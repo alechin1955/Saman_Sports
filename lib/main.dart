@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:saman_sports/FirebaseFuncs.dart';
+import 'package:saman_sports/FirebaseServices.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -8,9 +8,9 @@ Future<void> main() async {
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-  );
+  ); 
 
-  AuthResponse response = await FirebaseFunctions.register(
+  AuthResponse response = await FirebaseServices.register(
     email: 'gianpz@gmail.com',
     password: 'Flutter123456',
   );
@@ -20,6 +20,20 @@ Future<void> main() async {
   } else {
     print('Falló: ${response.errorMessage}');
   }
+
+  final (credential, errorMessage) = await FirebaseServices.signIn(
+      email: 'gianpz@gmail.com',
+      password: 'Flutter123456',
+    );
+
+    if (errorMessage != null) {
+      // Error aqui
+      print('Error al iniciar sesion');
+
+    } else if (credential != null) {
+      //Si fue exitoso aqui
+      print('Bienvenido: ${credential.user?.email}');
+    }
 
   runApp(const MyApp()); 
 }
