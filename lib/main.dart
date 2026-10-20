@@ -10,9 +10,18 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  FirebaseFuctions.Register();
+  AuthResponse response = await FirebaseFunctions.register(
+    email: 'gianpz@gmail.com',
+    password: 'Flutter123456',
+  );
 
-  runApp(const MyApp());
+  if (response.isSuccess) {
+    print('Éxito: ${response.credential?.user?.uid}');
+  } else {
+    print('Falló: ${response.errorMessage}');
+  }
+
+  runApp(const MyApp()); 
 }
 
 class MyApp extends StatelessWidget {
