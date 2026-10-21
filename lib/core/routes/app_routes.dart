@@ -5,7 +5,6 @@ import 'package:saman_sports/views/auth/forgot_password_view.dart';
 import 'package:saman_sports/views/auth/login_view.dart';
 import 'package:saman_sports/views/auth/register_view.dart';
 import 'package:saman_sports/views/dashboards/dashboard_placeholder_view.dart';
-import 'package:saman_sports/views/widgets/widgets_preview_view.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -15,7 +14,6 @@ class AppRoutes {
   static const String dashboardEstudiante = '/estudiante';
   static const String dashboardEntrenador = '/entrenador';
   static const String dashboardAdmin = '/admin';
-  static const String previewWidgets = '/preview-widgets';
 
   static Map<String, WidgetBuilder> routes(AuthController auth) {
     return {
@@ -28,13 +26,18 @@ class AppRoutes {
           correoInicial: argumento is String ? argumento : null,
         );
       },
-      dashboardEstudiante: (_) =>
-          const DashboardPlaceholderView(titulo: AppStrings.panelEstudiante),
-      dashboardEntrenador: (_) =>
-          const DashboardPlaceholderView(titulo: AppStrings.panelEntrenador),
-      dashboardAdmin: (_) =>
-          const DashboardPlaceholderView(titulo: AppStrings.panelAdmin),
-      previewWidgets: (_) => const WidgetsPreviewView(),
+      dashboardEstudiante: (_) => DashboardPlaceholderView(
+        controller: auth,
+        titulo: AppStrings.panelEstudiante,
+      ),
+      dashboardEntrenador: (_) => DashboardPlaceholderView(
+        controller: auth,
+        titulo: AppStrings.panelEntrenador,
+      ),
+      dashboardAdmin: (_) => DashboardPlaceholderView(
+        controller: auth,
+        titulo: AppStrings.panelAdmin,
+      ),
     };
   }
 }

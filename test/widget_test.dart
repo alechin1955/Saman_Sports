@@ -5,6 +5,7 @@ import 'package:saman_sports/core/constants/app_strings.dart';
 void main() {
   testWidgets('abre la portada sin Firebase', (tester) async {
     await tester.pumpWidget(const SamanSportsApp());
+    await tester.pump();
 
     expect(find.text(AppStrings.homeTitulo), findsOneWidget);
     expect(find.text(AppStrings.explorarDeportes), findsOneWidget);

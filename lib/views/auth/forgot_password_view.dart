@@ -36,6 +36,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   void initState() {
     super.initState();
     _correo = TextEditingController(text: widget.correoInicial ?? '');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.reiniciarEstado();
+    });
   }
 
   @override

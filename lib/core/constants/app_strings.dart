@@ -14,6 +14,7 @@ class AppStrings {
   static const String explorarDeportes = 'Explorar deportes';
   static const String proximamente = 'Próximamente';
   static const String volverAlInicio = 'Volver al inicio';
+  static const String cerrarSesion = 'Cerrar sesión';
   static const String panelEstudiante = 'Panel del estudiante';
   static const String panelEntrenador = 'Panel del entrenador';
   static const String panelAdmin = 'Panel del administrador';
@@ -24,6 +25,31 @@ class AppStrings {
   static const String homeDescripcion =
       'Centralizamos la experiencia deportiva de la UNIMET: deportes, entrenadores, horarios y reseñas en un solo lugar para nuestra comunidad universitaria.';
   static const String homeBadge = 'Universidad Metropolitana · UNIMET';
+  static const String disciplinas = 'Disciplinas';
+  static const String valoracion = 'Valoración';
+  static const String queEsTitulo = '¿Qué es Saman Sports?';
+  static const String queEsTexto =
+      'Un lugar para ver la oferta deportiva de la UNIMET, conocer entrenadores y leer reseñas de la comunidad.';
+  static const String inscribeteFacil = 'Inscríbete fácil';
+  static const String inscribeteFacilTexto = 'Revisa cupos y horarios antes de reservar.';
+  static const String conectaEntrenadores = 'Conecta con entrenadores';
+  static const String conectaEntrenadoresTexto = 'Conoce quién guía cada disciplina.';
+  static const String comparteExperiencia = 'Comparte tu experiencia';
+  static const String comparteExperienciaTexto = 'Las reseñas ayudan a otros estudiantes.';
+  static const String descubreDeportesTexto = 'Explora las disciplinas activas del campus.';
+  static const String deportesDisponibles = 'Deportes disponibles';
+  static const String verDetalles = 'Ver detalles';
+  static const String datosEjemplo = 'Datos de ejemplo';
+  static const String prontoDeportes = 'Pronto verás aquí los deportes.';
+  static const String prontoEntrenadores = 'Pronto verás aquí los entrenadores.';
+  static const String prontoResenas = 'Pronto verás aquí las reseñas.';
+  static const String cupos = 'Cupos';
+  static const String estadoDisponible = 'Disponible';
+  static const String estadoPocos = 'Pocos cupos';
+  static const String estadoCompleto = 'Completo';
+  static const String listoParaEmpezar = '¿Listo para empezar?';
+  static const String ctaTexto = 'Crea tu cuenta de estudiante y sigue la actividad deportiva de la UNIMET.';
+  static const String estudianteUnimet = 'Estudiante UNIMET';
 
   static const String loginTagline = 'El deporte universitario en tus manos.';
   static const String loginPalabraResaltada = 'tus manos';

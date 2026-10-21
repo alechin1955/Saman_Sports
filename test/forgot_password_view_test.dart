@@ -4,7 +4,7 @@ import 'package:saman_sports/app.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 
 void main() {
-  testWidgets('confirma, habilita reenviar y vuelve al formulario', (tester) async {
+  testWidgets('muestra la confirmación genérica y vuelve al formulario', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     await tester.pumpWidget(const SamanSportsApp());
     await tester.pumpAndSettle();
@@ -20,8 +20,10 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.enviarEnlace));
     await tester.pumpAndSettle();
 
-    expect(find.text(AppStrings.errorInesperado), findsOneWidget);
-    expect(find.text(AppStrings.revisarCorreo), findsNothing);
+    expect(find.text(AppStrings.revisarCorreo), findsOneWidget);
+    await tester.tap(find.text(AppStrings.usarOtroCorreo));
+    await tester.pump();
+    expect(find.text(AppStrings.recuperarContrasena), findsOneWidget);
     await tester.binding.setSurfaceSize(null);
   });
 

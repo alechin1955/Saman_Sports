@@ -32,7 +32,7 @@ void main() {
     }
   });
 
-  testWidgets('con datos válidos abre el panel del estudiante', (tester) async {
+  testWidgets('un formulario completo no entra sin Firebase', (tester) async {
     await abrirRegistro(tester);
     final campos = find.byType(TextFormField);
     await tester.enterText(campos.at(0), 'Ana');
@@ -58,7 +58,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     await tester.pumpWidget(const SamanSportsApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text(AppStrings.registrarme));
+    await tester.tap(find.text(AppStrings.registrarme).first);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.binding.setSurfaceSize(null);

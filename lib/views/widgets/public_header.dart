@@ -5,7 +5,6 @@ import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/views/widgets/app_logo.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
-import 'package:saman_sports/views/widgets/boton_secundario.dart';
 
 class PublicHeader extends StatelessWidget implements PreferredSizeWidget {
   const PublicHeader({
@@ -67,22 +66,14 @@ class PublicHeader extends StatelessWidget implements PreferredSizeWidget {
                         ),
                       ),
                     const Spacer(),
-                    Theme(
-                      data: _temaBotones(context),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          BotonSecundario(
-                            texto: AppStrings.iniciarSesion,
-                            onPressed: onIniciarSesion,
-                          ),
-                          const SizedBox(width: AppSizes.space8),
-                          BotonPrimario(
-                            texto: AppStrings.registrarse,
-                            onPressed: onRegistrarse,
-                          ),
-                        ],
-                      ),
+                    BotonPrimario(
+                      texto: AppStrings.iniciarSesion,
+                      onPressed: onIniciarSesion,
+                    ),
+                    const SizedBox(width: AppSizes.space8),
+                    BotonPrimario(
+                      texto: AppStrings.registrarse,
+                      onPressed: onRegistrarse,
                     ),
                   ] else
                     IconButton(
@@ -95,29 +86,6 @@ class PublicHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
         );
       },
-    );
-  }
-
-  ThemeData _temaBotones(BuildContext context) {
-    final compacto = const EdgeInsets.symmetric(
-      horizontal: AppSizes.space16,
-      vertical: AppSizes.space8,
-    );
-    return Theme.of(context).copyWith(
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          padding: compacto,
-          minimumSize: const Size(0, 40),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          padding: compacto,
-          minimumSize: const Size(0, 40),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-      ),
     );
   }
 
@@ -146,7 +114,7 @@ class PublicHeader extends StatelessWidget implements PreferredSizeWidget {
                   },
                 ),
               const Spacer(),
-              BotonSecundario(
+              BotonPrimario(
                 texto: AppStrings.iniciarSesion,
                 onPressed: onIniciarSesion,
                 anchoCompleto: true,

@@ -30,6 +30,14 @@ class _LoginViewState extends State<LoginView> {
   bool _recordar = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.reiniciarEstado();
+    });
+  }
+
+  @override
   void dispose() {
     _correo.dispose();
     _clave.dispose();

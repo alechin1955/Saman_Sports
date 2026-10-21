@@ -1,12 +1,10 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/controllers/datos_registro.dart';
 import 'package:saman_sports/controllers/resultado_login.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
-import 'package:saman_sports/core/constants/dominios.dart';
 import 'package:saman_sports/core/utils/validators.dart';
 
 class AuthController extends ChangeNotifier {
@@ -15,19 +13,9 @@ class AuthController extends ChangeNotifier {
   bool enlaceEnviado = false;
   String? correoEnviado;
   int segundosReenvio = 0;
+  DestinoLogin? destinoActual;
 
   Timer? _reenvio;
-
-  static DestinoLogin? destinoDesdeCorreo(String? correo) {
-    final normalizado = correo?.trim().toLowerCase() ?? '';
-    if (normalizado.endsWith(Dominios.estudiante)) {
-      return DestinoLogin.estudiante;
-    }
-    if (normalizado.endsWith(Dominios.personal)) {
-      return DestinoLogin.entrenador;
-    }
-    return null;
-  }
 
   Future<DestinoLogin?> iniciarSesion(
     String correo,
@@ -45,7 +33,7 @@ class AuthController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      await _recordarSesion(recordar);
+      await FirebaseServices.setRememberSession(recordar);
       final (credential, errorMessage) = await FirebaseServices.signIn(
         email: correo.trim(),
         password: clave,
@@ -55,12 +43,15 @@ class AuthController extends ChangeNotifier {
         return null;
       }
 
-      final destino = destinoDesdeCorreo(credential!.user!.email ?? correo);
+      final rol = await FirebaseServices.getUserRole(uid: credential!.user!.uid);
+      final destino = _destinoDesdeRol(rol);
       if (destino == null) {
-        await FirebaseAuth.instance.signOut();
+        await FirebaseServices.signOut();
         error = AppStrings.cuentaNoHabilitada;
+        destinoActual = null;
         return null;
       }
+      destinoActual = destino;
       return destino;
     } catch (_) {
       error = AppStrings.errorInesperado;
@@ -87,10 +78,22 @@ class AuthController extends ChangeNotifier {
         email: datos.correo.trim(),
         password: datos.clave,
       );
-      if (!respuesta.isSuccess || respuesta.credential?.user == null) {
+      final uid = respuesta.credential?.user?.uid;
+      if (!respuesta.isSuccess || uid == null) {
         error = respuesta.errorMessage ?? AppStrings.errorInesperado;
         return false;
       }
+
+      final guardado = await FirebaseServices.saveUserData(
+        uid: uid,
+        data: datos.toMap(),
+      );
+      if (!guardado.isSuccess) {
+        await FirebaseServices.deleteCurrentUser();
+        error = guardado.errorMessage ?? AppStrings.errorInesperado;
+        return false;
+      }
+      destinoActual = DestinoLogin.estudiante;
       return true;
     } catch (_) {
       error = AppStrings.errorInesperado;
@@ -113,11 +116,7 @@ class AuthController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      try {
-        await FirebaseAuth.instance.sendPasswordResetEmail(email: correo.trim());
-      } on FirebaseAuthException {
-        // La confirmación es siempre la misma, exista o no la cuenta.
-      }
+      await FirebaseServices.sendPasswordResetEmail(email: correo.trim());
       enlaceEnviado = true;
       correoEnviado = correo.trim();
       _iniciarCuentaRegresiva();
@@ -149,13 +148,34 @@ class AuthController extends ChangeNotifier {
     cargando = true;
     notifyListeners();
     try {
-      await FirebaseAuth.instance.signOut();
+      await FirebaseServices.signOut();
+      destinoActual = null;
     } catch (_) {
       error = AppStrings.errorInesperado;
     } finally {
       cargando = false;
       notifyListeners();
     }
+  }
+
+  Future<DestinoLogin?> rolSesionActual() async {
+    final user = FirebaseServices.currentUser;
+    if (user == null) {
+      destinoActual = null;
+      return null;
+    }
+    final rol = await FirebaseServices.getUserRole(uid: user.uid);
+    destinoActual = _destinoDesdeRol(rol);
+    return destinoActual;
+  }
+
+  void reiniciarEstado() {
+    _reenvio?.cancel();
+    error = null;
+    enlaceEnviado = false;
+    correoEnviado = null;
+    segundosReenvio = 0;
+    notifyListeners();
   }
 
   void limpiarError() {
@@ -169,10 +189,13 @@ class AuthController extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> _recordarSesion(bool recordar) async {
-    await FirebaseAuth.instance.setPersistence(
-      recordar ? Persistence.LOCAL : Persistence.SESSION,
-    );
+  DestinoLogin? _destinoDesdeRol(String? rol) {
+    return switch (rol) {
+      'estudiante' => DestinoLogin.estudiante,
+      'entrenador' => DestinoLogin.entrenador,
+      'administrador' => DestinoLogin.administrador,
+      _ => null,
+    };
   }
 
   String? _validarRegistro(DatosRegistro datos) {

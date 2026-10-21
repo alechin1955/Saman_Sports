@@ -22,6 +22,16 @@ class BotonPrimario extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final boton = ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.surface,
+        disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+        disabledForegroundColor: AppColors.surface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radius),
+        ),
+      ),
       onPressed: cargando ? null : onPressed,
       child: cargando
           ? const SizedBox(

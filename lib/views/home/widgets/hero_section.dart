@@ -12,10 +12,18 @@ class HeroSection extends StatelessWidget {
     super.key,
     required this.onExplorar,
     required this.onRegistrarme,
+    this.disciplinas = 0,
+    this.entrenadores = 0,
+    this.valoracion = '0.0',
+    this.resenas = 0,
   });
 
   final VoidCallback onExplorar;
   final VoidCallback onRegistrarme;
+  final int disciplinas;
+  final int entrenadores;
+  final String valoracion;
+  final int resenas;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +35,10 @@ class HeroSection extends StatelessWidget {
           fontSize: esMovil ? AppSizes.heroTitleMobile : AppSizes.heroTitleDesktop,
           onExplorar: onExplorar,
           onRegistrarme: onRegistrarme,
+          disciplinas: disciplinas,
+          entrenadores: entrenadores,
+          valoracion: valoracion,
+          resenas: resenas,
         );
 
         if (!esEscritorio) {
@@ -77,11 +89,19 @@ class _HeroTexto extends StatelessWidget {
     required this.fontSize,
     required this.onExplorar,
     required this.onRegistrarme,
+    required this.disciplinas,
+    required this.entrenadores,
+    required this.valoracion,
+    required this.resenas,
   });
 
   final double fontSize;
   final VoidCallback onExplorar;
   final VoidCallback onRegistrarme;
+  final int disciplinas;
+  final int entrenadores;
+  final String valoracion;
+  final int resenas;
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +140,17 @@ class _HeroTexto extends StatelessWidget {
               texto: AppStrings.registrarme,
               onPressed: onRegistrarme,
             ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.space24),
+        Wrap(
+          spacing: AppSizes.space16,
+          runSpacing: AppSizes.space8,
+          children: [
+            Text('$disciplinas+ ${AppStrings.disciplinas}', style: AppTextStyles.label),
+            Text('$entrenadores ${AppStrings.entrenadores}', style: AppTextStyles.label),
+            Text('$valoracion★ ${AppStrings.valoracion}', style: AppTextStyles.label),
+            Text('$resenas ${AppStrings.resenas}', style: AppTextStyles.label),
           ],
         ),
       ],

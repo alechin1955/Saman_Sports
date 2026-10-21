@@ -37,6 +37,14 @@ class _RegisterViewState extends State<RegisterView> {
   bool _errorTerminos = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.reiniciarEstado();
+    });
+  }
+
+  @override
   void dispose() {
     _nombre.dispose();
     _apellido.dispose();
@@ -219,7 +227,7 @@ class _RegisterForm extends StatelessWidget {
             label: AppStrings.cedula,
             hint: AppStrings.hintCedula,
             icono: Icons.badge_outlined,
-            keyboardType: TextInputType.number,
+            keyboardType: TextInputType.text,
             textInputAction: TextInputAction.next,
             validator: Validators.cedula,
           ),

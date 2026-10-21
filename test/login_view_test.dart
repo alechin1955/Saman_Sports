@@ -24,7 +24,7 @@ void main() {
     expect(find.text('Panel del estudiante'), findsNothing);
   });
 
-  testWidgets('un correo UNIMET válido abre el panel del estudiante', (tester) async {
+  testWidgets('un correo institucional válido no entra sin Firebase', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     await tester.pumpWidget(const SamanSportsApp());
     await tester.pumpAndSettle();

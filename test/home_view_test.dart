@@ -18,7 +18,7 @@ void main() {
     await tester.pumpWidget(const SamanSportsApp());
     expect(find.byIcon(Icons.menu), findsOneWidget);
 
-    await tester.tap(find.text(AppStrings.registrarme));
+    await tester.tap(find.text(AppStrings.registrarme).first);
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.crearCuenta), findsWidgets);
 
