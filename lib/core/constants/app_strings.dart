@@ -14,6 +14,9 @@ class AppStrings {
   static const String explorarDeportes = 'Explorar deportes';
   static const String proximamente = 'Próximamente';
   static const String volverAlInicio = 'Volver al inicio';
+  static const String panelEstudiante = 'Panel del estudiante';
+  static const String panelEntrenador = 'Panel del entrenador';
+  static const String panelAdmin = 'Panel del administrador';
 
   static const String homeTitulo = 'Vive el deporte.';
   static const String homeTituloDestacado = 'Conecta.';
@@ -44,6 +47,7 @@ class AppStrings {
   static const String recordarSesion = 'Recordar sesión';
   static const String olvidasteContrasena = '¿Olvidaste tu contraseña?';
   static const String noTienesCuenta = '¿No tienes cuenta?';
+  static const String divisorO = 'o';
   static const String registrate = 'Regístrate';
   static const String registroSoloEstudiantes =
       'El registro está disponible solo para estudiantes.';
@@ -65,9 +69,26 @@ class AppStrings {
   static const String confirmarContrasena = 'Confirmar contraseña';
   static const String hintContrasena = 'Mín. 6 caracteres';
   static const String repetirContrasena = 'Repítela';
+  static const String aceptoLos = 'Acepto los';
+  static const String terminosCondiciones = 'Términos y Condiciones';
+  static const String yLa = 'y la';
   static const String aceptoTerminos = 'Acepto los Términos y Condiciones';
   static const String politicaPrivacidad = 'Política de Privacidad';
+  static const String debesAceptarTerminos =
+      'Debes aceptar los Términos y Condiciones';
+  static const String telefono = 'Teléfono';
+  static const String hintTelefono = '0414-1234567';
+  static const String featureDescubre = 'Descubre deportes';
+  static const String featureDescubreTexto =
+      'Encuentra disciplinas y únete a actividades.';
+  static const String featureAgenda = 'Controla tu agenda';
+  static const String featureAgendaTexto =
+      'Horarios, inscripciones y recordatorios.';
+  static const String featureComunidadRegistroTexto =
+      'Entrenadores, compañeros y reseñas.';
   static const String yaTienesCuenta = '¿Ya tienes cuenta?';
+  static const String registroTaglineCompleta =
+      'Descubre tu deporte. Conecta con tu comunidad.';
   static const String registroTagline = 'Descubre tu deporte.';
   static const String registroTaglineDestacado = 'Conecta';
   static const String registroTaglineFinal = 'con tu comunidad.';
@@ -88,9 +109,29 @@ class AppStrings {
   static const String reenviarEnlace = 'Reenviar enlace';
   static const String usarOtroCorreo = 'Usar otro correo';
   static const String escribisteMalCorreo = '¿Escribiste mal tu correo?';
+  static const String recuperarTaglineCompleta = 'Recupera el acceso a tu cuenta.';
+  static const String recuperarPalabraResaltada = 'cuenta';
+  static const String recuperarPanelDescripcion =
+      'Te ayudamos a restablecer tu contraseña de forma segura para que vuelvas a disfrutar del deporte en la UNIMET.';
   static const String recuperarTagline = 'Recupera el acceso';
   static const String recuperarTaglineFinal = 'a tu cuenta.';
+  static const String featureEnlace = 'Enlace por correo';
+  static const String featureEnlaceTexto =
+      'Recibirás un enlace seguro en tu correo institucional.';
+  static const String featureProceso = 'Proceso seguro';
+  static const String featureProcesoTexto =
+      'Gestionado con Firebase Authentication.';
+  static const String featureNuevaClave = 'Nueva contraseña';
+  static const String featureNuevaClaveTexto =
+      'Crea una contraseña nueva en pocos segundos.';
+  static const String mensajeAntesCorreo = 'Si existe una cuenta asociada a ';
+  static const String mensajeDespuesCorreo =
+      ', recibirás un enlace para restablecer tu contraseña. Revisa también tu carpeta de spam.';
+  static const String disponibleEn = 'disponible en';
+  static const String enlaceReenviado = 'Enlace reenviado';
 
+  static const String cuentaNoHabilitada = 'La cuenta no está habilitada.';
+  static const String errorInesperado = 'Ocurrió un error. Inténtalo de nuevo.';
   static const String campoObligatorio = 'Este campo es obligatorio.';
   static const String correoInvalido = 'Ingresa un correo válido.';
   static const String soloCorreoEstudiante =
