@@ -1,17 +1,18 @@
-# saman_sports
+# Saman Sports
 
-A new Flutter project.
+Plataforma web de las actividades deportivas de la Universidad Metropolitana (UNIMET).
 
-## Getting Started
+## Cómo correrlo
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run -d chrome
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Estructura
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- `lib/FirebaseServices.dart`: única fachada hacia Firebase.
+- `lib/controllers/`: lógica de autenticación y del Home.
+- `lib/views/`: pantallas y widgets.
+- `lib/core/`: tema, textos, rutas y validadores.
+- `docs/mockups/`: referencias visuales, no se cargan en la app.
