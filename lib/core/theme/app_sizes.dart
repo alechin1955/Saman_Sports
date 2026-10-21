@@ -10,4 +10,6 @@ class AppSizes {
   static const double formMaxWidth = 460;
   static const double mobile = 600;
   static const double desktop = 1024;
+  static const double heroTitleDesktop = 72;
+  static const double heroTitleMobile = 40;
 }

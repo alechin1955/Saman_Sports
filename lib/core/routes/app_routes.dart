@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/views/dashboards/dashboard_placeholder_view.dart';
+import 'package:saman_sports/views/home/home_view.dart';
+import 'package:saman_sports/views/widgets/widgets_preview_view.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -9,10 +11,11 @@ class AppRoutes {
   static const String dashboardEstudiante = '/estudiante';
   static const String dashboardEntrenador = '/entrenador';
   static const String dashboardAdmin = '/admin';
+  static const String previewWidgets = '/preview-widgets';
 
   static Map<String, WidgetBuilder> routes() {
     return {
-      home: (_) => const DashboardPlaceholderView(titulo: 'Home'),
+      home: (_) => const HomeView(),
       login: (_) => const DashboardPlaceholderView(titulo: 'Login'),
       registro: (_) => const DashboardPlaceholderView(titulo: 'Registro'),
       recuperarContrasena: (_) =>
@@ -23,6 +26,7 @@ class AppRoutes {
           const DashboardPlaceholderView(titulo: 'Panel del entrenador'),
       dashboardAdmin: (_) =>
           const DashboardPlaceholderView(titulo: 'Panel del administrador'),
+      previewWidgets: (_) => const WidgetsPreviewView(),
     };
   }
 }
