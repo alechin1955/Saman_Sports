@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 
@@ -25,7 +26,7 @@ class DashboardPlaceholderView extends StatelessWidget {
                   (route) => false,
                 );
               },
-              child: const Text('Volver al inicio'),
+              child: const Text(AppStrings.volverAlInicio),
             ),
           ],
         ),

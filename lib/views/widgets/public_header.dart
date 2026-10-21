@@ -130,7 +130,11 @@ class PublicHeader extends StatelessWidget implements PreferredSizeWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const AppLogo(size: 40, mostrarTexto: true),
+              const FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: AppLogo(size: 40, mostrarTexto: true),
+              ),
               const SizedBox(height: AppSizes.space32),
               for (final link in links)
                 _NavLink(

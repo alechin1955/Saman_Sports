@@ -38,7 +38,10 @@ class HeroSection extends StatelessWidget {
                 texto,
                 if (!esMovil) ...[
                   const SizedBox(height: AppSizes.space32),
-                  const SizedBox(height: 220, child: HeroIllustration()),
+                  const SizedBox(
+                    height: AppSizes.heroIllustrationMobile,
+                    child: HeroIllustration(),
+                  ),
                 ],
               ],
             ),
@@ -54,7 +57,13 @@ class HeroSection extends StatelessWidget {
             children: [
               Expanded(flex: 6, child: texto),
               const SizedBox(width: AppSizes.space32),
-              const Expanded(flex: 5, child: SizedBox(height: 560, child: HeroIllustration())),
+              const Expanded(
+                flex: 5,
+                child: SizedBox(
+                  height: AppSizes.heroIllustrationDesktop,
+                  child: HeroIllustration(),
+                ),
+              ),
             ],
           ),
         );
