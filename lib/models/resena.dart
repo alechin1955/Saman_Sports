@@ -26,15 +26,13 @@ class Resena {
   final DateTime fecha;
 
   factory Resena.fromMap(Map<String, dynamic> map) {
-    final valor = map['estrellas'];
-    final estrellas = valor is int ? valor : int.tryParse('$valor') ?? 1;
     return Resena(
       id: '${map['id'] ?? ''}',
       autorUid: '${map['autorUid'] ?? ''}',
       autorNombre: '${map['autorNombre'] ?? ''}',
       disciplina: '${map['disciplina'] ?? ''}',
       deporteId: '${map['deporteId'] ?? ''}',
-      estrellas: estrellas.clamp(1, 5),
+      estrellas: (map['estrellas'] as num?)?.round().clamp(1, 5).toInt() ?? 5,
       comentario: '${map['comentario'] ?? ''}',
       fecha: _fecha(map['fecha']),
     );

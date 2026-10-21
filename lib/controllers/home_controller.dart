@@ -102,7 +102,15 @@ class HomeController extends ChangeNotifier {
     }
 
     try {
-      return origen().listen(recibir, onError: (_) => recibir(const []));
+      return origen()
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: (sink) {
+              sink.add(const []);
+              sink.close();
+            },
+          )
+          .listen(recibir, onError: (_) => recibir(const []));
     } catch (_) {
       recibir(const []);
       return null;

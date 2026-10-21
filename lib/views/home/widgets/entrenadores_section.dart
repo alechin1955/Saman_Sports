@@ -30,7 +30,7 @@ class EntrenadoresSection extends StatelessWidget {
               builder: (context, constraints) {
                 if (constraints.maxWidth < AppSizes.mobile) {
                   return SizedBox(
-                    height: 210,
+                    height: AppSizes.entrenadorCarruselAlto,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: controller.entrenadores.length,
@@ -40,6 +40,7 @@ class EntrenadoresSection extends StatelessWidget {
                   );
                 }
                 return Wrap(
+                  alignment: WrapAlignment.start,
                   spacing: AppSizes.space12,
                   runSpacing: AppSizes.space12,
                   children: [

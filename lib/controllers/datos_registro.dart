@@ -19,13 +19,14 @@ class DatosRegistro {
 
   Map<String, String> toMap() {
     return {
-      'nombre': nombre,
-      'apellido': apellido,
-      'cedula': cedula,
-      'carnet': carnet,
-      'telefono': telefono,
-      'correo': correo,
+      'nombre': nombre.trim(),
+      'apellido': apellido.trim(),
+      'cedula': cedula.trim(),
+      'carnet': carnet.trim(),
+      'telefono': telefono.trim(),
+      'correo': correo.trim().toLowerCase(),
       'rol': 'estudiante',
+      'creadoEn': DateTime.now().toIso8601String(),
     };
   }
 }

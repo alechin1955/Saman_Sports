@@ -10,6 +10,12 @@ class AppSizes {
   static const double formMaxWidth = 460;
   static const double mobile = 600;
   static const double desktop = 1024;
+  static const double logoHeader = 40;
+  static const double headerHeight = 72;
+  static const double heroTextMaxWidth = 520;
+  static const double entrenadorCardAncho = 220;
+  static const double entrenadorCarruselAlto = 210;
+  static const double skeletonAlto = 140;
   static const double heroTitleDesktop = 72;
   static const double heroTitleMobile = 40;
   static const double heroIllustrationMobile = 220;

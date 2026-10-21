@@ -13,7 +13,7 @@ class EntrenadorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final foto = entrenador.fotoUrl;
     return Container(
-      width: 220,
+      width: AppSizes.entrenadorCardAncho,
       padding: const EdgeInsets.all(AppSizes.space16),
       decoration: BoxDecoration(
         color: AppColors.surface,

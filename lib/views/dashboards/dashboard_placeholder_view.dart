@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
+import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/views/widgets/enlace_volver_inicio.dart';
 
@@ -33,7 +34,11 @@ class DashboardPlaceholderView extends StatelessWidget {
               onPressed: () async {
                 await controller.cerrarSesion();
                 if (!context.mounted) return;
-                volverAlInicio(context);
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.home,
+                  (_) => false,
+                );
               },
               child: const Text(AppStrings.cerrarSesion),
             ),

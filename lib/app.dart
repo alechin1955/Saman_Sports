@@ -7,6 +7,7 @@ import 'package:saman_sports/controllers/home_controller.dart';
 import 'package:saman_sports/controllers/resultado_login.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
+import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_theme.dart';
 import 'package:saman_sports/views/dashboards/dashboard_placeholder_view.dart';
 import 'package:saman_sports/views/home/home_view.dart';
@@ -33,7 +34,7 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Saman Sports',
+      title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       initialRoute: AppRoutes.home,
@@ -71,7 +72,7 @@ class _InicioSegunSesion extends StatefulWidget {
 class _InicioSegunSesionState extends State<_InicioSegunSesion> {
   StreamSubscription<Object?>? _sub;
   Object? _usuario;
-  Future<DestinoLogin?>? _rol;
+  Future<ResultadoRol>? _rol;
   bool _listo = false;
 
   @override
@@ -85,6 +86,10 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
           setState(() {
             _usuario = usuario;
             _listo = true;
+            if (widget.auth.registrando || widget.auth.cargando) {
+              _rol = null;
+              return;
+            }
             _rol = usuario == null ? null : widget.auth.rolSesionActual();
           });
         },
@@ -113,22 +118,40 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
     if (!_listo) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    if (widget.auth.registrando || widget.auth.cargando) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     if (_usuario == null) {
       return HomeView(controller: widget.home);
     }
-    return FutureBuilder<DestinoLogin?>(
-      future: _rol,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
+    return ListenableBuilder(
+      listenable: widget.auth,
+      builder: (context, _) {
+        if (widget.auth.registrando || widget.auth.cargando) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        final destino = snapshot.data;
-        if (destino == null) {
-          return _SesionSinRol(auth: widget.auth, home: widget.home);
-        }
-        return DashboardPlaceholderView(
-          controller: widget.auth,
-          titulo: _titulo(destino),
+        return FutureBuilder<ResultadoRol>(
+          future: _rol,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            final resultado = snapshot.data;
+            if (resultado == null || resultado.tipo == TipoResultadoRol.error) {
+              return _ErrorRol(
+                onReintentar: () {
+                  setState(() => _rol = widget.auth.rolSesionActual());
+                },
+              );
+            }
+            if (resultado.destino == null) {
+              return _SesionSinRol(auth: widget.auth, home: widget.home);
+            }
+            return DashboardPlaceholderView(
+              controller: widget.auth,
+              titulo: _titulo(resultado.destino!),
+            );
+          },
         );
       },
     );
@@ -140,6 +163,31 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
       DestinoLogin.entrenador => AppStrings.panelEntrenador,
       DestinoLogin.administrador => AppStrings.panelAdmin,
     };
+  }
+}
+
+class _ErrorRol extends StatelessWidget {
+  const _ErrorRol({required this.onReintentar});
+
+  final VoidCallback onReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(AppStrings.errorConexion),
+            const SizedBox(height: AppSizes.space16),
+            ElevatedButton(
+              onPressed: onReintentar,
+              child: Text(AppStrings.reintentar),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

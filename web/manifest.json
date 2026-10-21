@@ -1,11 +1,11 @@
 {
-    "name": "saman_sports",
-    "short_name": "saman_sports",
+    "name": "Saman Sports",
+    "short_name": "Saman Sports",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F8F9FA",
+    "theme_color": "#E85D04",
+    "description": "Plataforma deportiva de la Universidad Metropolitana.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

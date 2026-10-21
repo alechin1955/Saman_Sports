@@ -28,7 +28,7 @@ class PublicHeader extends StatelessWidget implements PreferredSizeWidget {
   ];
 
   @override
-  Size get preferredSize => const Size.fromHeight(72);
+  Size get preferredSize => const Size.fromHeight(AppSizes.headerHeight);
 
   @override
   Widget build(BuildContext context) {
@@ -45,27 +45,29 @@ class PublicHeader extends StatelessWidget implements PreferredSizeWidget {
               padding: const EdgeInsets.symmetric(horizontal: AppSizes.space16),
               child: Row(
                 children: [
-                  const Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: AppLogo(size: 40, mostrarTexto: true),
-                    ),
-                  ),
+                  const AppLogo(size: AppSizes.logoHeader, mostrarTexto: true),
                   if (esEscritorio) ...[
-                    const SizedBox(width: AppSizes.space16),
-                    for (final link in links)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.space8,
-                        ),
-                        child: _NavLink(
-                          texto: link,
-                          activo: link == linkActivo,
-                          onPressed: () => onLink?.call(link),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            for (final link in links)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.space8,
+                                ),
+                                child: _NavLink(
+                                  texto: link,
+                                  activo: link == linkActivo,
+                                  onPressed: () => onLink?.call(link),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    const Spacer(),
+                    ),
                     BotonPrimario(
                       texto: AppStrings.iniciarSesion,
                       onPressed: onIniciarSesion,

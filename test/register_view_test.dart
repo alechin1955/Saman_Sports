@@ -28,7 +28,7 @@ void main() {
       await tester.enterText(correo, valor);
       await enviar(tester);
       expect(find.text(AppStrings.soloCorreoEstudiante), findsOneWidget);
-      expect(find.text('Panel del estudiante'), findsNothing);
+      expect(find.text(AppStrings.panelEstudiante), findsNothing);
     }
   });
 

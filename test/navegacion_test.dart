@@ -51,6 +51,7 @@ void main() {
     await tester.pumpWidget(const SamanSportsApp(key: ValueKey('dashboard')));
     await tester.pumpAndSettle();
     await tocar(tester, find.text(AppStrings.iniciarSesion).first);
+    expect(find.text(AppStrings.olvidasteContrasena), findsOneWidget);
     await tester.binding.setSurfaceSize(null);
   });
 }

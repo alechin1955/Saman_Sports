@@ -9,6 +9,7 @@ import 'package:saman_sports/core/utils/validators.dart';
 
 class AuthController extends ChangeNotifier {
   bool cargando = false;
+  bool registrando = false;
   String? error;
   bool enlaceEnviado = false;
   String? correoEnviado;
@@ -43,14 +44,18 @@ class AuthController extends ChangeNotifier {
         return null;
       }
 
-      final rol = await FirebaseServices.getUserRole(uid: credential!.user!.uid);
-      final destino = _destinoDesdeRol(rol);
-      if (destino == null) {
+      final resultado = await _consultarRol(credential!.user!.uid);
+      if (resultado.tipo == TipoResultadoRol.error) {
+        error = AppStrings.errorConexion;
+        return null;
+      }
+      if (resultado.destino == null) {
         await FirebaseServices.signOut();
         error = AppStrings.cuentaNoHabilitada;
         destinoActual = null;
         return null;
       }
+      final destino = resultado.destino!;
       destinoActual = destino;
       return destino;
     } catch (_) {
@@ -71,6 +76,7 @@ class AuthController extends ChangeNotifier {
     }
 
     cargando = true;
+    registrando = true;
     error = null;
     notifyListeners();
     try {
@@ -80,14 +86,21 @@ class AuthController extends ChangeNotifier {
       );
       final uid = respuesta.credential?.user?.uid;
       if (!respuesta.isSuccess || uid == null) {
-        error = respuesta.errorMessage ?? AppStrings.errorInesperado;
+        error = _traducirRegistro(respuesta.errorMessage);
         return false;
       }
 
-      final guardado = await FirebaseServices.saveUserData(
-        uid: uid,
-        data: datos.toMap(),
-      );
+      final AuthResponse guardado;
+      try {
+        guardado = await FirebaseServices.saveUserData(
+          uid: uid,
+          data: datos.toMap(),
+        ).timeout(const Duration(seconds: 10));
+      } on TimeoutException {
+        await FirebaseServices.deleteCurrentUser();
+        error = AppStrings.errorConexion;
+        return false;
+      }
       if (!guardado.isSuccess) {
         await FirebaseServices.deleteCurrentUser();
         error = guardado.errorMessage ?? AppStrings.errorInesperado;
@@ -99,6 +112,7 @@ class AuthController extends ChangeNotifier {
       error = AppStrings.errorInesperado;
       return false;
     } finally {
+      registrando = false;
       cargando = false;
       notifyListeners();
     }
@@ -158,15 +172,15 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  Future<DestinoLogin?> rolSesionActual() async {
+  Future<ResultadoRol> rolSesionActual() async {
     final user = FirebaseServices.currentUser;
     if (user == null) {
       destinoActual = null;
-      return null;
+      return const ResultadoRol(tipo: TipoResultadoRol.sinRol);
     }
-    final rol = await FirebaseServices.getUserRole(uid: user.uid);
-    destinoActual = _destinoDesdeRol(rol);
-    return destinoActual;
+    final resultado = await _consultarRol(user.uid);
+    destinoActual = resultado.destino;
+    return resultado;
   }
 
   void reiniciarEstado() {
@@ -187,6 +201,37 @@ class AuthController extends ChangeNotifier {
   void dispose() {
     _reenvio?.cancel();
     super.dispose();
+  }
+
+  Future<ResultadoRol> _consultarRol(String uid) async {
+    final consulta = await FirebaseServices.consultarRol(uid: uid);
+    if (consulta.error) {
+      return const ResultadoRol(tipo: TipoResultadoRol.error);
+    }
+    final destino = _destinoDesdeRol(consulta.rol);
+    if (!consulta.existe || destino == null) {
+      return const ResultadoRol(tipo: TipoResultadoRol.sinRol);
+    }
+    return ResultadoRol(tipo: TipoResultadoRol.valido, destino: destino);
+  }
+
+  String _traducirRegistro(String? mensaje) {
+    final texto = (mensaje ?? '').toLowerCase();
+    if (texto.contains('already') || texto.contains('email-already-in-use')) {
+      return AppStrings.correoYaRegistrado;
+    }
+    if (texto.contains('weak-password') || texto.contains('weak')) {
+      return AppStrings.claveCorta;
+    }
+    if (texto.contains('invalid-email') || texto.contains('badly formatted')) {
+      return AppStrings.correoInvalido;
+    }
+    if (texto.contains('network') || texto.contains('unavailable')) {
+      return AppStrings.errorConexion;
+    }
+    return mensaje == null || mensaje.isEmpty
+        ? AppStrings.errorInesperado
+        : mensaje;
   }
 
   DestinoLogin? _destinoDesdeRol(String? rol) {

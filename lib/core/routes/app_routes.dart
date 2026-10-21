@@ -4,6 +4,8 @@ import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/views/auth/forgot_password_view.dart';
 import 'package:saman_sports/views/auth/login_view.dart';
 import 'package:saman_sports/views/auth/register_view.dart';
+import 'package:saman_sports/controllers/resultado_login.dart';
+import 'package:saman_sports/views/auth/guardia_rol.dart';
 import 'package:saman_sports/views/dashboards/dashboard_placeholder_view.dart';
 
 class AppRoutes {
@@ -26,17 +28,29 @@ class AppRoutes {
           correoInicial: argumento is String ? argumento : null,
         );
       },
-      dashboardEstudiante: (_) => DashboardPlaceholderView(
-        controller: auth,
-        titulo: AppStrings.panelEstudiante,
+      dashboardEstudiante: (_) => GuardiaRol(
+        auth: auth,
+        esperado: DestinoLogin.estudiante,
+        child: DashboardPlaceholderView(
+          controller: auth,
+          titulo: AppStrings.panelEstudiante,
+        ),
       ),
-      dashboardEntrenador: (_) => DashboardPlaceholderView(
-        controller: auth,
-        titulo: AppStrings.panelEntrenador,
+      dashboardEntrenador: (_) => GuardiaRol(
+        auth: auth,
+        esperado: DestinoLogin.entrenador,
+        child: DashboardPlaceholderView(
+          controller: auth,
+          titulo: AppStrings.panelEntrenador,
+        ),
       ),
-      dashboardAdmin: (_) => DashboardPlaceholderView(
-        controller: auth,
-        titulo: AppStrings.panelAdmin,
+      dashboardAdmin: (_) => GuardiaRol(
+        auth: auth,
+        esperado: DestinoLogin.administrador,
+        child: DashboardPlaceholderView(
+          controller: auth,
+          titulo: AppStrings.panelAdmin,
+        ),
       ),
     };
   }

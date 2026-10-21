@@ -116,8 +116,11 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
     );
   }
 
-  void _irALogin() {
-    Navigator.pushNamed(context, AppRoutes.login);
+  Future<void> _irALogin() async {
+    final navigator = Navigator.of(context);
+    if (await navigator.maybePop()) return;
+    if (!mounted) return;
+    navigator.pushReplacementNamed(AppRoutes.login);
   }
 }
 

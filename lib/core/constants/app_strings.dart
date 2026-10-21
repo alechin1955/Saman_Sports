@@ -158,6 +158,9 @@ class AppStrings {
 
   static const String cuentaNoHabilitada = 'La cuenta no está habilitada.';
   static const String errorInesperado = 'Ocurrió un error. Inténtalo de nuevo.';
+  static const String errorConexion = 'Sin conexión. Revisa tu internet e inténtalo de nuevo.';
+  static const String correoYaRegistrado = 'Ya existe una cuenta con ese correo.';
+  static const String reintentar = 'Reintentar';
   static const String campoObligatorio = 'Este campo es obligatorio.';
   static const String correoInvalido = 'Ingresa un correo válido.';
   static const String soloCorreoEstudiante =

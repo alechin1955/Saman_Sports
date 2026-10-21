@@ -21,7 +21,7 @@ void main() {
     await tester.pump();
 
     expect(find.text(AppStrings.correoInstitucionalInvalido), findsOneWidget);
-    expect(find.text('Panel del estudiante'), findsNothing);
+    expect(find.text(AppStrings.panelEstudiante), findsNothing);
   });
 
   testWidgets('un correo institucional válido no entra sin Firebase', (tester) async {

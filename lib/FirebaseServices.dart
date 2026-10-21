@@ -154,6 +154,21 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
   /// Borra la cuenta recién creada en Auth. Se usa en el registro si la cuenta
   /// se creó pero no se pudieron guardar sus datos en Firestore, para no dejar
   /// cuentas a medias.
+  static Future<({bool error, bool existe, String? rol})> consultarRol({
+    required String uid,
+  }) async {
+    try {
+      final doc = await _db.collection(usuariosCollection).doc(uid).get();
+      if (!doc.exists) {
+        return (error: false, existe: false, rol: null);
+      }
+      final rol = doc.data()?['rol'];
+      return (error: false, existe: true, rol: rol is String ? rol : null);
+    } catch (_) {
+      return (error: true, existe: false, rol: null);
+    }
+  }
+
   static Future<void> deleteCurrentUser() async {
     try {
       await _auth.currentUser?.delete();

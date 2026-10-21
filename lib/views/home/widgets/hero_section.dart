@@ -120,7 +120,7 @@ class _HeroTexto extends StatelessWidget {
         _linea(AppStrings.homeTituloFinal, base),
         const SizedBox(height: AppSizes.space24),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
+          constraints: const BoxConstraints(maxWidth: AppSizes.heroTextMaxWidth),
           child: Text(
             AppStrings.homeDescripcion,
             style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),

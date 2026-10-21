@@ -13,7 +13,7 @@ class EtiquetaEjemplo extends StatelessWidget {
   Widget build(BuildContext context) {
     if (cargando) {
       return Container(
-        height: 140,
+        height: AppSizes.skeletonAlto,
         decoration: BoxDecoration(
           color: AppColors.border,
           borderRadius: BorderRadius.circular(AppSizes.radius),

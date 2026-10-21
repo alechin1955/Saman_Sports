@@ -34,19 +34,17 @@ class DeportesSection extends StatelessWidget {
                     : constraints.maxWidth < AppSizes.desktop
                         ? 2
                         : 3;
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: controller.deportes.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columnas,
-                    mainAxisSpacing: AppSizes.space12,
-                    crossAxisSpacing: AppSizes.space12,
-                    childAspectRatio: 0.72,
-                  ),
-                  itemBuilder: (context, index) {
-                    return DeporteCard(deporte: controller.deportes[index], onDetalles: onDetalles);
-                  },
+                final ancho = (constraints.maxWidth - AppSizes.space12 * (columnas - 1)) / columnas;
+                return Wrap(
+                  spacing: AppSizes.space12,
+                  runSpacing: AppSizes.space12,
+                  children: [
+                    for (final deporte in controller.deportes)
+                      SizedBox(
+                        width: ancho,
+                        child: DeporteCard(deporte: deporte, onDetalles: onDetalles),
+                      ),
+                  ],
                 );
               },
             ),
