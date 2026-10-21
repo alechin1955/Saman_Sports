@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
+import 'package:saman_sports/core/theme/app_sizes.dart';
 
 class DashboardPlaceholderView extends StatelessWidget {
   const DashboardPlaceholderView({super.key, required this.titulo});
@@ -15,7 +16,7 @@ class DashboardPlaceholderView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(titulo),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSizes.space16),
             ElevatedButton(
               onPressed: () {
                 Navigator.pushNamedAndRemoveUntil(
