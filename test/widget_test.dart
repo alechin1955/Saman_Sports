@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/app.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 void main() {
-  testWidgets('muestra el placeholder de Home sin Firebase', (tester) async {
+  testWidgets('abre la portada sin Firebase', (tester) async {
     await tester.pumpWidget(const SamanSportsApp());
 
-    expect(find.text('Home'), findsWidgets);
-    expect(find.text('Volver al inicio'), findsOneWidget);
+    expect(find.text(AppStrings.homeTitulo), findsOneWidget);
+    expect(find.text(AppStrings.explorarDeportes), findsOneWidget);
   });
 }
