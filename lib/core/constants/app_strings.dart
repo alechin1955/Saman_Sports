@@ -31,31 +31,38 @@ class AppStrings {
   static const String queEsTexto =
       'Un lugar para ver la oferta deportiva de la UNIMET, conocer entrenadores y leer reseñas de la comunidad.';
   static const String inscribeteFacil = 'Inscríbete fácil';
-  static const String inscribeteFacilTexto = 'Revisa cupos y horarios antes de reservar.';
+  static const String inscribeteFacilTexto =
+      'Revisa cupos y horarios antes de reservar.';
   static const String conectaEntrenadores = 'Conecta con entrenadores';
-  static const String conectaEntrenadoresTexto = 'Conoce quién guía cada disciplina.';
+  static const String conectaEntrenadoresTexto =
+      'Conoce quién guía cada disciplina.';
   static const String comparteExperiencia = 'Comparte tu experiencia';
-  static const String comparteExperienciaTexto = 'Las reseñas ayudan a otros estudiantes.';
-  static const String descubreDeportesTexto = 'Explora las disciplinas activas del campus.';
+  static const String comparteExperienciaTexto =
+      'Las reseñas ayudan a otros estudiantes.';
+  static const String descubreDeportesTexto =
+      'Explora las disciplinas activas del campus.';
   static const String deportesDisponibles = 'Deportes disponibles';
   static const String verDetalles = 'Ver detalles';
   static const String datosEjemplo = 'Datos de ejemplo';
   static const String prontoDeportes = 'Pronto verás aquí los deportes.';
-  static const String prontoEntrenadores = 'Pronto verás aquí los entrenadores.';
+  static const String prontoEntrenadores =
+      'Pronto verás aquí los entrenadores.';
   static const String prontoResenas = 'Pronto verás aquí las reseñas.';
   static const String cupos = 'Cupos';
   static const String estadoDisponible = 'Disponible';
   static const String estadoPocos = 'Pocos cupos';
   static const String estadoCompleto = 'Completo';
   static const String listoParaEmpezar = '¿Listo para empezar?';
-  static const String ctaTexto = 'Crea tu cuenta de estudiante y sigue la actividad deportiva de la UNIMET.';
+  static const String ctaTexto =
+      'Crea tu cuenta de estudiante y sigue la actividad deportiva de la UNIMET.';
   static const String estudianteUnimet = 'Estudiante UNIMET';
 
   static const String loginTagline = 'El deporte universitario en tus manos.';
   static const String loginPalabraResaltada = 'tus manos';
   static const String loginDescripcion =
       'Gestiona tus actividades deportivas, inscríbete en disciplinas y mantente conectado con la comunidad UNIMET.';
-  static const String loginBienvenida = 'Bienvenido(a) de vuelta a Saman Sports.';
+  static const String loginBienvenida =
+      'Bienvenido(a) de vuelta a Saman Sports.';
   static const String featureReservas = 'Reservas fáciles';
   static const String featureReservasTexto =
       'Inscríbete en disciplinas y horarios en un clic.';
@@ -135,7 +142,8 @@ class AppStrings {
   static const String reenviarEnlace = 'Reenviar enlace';
   static const String usarOtroCorreo = 'Usar otro correo';
   static const String escribisteMalCorreo = '¿Escribiste mal tu correo?';
-  static const String recuperarTaglineCompleta = 'Recupera el acceso a tu cuenta.';
+  static const String recuperarTaglineCompleta =
+      'Recupera el acceso a tu cuenta.';
   static const String recuperarPalabraResaltada = 'cuenta';
   static const String recuperarPanelDescripcion =
       'Te ayudamos a restablecer tu contraseña de forma segura para que vuelvas a disfrutar del deporte en la UNIMET.';
@@ -158,8 +166,10 @@ class AppStrings {
 
   static const String cuentaNoHabilitada = 'La cuenta no está habilitada.';
   static const String errorInesperado = 'Ocurrió un error. Inténtalo de nuevo.';
-  static const String errorConexion = 'Sin conexión. Revisa tu internet e inténtalo de nuevo.';
-  static const String correoYaRegistrado = 'Ya existe una cuenta con ese correo.';
+  static const String errorConexion =
+      'Sin conexión. Revisa tu internet e inténtalo de nuevo.';
+  static const String correoYaRegistrado =
+      'Ya existe una cuenta con ese correo.';
   static const String reintentar = 'Reintentar';
   static const String campoObligatorio = 'Este campo es obligatorio.';
   static const String correoInvalido = 'Ingresa un correo válido.';
@@ -178,4 +188,14 @@ class AppStrings {
       'El carnet debe tener entre 8 y 12 dígitos.';
   static const String telefonoInvalido =
       'Ingresa un teléfono venezolano válido, por ejemplo 0414-1234567.';
+
+  // ---------------------------------------------------------------------------
+  // Panel del estudiante (Gonzalo)
+  // ---------------------------------------------------------------------------
+  static const String sesionNoIniciada =
+      'Tu sesión expiró. Inicia sesión de nuevo.';
+  static const String perfilNoEncontrado =
+      'No encontramos los datos de tu cuenta.';
+  static const String perfilActualizado =
+      'Tu perfil se actualizó correctamente.';
 }
