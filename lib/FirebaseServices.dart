@@ -252,7 +252,91 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: Comunidad)
+  // ---------------------------------------------------------------------------
+
+  /// Reseñas de un estudiante, en vivo y de la más nueva a la más vieja.
+  /// Necesita el índice compuesto resenas: autorUid ↑ + fecha ↓.
+  /// La usa ComunidadController.
+  static Stream<List<Map<String, dynamic>>> streamMisResenas({
+    required String uid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(resenasCollection)
+          .where('autorUid', isEqualTo: uid)
+          .orderBy('fecha', descending: true),
+    );
+  }
+
+  /// Crea una reseña en resenas/{id} con la fecha del servidor y visible.
+  /// La usa ComunidadController.
+  static Future<AuthResponse> crearResena({
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      await _db.collection(resenasCollection).add({
+        ...data,
+        'fecha': FieldValue.serverTimestamp(),
+        'visible': true,
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo publicar la reseña. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Cambia las estrellas y el comentario de una reseña propia.
+  /// La usa ComunidadController.
+  static Future<AuthResponse> actualizarResena({
+    required String id,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      await _db.collection(resenasCollection).doc(id).update(data);
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo actualizar la reseña. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Elimina una reseña propia. La usa ComunidadController.
+  static Future<AuthResponse> eliminarResena({required String id}) async {
+    try {
+      await _db.collection(resenasCollection).doc(id).delete();
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo eliminar la reseña. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
 }
+
 
 class AuthResponse {
   final UserCredential? credential;
