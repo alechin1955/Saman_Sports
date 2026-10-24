@@ -28,9 +28,24 @@ class OpcionesEstudiante {
       ruta: AppRoutes.estudiantePagos,
     ),
     OpcionPanel(
+      icono: Icons.history,
+      texto: AppStrings.historial,
+      ruta: AppRoutes.estudianteHistorial,
+    ),
+    OpcionPanel(
+      icono: Icons.notifications_none,
+      texto: AppStrings.recordatorios,
+      ruta: AppRoutes.estudianteRecordatorios,
+    ),
+    OpcionPanel(
       icono: Icons.forum_outlined,
       texto: AppStrings.comunidad,
       ruta: AppRoutes.estudianteComunidad,
+    ),
+    OpcionPanel(
+      icono: Icons.support_agent,
+      texto: AppStrings.soporte,
+      ruta: AppRoutes.estudianteSoporte,
     ),
     OpcionPanel(
       icono: Icons.person_outline,

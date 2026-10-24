@@ -15,6 +15,8 @@ import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
 import 'package:saman_sports/views/estudiante/explorar_deportes_view.dart';
 import 'package:saman_sports/controllers/comunidad_controller.dart';
 import 'package:saman_sports/views/estudiante/comunidad_view.dart';
+import 'package:saman_sports/views/estudiante/estatus_pagos_view.dart';
+import 'package:saman_sports/views/estudiante/mis_disciplinas_view.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -29,6 +31,9 @@ class AppRoutes {
   static const String estudiantePagos = '/estudiante/pagos';
   static const String estudianteComunidad = '/estudiante/comunidad';
   static const String estudiantePerfil = '/estudiante/perfil';
+  static const String estudianteHistorial = '/estudiante/historial';
+  static const String estudianteRecordatorios = '/estudiante/recordatorios';
+  static const String estudianteSoporte = '/estudiante/soporte';
 
   static Map<String, WidgetBuilder> routes(
     AuthController auth,
@@ -54,22 +59,37 @@ class AppRoutes {
         auth,
         ExplorarDeportesView(auth: auth, controller: explorar),
       ),
-      estudianteDisciplinas: (_) => _soloEstudiante(
-        auth,
-        ProximamenteEstudianteView(
-          auth: auth,
-          ruta: estudianteDisciplinas,
-          titulo: AppStrings.misDisciplinas,
-          descripcion: AppStrings.misDisciplinasDescripcion,
-        ),
-      ),
+      estudianteDisciplinas: (_) =>
+          _soloEstudiante(auth, MisDisciplinasView(auth: auth)),
       estudiantePagos: (_) => _soloEstudiante(
         auth,
+        EstatusPagosView(auth: auth, controller: estudiante),
+      ),
+      estudianteHistorial: (_) => _soloEstudiante(
+        auth,
         ProximamenteEstudianteView(
           auth: auth,
-          ruta: estudiantePagos,
-          titulo: AppStrings.estatusPagos,
-          descripcion: AppStrings.estatusPagosDescripcion,
+          ruta: estudianteHistorial,
+          titulo: AppStrings.historial,
+          descripcion: AppStrings.historialDescripcion,
+        ),
+      ),
+      estudianteRecordatorios: (_) => _soloEstudiante(
+        auth,
+        ProximamenteEstudianteView(
+          auth: auth,
+          ruta: estudianteRecordatorios,
+          titulo: AppStrings.recordatorios,
+          descripcion: AppStrings.recordatoriosDescripcion,
+        ),
+      ),
+      estudianteSoporte: (_) => _soloEstudiante(
+        auth,
+        ProximamenteEstudianteView(
+          auth: auth,
+          ruta: estudianteSoporte,
+          titulo: AppStrings.soporte,
+          descripcion: AppStrings.soporteDescripcion,
         ),
       ),
       estudianteComunidad: (_) => _soloEstudiante(

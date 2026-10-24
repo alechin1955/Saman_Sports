@@ -280,4 +280,30 @@ class AppStrings {
   static const String comentarioCorto = 'Escribe al menos 10 caracteres.';
   static const String comentarioLargo =
       'El comentario puede tener máximo 300 caracteres.';
+  static const String historial = 'Historial';
+  static const String recordatorios = 'Recordatorios';
+  static const String soporte = 'Soporte';
+  static const String historialDescripcion =
+      'Tu asistencia y las disciplinas que has cursado.';
+  static const String recordatoriosDescripcion =
+      'Avisos de tus próximos entrenamientos.';
+  static const String soporteDescripcion =
+      '¿Tienes un problema? Escríbele a la coordinación de deportes.';
+  static const String sinDisciplinas =
+      'Aún no estás inscrito en ninguna disciplina';
+  static const String sinDisciplinasTexto =
+      'Cuando te inscribas, aquí verás tus horarios, tu entrenador y tu asistencia.';
+  static const String sinPagos = 'No tienes pagos registrados';
+  static const String sinPagosTexto =
+      'Cuando te inscribas en una disciplina, aquí verás el estado de tu pago.';
+  static const String estadoCuenta = 'Estado de tu cuenta';
+  static const String pagos = 'Pagos';
+  static const String comoFuncionaInscripcion = 'Cómo funciona la inscripción';
+  static const String pasoElegir =
+      'Elige una disciplina con cupos disponibles.';
+  static const String pasoPendiente =
+      'Tu inscripción queda pendiente y se reserva tu cupo.';
+  static const String pasoPagar = 'Paga con PayPal para confirmar el cupo.';
+  static const String pasoConfirmada =
+      'Listo: tu inscripción queda confirmada.';
 }
