@@ -232,4 +232,9 @@ class AppStrings {
   static const String seccionEnConstruccionTexto =
       'Muy pronto podrás usarla desde tu panel.';
   static const String irAlDashboard = 'Ir al Dashboard';
+  static const String datosPersonales = 'Datos personales';
+  static const String datosCuenta = 'Datos de la cuenta';
+  static const String datosCuentaTexto =
+      'Estos datos identifican tu cuenta en la UNIMET y no se pueden cambiar.';
+  static const String guardarCambios = 'Guardar cambios';
 }

@@ -10,6 +10,7 @@ import 'package:saman_sports/views/dashboards/dashboard_placeholder_view.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/proximamente_estudiante_view.dart';
+import 'package:saman_sports/views/estudiante/perfil_estudiante_view.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -81,12 +82,7 @@ class AppRoutes {
       ),
       estudiantePerfil: (_) => _soloEstudiante(
         auth,
-        ProximamenteEstudianteView(
-          auth: auth,
-          ruta: estudiantePerfil,
-          titulo: AppStrings.miPerfil,
-          descripcion: AppStrings.miPerfilDescripcion,
-        ),
+        PerfilEstudianteView(auth: auth, controller: estudiante),
       ),
       dashboardEntrenador: (_) => GuardiaRol(
         auth: auth,
