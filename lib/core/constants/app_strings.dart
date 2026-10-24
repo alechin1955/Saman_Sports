@@ -251,4 +251,33 @@ class AppStrings {
   static const String inscripcionProximamente =
       'La inscripción en línea estará disponible muy pronto.';
   static const String cerrar = 'Cerrar';
+  static const String escribeResena = 'Escribe una reseña';
+  static const String escribeResenaTexto =
+      'Cuéntale a otros estudiantes cómo es tu experiencia.';
+  static const String disciplina = 'Disciplina';
+  static const String eligeDisciplina = 'Elige una disciplina';
+  static const String calificacion = 'Calificación';
+  static const String comentario = 'Comentario';
+  static const String hintComentario = '¿Qué te gustó? ¿Qué mejorarías?';
+  static const String publicarResena = 'Publicar reseña';
+  static const String misResenas = 'Mis reseñas';
+  static const String sinMisResenas = 'Todavía no has escrito reseñas';
+  static const String sinMisResenasTexto =
+      'Tus reseñas aparecerán aquí y en la portada de Saman Sports.';
+  static const String resenaPublicada = 'Tu reseña se publicó.';
+  static const String resenaActualizada = 'Tu reseña se actualizó.';
+  static const String resenaEliminada = 'Tu reseña se eliminó.';
+  static const String editarResena = 'Editar reseña';
+  static const String editar = 'Editar';
+  static const String eliminar = 'Eliminar';
+  static const String cancelar = 'Cancelar';
+  static const String guardar = 'Guardar';
+  static const String confirmarEliminarResena = '¿Eliminar esta reseña?';
+  static const String eliminarNoSeDeshace = 'Esta acción no se puede deshacer.';
+  static const String elegirDisciplinaError =
+      'Elige la disciplina que quieres reseñar.';
+  static const String elegirEstrellasError = 'Elige de 1 a 5 estrellas.';
+  static const String comentarioCorto = 'Escribe al menos 10 caracteres.';
+  static const String comentarioLargo =
+      'El comentario puede tener máximo 300 caracteres.';
 }

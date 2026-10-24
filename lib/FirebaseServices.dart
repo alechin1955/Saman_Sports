@@ -10,10 +10,8 @@ class FirebaseServices {
     required String password,
   }) async {
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
       return AuthResponse(credential: credential, isSuccess: true);
     } on FirebaseAuthException catch (e) {
       return AuthResponse(errorMessage: e.message, isSuccess: false);
@@ -22,7 +20,7 @@ class FirebaseServices {
     }
   }
 
-static Future<(UserCredential? credential, String? errorMessage)> signIn({
+  static Future<(UserCredential? credential, String? errorMessage)> signIn({
     required String email,
     required String password,
   }) async {
@@ -34,7 +32,6 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
 
       return (credential, null);
     } on FirebaseAuthException catch (e) {
-
       String message;
       switch (e.code) {
         case 'user-not-found':
@@ -134,7 +131,9 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
 
   /// Lee los datos del usuario desde usuarios/{uid}.
   /// Devuelve null si el documento no existe o si hubo un error.
-  static Future<Map<String, dynamic>?> getUserData({required String uid}) async {
+  static Future<Map<String, dynamic>?> getUserData({
+    required String uid,
+  }) async {
     try {
       final doc = await _db.collection(usuariosCollection).doc(uid).get();
       return doc.data();
@@ -216,7 +215,10 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
 
   static Stream<List<Map<String, dynamic>>> streamDeportes() {
     return _streamConsulta(
-      _db.collection(deportesCollection).where('activo', isEqualTo: true).orderBy('nombre'),
+      _db
+          .collection(deportesCollection)
+          .where('activo', isEqualTo: true)
+          .orderBy('nombre'),
     );
   }
 
@@ -242,15 +244,104 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
   static Stream<List<Map<String, dynamic>>> _streamConsulta(
     Query<Map<String, dynamic>> consulta,
   ) {
-    return consulta.snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
-          .toList();
-    }).transform(
-      StreamTransformer<List<Map<String, dynamic>>, List<Map<String, dynamic>>>.fromHandlers(
-        handleError: (error, stack, sink) => sink.add(const []),
-      ),
+    return consulta
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+              .toList();
+        })
+        .transform(
+          StreamTransformer<
+            List<Map<String, dynamic>>,
+            List<Map<String, dynamic>>
+          >.fromHandlers(
+            handleError: (error, stack, sink) => sink.add(const []),
+          ),
+        );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: Comunidad)
+  // ---------------------------------------------------------------------------
+
+  /// Reseñas de un estudiante, en vivo y de la más nueva a la más vieja.
+  /// Necesita el índice compuesto resenas: autorUid ↑ + fecha ↓.
+  /// La usa ComunidadController.
+  static Stream<List<Map<String, dynamic>>> streamMisResenas({
+    required String uid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(resenasCollection)
+          .where('autorUid', isEqualTo: uid)
+          .orderBy('fecha', descending: true),
     );
+  }
+
+  /// Crea una reseña en resenas/{id} con la fecha del servidor y visible.
+  /// La usa ComunidadController.
+  static Future<AuthResponse> crearResena({
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      await _db.collection(resenasCollection).add({
+        ...data,
+        'fecha': FieldValue.serverTimestamp(),
+        'visible': true,
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo publicar la reseña. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Cambia las estrellas y el comentario de una reseña propia.
+  /// La usa ComunidadController.
+  static Future<AuthResponse> actualizarResena({
+    required String id,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      await _db.collection(resenasCollection).doc(id).update(data);
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo actualizar la reseña. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Elimina una reseña propia. La usa ComunidadController.
+  static Future<AuthResponse> eliminarResena({required String id}) async {
+    try {
+      await _db.collection(resenasCollection).doc(id).delete();
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo eliminar la reseña. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
   }
 }
 

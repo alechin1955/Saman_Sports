@@ -13,6 +13,8 @@ import 'package:saman_sports/views/estudiante/proximamente_estudiante_view.dart'
 import 'package:saman_sports/views/estudiante/perfil_estudiante_view.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
 import 'package:saman_sports/views/estudiante/explorar_deportes_view.dart';
+import 'package:saman_sports/controllers/comunidad_controller.dart';
+import 'package:saman_sports/views/estudiante/comunidad_view.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -32,6 +34,7 @@ class AppRoutes {
     AuthController auth,
     EstudianteController estudiante,
     ExplorarDeportesController explorar,
+    ComunidadController comunidad,
   ) {
     return {
       login: (_) => LoginView(controller: auth),
@@ -71,12 +74,7 @@ class AppRoutes {
       ),
       estudianteComunidad: (_) => _soloEstudiante(
         auth,
-        ProximamenteEstudianteView(
-          auth: auth,
-          ruta: estudianteComunidad,
-          titulo: AppStrings.comunidad,
-          descripcion: AppStrings.comunidadDescripcion,
-        ),
+        ComunidadView(auth: auth, controller: comunidad),
       ),
       estudiantePerfil: (_) => _soloEstudiante(
         auth,
