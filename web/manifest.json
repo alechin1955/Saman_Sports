@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
     "name": "saman_deportivo",
     "short_name": "saman_deportivo",
+=======
+    "name": "saman_sports",
+    "short_name": "saman_sports",
+>>>>>>> equipo/main
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"flutter":{"platforms":{"android":{"default":{"projectId":"saman-deportivo-4ff63","appId":"1:318356973327:android:b1e7675b6f2e148b39807a","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"saman-deportivo-4ff63","configurations":{"android":"1:318356973327:android:b1e7675b6f2e148b39807a","ios":"1:318356973327:ios:94dabe999c7fc0c139807a","macos":"1:318356973327:ios:94dabe999c7fc0c139807a","web":"1:318356973327:web:dee44c834d9dc30439807a","windows":"1:318356973327:web:3963f4b2d3cc808d39807a"}}}}}}
+=======
+{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"saman-sports","configurations":{"web":"1:995061509637:web:b998b439f632ee2bb9f66c"}}}}}}
+>>>>>>> equipo/main

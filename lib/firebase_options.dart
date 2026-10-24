@@ -21,6 +21,7 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
+<<<<<<< HEAD
         return android;
       case TargetPlatform.iOS:
         return ios;
@@ -28,6 +29,27 @@ class DefaultFirebaseOptions {
         return macos;
       case TargetPlatform.windows:
         return windows;
+=======
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for android - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      case TargetPlatform.iOS:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for ios - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      case TargetPlatform.macOS:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      case TargetPlatform.windows:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+>>>>>>> equipo/main
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -41,6 +63,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
+<<<<<<< HEAD
     apiKey: 'AIzaSyCjD2HS-AsELGlf4ivt7KMwwK7Hmdrpl0s',
     appId: '1:318356973327:web:dee44c834d9dc30439807a',
     messagingSenderId: '318356973327',
@@ -80,5 +103,13 @@ class DefaultFirebaseOptions {
     projectId: 'saman-deportivo-4ff63',
     authDomain: 'saman-deportivo-4ff63.firebaseapp.com',
     storageBucket: 'saman-deportivo-4ff63.firebasestorage.app',
+=======
+    apiKey: 'AIzaSyAFEK06GEYKGw3daEWPbgcW2piYKvMNNn8',
+    appId: '1:995061509637:web:b998b439f632ee2bb9f66c',
+    messagingSenderId: '995061509637',
+    projectId: 'saman-sports',
+    authDomain: 'saman-sports.firebaseapp.com',
+    storageBucket: 'saman-sports.firebasestorage.app',
+>>>>>>> equipo/main
   );
 }
