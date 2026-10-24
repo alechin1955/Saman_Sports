@@ -198,4 +198,38 @@ class AppStrings {
       'No encontramos los datos de tu cuenta.';
   static const String perfilActualizado =
       'Tu perfil se actualizó correctamente.';
+  static const String dashboard = 'Dashboard';
+  static const String misDisciplinas = 'Mis disciplinas';
+  static const String estatusPagos = 'Estatus y pagos';
+  static const String comunidad = 'Comunidad';
+  static const String miPerfil = 'Mi perfil';
+  static const String dashboardEstudianteDescripcion =
+      'Tu resumen deportivo en la UNIMET.';
+  static const String explorarDeportesDescripcion =
+      'Busca disciplinas y revisa sus cupos y horarios.';
+  static const String misDisciplinasDescripcion =
+      'Las disciplinas en las que estás inscrito.';
+  static const String estatusPagosDescripcion =
+      'El estado de tus inscripciones y pagos.';
+  static const String comunidadDescripcion =
+      'Comparte tu experiencia y lee la de otros estudiantes.';
+  static const String miPerfilDescripcion =
+      'Consulta y actualiza tus datos personales.';
+  static const String hola = 'Hola,';
+  static const String cuentaActiva = 'Cuenta activa';
+  static const String cuentaInactiva = 'Cuenta inactiva';
+  static const String solvente = 'Solvente';
+  static const String noSolvente = 'No solvente';
+  static const String avisoSolvencia =
+      'Para inscribirte en una disciplina debes estar activo y solvente. Si crees que hay un error, contacta a la coordinación de deportes.';
+  static const String accesosRapidos = 'Accesos rápidos';
+  static const String accesoExplorarTexto = 'Encuentra tu próxima disciplina.';
+  static const String accesoDisciplinasTexto = 'Revisa tus horarios.';
+  static const String accesoComunidadTexto = 'Deja tu reseña.';
+  static const String accesoPerfilTexto = 'Mantén tus datos al día.';
+  static const String seccionEnConstruccion =
+      'Estamos construyendo esta sección';
+  static const String seccionEnConstruccionTexto =
+      'Muy pronto podrás usarla desde tu panel.';
+  static const String irAlDashboard = 'Ir al Dashboard';
 }
