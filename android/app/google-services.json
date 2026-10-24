@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "318356973327",
+    "project_id": "saman-deportivo-4ff63",
+    "storage_bucket": "saman-deportivo-4ff63.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:318356973327:android:b1e7675b6f2e148b39807a",
+        "android_client_info": {
+          "package_name": "com.example.saman_deportivo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTUQ5CsZiLC2qxYRrAAoDc5_zgf_lXl5Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
