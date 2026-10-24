@@ -11,6 +11,8 @@ import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/proximamente_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/perfil_estudiante_view.dart';
+import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
+import 'package:saman_sports/views/estudiante/explorar_deportes_view.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -29,6 +31,7 @@ class AppRoutes {
   static Map<String, WidgetBuilder> routes(
     AuthController auth,
     EstudianteController estudiante,
+    ExplorarDeportesController explorar,
   ) {
     return {
       login: (_) => LoginView(controller: auth),
@@ -46,12 +49,7 @@ class AppRoutes {
       ),
       estudianteExplorar: (_) => _soloEstudiante(
         auth,
-        ProximamenteEstudianteView(
-          auth: auth,
-          ruta: estudianteExplorar,
-          titulo: AppStrings.explorarDeportes,
-          descripcion: AppStrings.explorarDeportesDescripcion,
-        ),
+        ExplorarDeportesView(auth: auth, controller: explorar),
       ),
       estudianteDisciplinas: (_) => _soloEstudiante(
         auth,

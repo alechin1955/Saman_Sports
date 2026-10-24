@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
+import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/controllers/home_controller.dart';
 import 'package:saman_sports/controllers/resultado_login.dart';
@@ -25,6 +26,7 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
   final AuthController _auth = AuthController();
   final HomeController _home = HomeController();
   final EstudianteController _estudiante = EstudianteController();
+  final ExplorarDeportesController _explorar = ExplorarDeportesController();
   late final Stream<Object?> _sesion = _abrirSesion();
 
   @override
@@ -32,6 +34,7 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
     _auth.dispose();
     _home.dispose();
     _estudiante.dispose();
+    _explorar.dispose();
     super.dispose();
   }
 
@@ -49,7 +52,7 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
           estudiante: _estudiante,
           sesion: _sesion,
         ),
-        ...AppRoutes.routes(_auth, _estudiante),
+        ...AppRoutes.routes(_auth, _estudiante, _explorar),
       },
     );
   }

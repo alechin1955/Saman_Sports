@@ -237,4 +237,18 @@ class AppStrings {
   static const String datosCuentaTexto =
       'Estos datos identifican tu cuenta en la UNIMET y no se pueden cambiar.';
   static const String guardarCambios = 'Guardar cambios';
+  static const String buscarDeportesHint = 'Buscar por deporte o entrenador';
+  static const String soloConCupos = 'Solo con cupos';
+  static const String todosLosDias = 'Todos los días';
+  static const String disciplinasEncontradas = 'disciplinas encontradas';
+  static const String sinResultados = 'No encontramos disciplinas';
+  static const String sinResultadosTexto =
+      'Prueba con otra búsqueda o quita los filtros.';
+  static const String limpiarFiltros = 'Limpiar filtros';
+  static const String horario = 'Horario';
+  static const String entrenador = 'Entrenador';
+  static const String cuposDisponibles = 'Cupos disponibles';
+  static const String inscripcionProximamente =
+      'La inscripción en línea estará disponible muy pronto.';
+  static const String cerrar = 'Cerrar';
 }
