@@ -145,17 +145,13 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
       listenable: widget.auth,
       builder: (context, _) {
         if (widget.auth.registrando || widget.auth.cargando) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         return FutureBuilder<ResultadoRol>(
           future: _rol,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
             }
             final resultado = snapshot.data;
             if (resultado == null || resultado.tipo == TipoResultadoRol.error) {

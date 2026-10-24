@@ -10,8 +10,10 @@ class FirebaseServices {
     required String password,
   }) async {
     try {
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       return AuthResponse(credential: credential, isSuccess: true);
     } on FirebaseAuthException catch (e) {
       return AuthResponse(errorMessage: e.message, isSuccess: false);
@@ -20,7 +22,7 @@ class FirebaseServices {
     }
   }
 
-  static Future<(UserCredential? credential, String? errorMessage)> signIn({
+static Future<(UserCredential? credential, String? errorMessage)> signIn({
     required String email,
     required String password,
   }) async {
@@ -32,6 +34,7 @@ class FirebaseServices {
 
       return (credential, null);
     } on FirebaseAuthException catch (e) {
+
       String message;
       switch (e.code) {
         case 'user-not-found':
@@ -131,9 +134,7 @@ class FirebaseServices {
 
   /// Lee los datos del usuario desde usuarios/{uid}.
   /// Devuelve null si el documento no existe o si hubo un error.
-  static Future<Map<String, dynamic>?> getUserData({
-    required String uid,
-  }) async {
+  static Future<Map<String, dynamic>?> getUserData({required String uid}) async {
     try {
       final doc = await _db.collection(usuariosCollection).doc(uid).get();
       return doc.data();
@@ -215,10 +216,7 @@ class FirebaseServices {
 
   static Stream<List<Map<String, dynamic>>> streamDeportes() {
     return _streamConsulta(
-      _db
-          .collection(deportesCollection)
-          .where('activo', isEqualTo: true)
-          .orderBy('nombre'),
+      _db.collection(deportesCollection).where('activo', isEqualTo: true).orderBy('nombre'),
     );
   }
 
@@ -244,21 +242,15 @@ class FirebaseServices {
   static Stream<List<Map<String, dynamic>>> _streamConsulta(
     Query<Map<String, dynamic>> consulta,
   ) {
-    return consulta
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
-              .toList();
-        })
-        .transform(
-          StreamTransformer<
-            List<Map<String, dynamic>>,
-            List<Map<String, dynamic>>
-          >.fromHandlers(
-            handleError: (error, stack, sink) => sink.add(const []),
-          ),
-        );
+    return consulta.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+          .toList();
+    }).transform(
+      StreamTransformer<List<Map<String, dynamic>>, List<Map<String, dynamic>>>.fromHandlers(
+        handleError: (error, stack, sink) => sink.add(const []),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -344,6 +336,7 @@ class FirebaseServices {
     }
   }
 }
+
 
 class AuthResponse {
   final UserCredential? credential;
