@@ -24,4 +24,7 @@ class AppSizes {
   static const double iconMedium = 28;
   static const double iconLarge = 36;
   static const double iconCircle = 88;
+  static const double panelMenuAncho = 260;
+  static const double panelContenidoMax = 1200;
+  static const double perfilDosColumnas = 840;
 }

@@ -178,4 +178,122 @@ class AppStrings {
       'El carnet debe tener entre 8 y 12 dígitos.';
   static const String telefonoInvalido =
       'Ingresa un teléfono venezolano válido, por ejemplo 0414-1234567.';
+
+  // ---------------------------------------------------------------------------
+  // Panel del estudiante (Gonzalo)
+  // ---------------------------------------------------------------------------
+  static const String sesionNoIniciada =
+      'Tu sesión expiró. Inicia sesión de nuevo.';
+  static const String perfilNoEncontrado =
+      'No encontramos los datos de tu cuenta.';
+  static const String perfilActualizado =
+      'Tu perfil se actualizó correctamente.';
+  static const String dashboard = 'Dashboard';
+  static const String misDisciplinas = 'Mis disciplinas';
+  static const String estatusPagos = 'Estatus y pagos';
+  static const String comunidad = 'Comunidad';
+  static const String miPerfil = 'Mi perfil';
+  static const String dashboardEstudianteDescripcion =
+      'Tu resumen deportivo en la UNIMET.';
+  static const String explorarDeportesDescripcion =
+      'Busca disciplinas y revisa sus cupos y horarios.';
+  static const String misDisciplinasDescripcion =
+      'Las disciplinas en las que estás inscrito.';
+  static const String estatusPagosDescripcion =
+      'El estado de tus inscripciones y pagos.';
+  static const String comunidadDescripcion =
+      'Comparte tu experiencia y lee la de otros estudiantes.';
+  static const String miPerfilDescripcion =
+      'Consulta y actualiza tus datos personales.';
+  static const String hola = 'Hola,';
+  static const String cuentaActiva = 'Cuenta activa';
+  static const String cuentaInactiva = 'Cuenta inactiva';
+  static const String solvente = 'Solvente';
+  static const String noSolvente = 'No solvente';
+  static const String avisoSolvencia =
+      'Para inscribirte en una disciplina debes estar activo y solvente. Si crees que hay un error, contacta a la coordinación de deportes.';
+  static const String accesosRapidos = 'Accesos rápidos';
+  static const String accesoExplorarTexto = 'Encuentra tu próxima disciplina.';
+  static const String accesoDisciplinasTexto = 'Revisa tus horarios.';
+  static const String accesoComunidadTexto = 'Deja tu reseña.';
+  static const String accesoPerfilTexto = 'Mantén tus datos al día.';
+  static const String seccionEnConstruccion =
+      'Estamos construyendo esta sección';
+  static const String seccionEnConstruccionTexto =
+      'Muy pronto podrás usarla desde tu panel.';
+  static const String irAlDashboard = 'Ir al Dashboard';
+  static const String datosPersonales = 'Datos personales';
+  static const String datosCuenta = 'Datos de la cuenta';
+  static const String datosCuentaTexto =
+      'Estos datos identifican tu cuenta en la UNIMET y no se pueden cambiar.';
+  static const String guardarCambios = 'Guardar cambios';
+  static const String buscarDeportesHint = 'Buscar por deporte o entrenador';
+  static const String soloConCupos = 'Solo con cupos';
+  static const String todosLosDias = 'Todos los días';
+  static const String disciplinasEncontradas = 'disciplinas encontradas';
+  static const String sinResultados = 'No encontramos disciplinas';
+  static const String sinResultadosTexto =
+      'Prueba con otra búsqueda o quita los filtros.';
+  static const String limpiarFiltros = 'Limpiar filtros';
+  static const String horario = 'Horario';
+  static const String entrenador = 'Entrenador';
+  static const String cuposDisponibles = 'Cupos disponibles';
+  static const String inscripcionProximamente =
+      'La inscripción en línea estará disponible muy pronto.';
+  static const String cerrar = 'Cerrar';
+  static const String escribeResena = 'Escribe una reseña';
+  static const String escribeResenaTexto =
+      'Cuéntale a otros estudiantes cómo es tu experiencia.';
+  static const String disciplina = 'Disciplina';
+  static const String eligeDisciplina = 'Elige una disciplina';
+  static const String calificacion = 'Calificación';
+  static const String comentario = 'Comentario';
+  static const String hintComentario = '¿Qué te gustó? ¿Qué mejorarías?';
+  static const String publicarResena = 'Publicar reseña';
+  static const String misResenas = 'Mis reseñas';
+  static const String sinMisResenas = 'Todavía no has escrito reseñas';
+  static const String sinMisResenasTexto =
+      'Tus reseñas aparecerán aquí y en la portada de Saman Sports.';
+  static const String resenaPublicada = 'Tu reseña se publicó.';
+  static const String resenaActualizada = 'Tu reseña se actualizó.';
+  static const String resenaEliminada = 'Tu reseña se eliminó.';
+  static const String editarResena = 'Editar reseña';
+  static const String editar = 'Editar';
+  static const String eliminar = 'Eliminar';
+  static const String cancelar = 'Cancelar';
+  static const String guardar = 'Guardar';
+  static const String confirmarEliminarResena = '¿Eliminar esta reseña?';
+  static const String eliminarNoSeDeshace = 'Esta acción no se puede deshacer.';
+  static const String elegirDisciplinaError =
+      'Elige la disciplina que quieres reseñar.';
+  static const String elegirEstrellasError = 'Elige de 1 a 5 estrellas.';
+  static const String comentarioCorto = 'Escribe al menos 10 caracteres.';
+  static const String comentarioLargo =
+      'El comentario puede tener máximo 300 caracteres.';
+  static const String historial = 'Historial';
+  static const String recordatorios = 'Recordatorios';
+  static const String soporte = 'Soporte';
+  static const String historialDescripcion =
+      'Tu asistencia y las disciplinas que has cursado.';
+  static const String recordatoriosDescripcion =
+      'Avisos de tus próximos entrenamientos.';
+  static const String soporteDescripcion =
+      '¿Tienes un problema? Escríbele a la coordinación de deportes.';
+  static const String sinDisciplinas =
+      'Aún no estás inscrito en ninguna disciplina';
+  static const String sinDisciplinasTexto =
+      'Cuando te inscribas, aquí verás tus horarios, tu entrenador y tu asistencia.';
+  static const String sinPagos = 'No tienes pagos registrados';
+  static const String sinPagosTexto =
+      'Cuando te inscribas en una disciplina, aquí verás el estado de tu pago.';
+  static const String estadoCuenta = 'Estado de tu cuenta';
+  static const String pagos = 'Pagos';
+  static const String comoFuncionaInscripcion = 'Cómo funciona la inscripción';
+  static const String pasoElegir =
+      'Elige una disciplina con cupos disponibles.';
+  static const String pasoPendiente =
+      'Tu inscripción queda pendiente y se reserva tu cupo.';
+  static const String pasoPagar = 'Paga con PayPal para confirmar el cupo.';
+  static const String pasoConfirmada =
+      'Listo: tu inscripción queda confirmada.';
 }
