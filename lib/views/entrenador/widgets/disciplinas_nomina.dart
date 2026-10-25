@@ -1,3 +1,5 @@
+import 'package:saman_sports/controllers/asistencia_controller.dart';
+import 'package:saman_sports/views/entrenador/widgets/registro_asistencia.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/entrenador_controller.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
@@ -5,12 +7,17 @@ import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 
 class DisciplinasNomina extends StatelessWidget {
-  const DisciplinasNomina({super.key, required this.controller});
+  const DisciplinasNomina({
+    super.key,
+    required this.controller,
+    this.asistencia,
+  });
   final EntrenadorController controller;
+  final AsistenciaController? asistencia;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: Listenable.merge([controller, asistencia]),
     builder: (context, _) {
       final c = controller;
       if (c.cargando) return const Center(child: CircularProgressIndicator());
@@ -24,7 +31,12 @@ class DisciplinasNomina extends StatelessWidget {
             children: [
               Text('Mis disciplinas', style: AppTextStyles.title),
               TextButton.icon(
-                onPressed: c.cargandoNomina ? null : c.cargar,
+                onPressed:
+                    c.cargandoNomina ||
+                        (asistencia?.cambios ?? false) ||
+                        (asistencia?.guardando ?? false)
+                    ? null
+                    : c.cargar,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Actualizar'),
               ),
@@ -75,7 +87,11 @@ class DisciplinasNomina extends StatelessWidget {
                       ),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(AppSizes.radius),
-                        onTap: () => c.seleccionar(d.id),
+                        onTap:
+                            (asistencia?.cambios ?? false) ||
+                                (asistencia?.guardando ?? false)
+                            ? null
+                            : () => c.seleccionar(d.id),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -114,6 +130,10 @@ class DisciplinasNomina extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
+            if (asistencia != null && !c.cargandoNomina && c.error == null) ...[
+              RegistroAsistencia(controller: asistencia!),
+              const SizedBox(height: 24),
+            ],
             Text('Nómina de inscritos', style: AppTextStyles.subtitle),
             const SizedBox(height: 8),
             const Text(

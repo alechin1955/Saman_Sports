@@ -25,8 +25,11 @@ class PanelLayout extends StatelessWidget {
     required this.titulo,
     required this.descripcion,
     required this.child,
+    this.permitirSalida,
   });
 
+  /// Permite al panel conservar borradores antes de navegar o cerrar sesión.
+  final Future<bool> Function()? permitirSalida;
   final AuthController auth;
   final List<OpcionPanel> opciones;
   final String rutaActiva;
@@ -59,6 +62,7 @@ class PanelLayout extends StatelessWidget {
                   width: AppSizes.panelMenuAncho,
                   child: _MenuPanel(
                     auth: auth,
+                    permitirSalida: permitirSalida,
                     opciones: opciones,
                     rutaActiva: rutaActiva,
                     subtitulo: subtituloPanel,
@@ -91,6 +95,7 @@ class PanelLayout extends StatelessWidget {
             child: SafeArea(
               child: _MenuPanel(
                 auth: auth,
+                permitirSalida: permitirSalida,
                 opciones: opciones,
                 rutaActiva: rutaActiva,
                 subtitulo: subtituloPanel,
@@ -112,8 +117,10 @@ class _MenuPanel extends StatelessWidget {
     required this.rutaActiva,
     required this.subtitulo,
     required this.enDrawer,
+    this.permitirSalida,
   });
 
+  final Future<bool> Function()? permitirSalida;
   final AuthController auth;
   final List<OpcionPanel> opciones;
   final String rutaActiva;
@@ -170,6 +177,7 @@ class _MenuPanel extends StatelessWidget {
                         opcion: opcion,
                         activa: opcion.ruta == rutaActiva,
                         enDrawer: enDrawer,
+                        permitirSalida: permitirSalida,
                       ),
                     ),
                 ],
@@ -178,7 +186,10 @@ class _MenuPanel extends StatelessWidget {
             const Divider(height: 1, color: AppColors.border),
             Padding(
               padding: const EdgeInsets.all(AppSizes.space12),
-              child: _BotonCerrarSesion(auth: auth),
+              child: _BotonCerrarSesion(
+                auth: auth,
+                permitirSalida: permitirSalida,
+              ),
             ),
           ],
         ),
@@ -192,8 +203,10 @@ class _ItemMenu extends StatelessWidget {
     required this.opcion,
     required this.activa,
     required this.enDrawer,
+    this.permitirSalida,
   });
 
+  final Future<bool> Function()? permitirSalida;
   final OpcionPanel opcion;
   final bool activa;
   final bool enDrawer;
@@ -219,11 +232,13 @@ class _ItemMenu extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: AppTextStyles.label.copyWith(color: color),
       ),
-      onTap: () {
+      onTap: () async {
         if (activa) {
           if (enDrawer) Navigator.pop(context);
           return;
         }
+        if (permitirSalida != null && !await permitirSalida!()) return;
+        if (!context.mounted) return;
         Navigator.pushReplacementNamed(context, opcion.ruta);
       },
     );
@@ -231,8 +246,9 @@ class _ItemMenu extends StatelessWidget {
 }
 
 class _BotonCerrarSesion extends StatelessWidget {
-  const _BotonCerrarSesion({required this.auth});
+  const _BotonCerrarSesion({required this.auth, this.permitirSalida});
 
+  final Future<bool> Function()? permitirSalida;
   final AuthController auth;
 
   @override
@@ -249,6 +265,7 @@ class _BotonCerrarSesion extends StatelessWidget {
         style: AppTextStyles.label.copyWith(color: AppColors.error),
       ),
       onTap: () async {
+        if (permitirSalida != null && !await permitirSalida!()) return;
         await auth.cerrarSesion();
         if (!context.mounted) return;
         Navigator.pushNamedAndRemoveUntil(
