@@ -1,3 +1,5 @@
+import 'package:saman_sports/controllers/entrenador_controller.dart';
+import 'package:saman_sports/views/entrenador/widgets/disciplinas_nomina.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
@@ -8,10 +10,38 @@ import 'package:saman_sports/views/widgets/opcion_panel.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
 
 /// Punto de entrada del entrenador, con la estructura compartida por los roles.
-class DashboardEntrenadorView extends StatelessWidget {
-  const DashboardEntrenadorView({super.key, required this.auth});
+class DashboardEntrenadorView extends StatefulWidget {
+  const DashboardEntrenadorView({
+    super.key,
+    required this.auth,
+    this.controller,
+  });
 
   final AuthController auth;
+  final EntrenadorController? controller;
+
+  @override
+  State<DashboardEntrenadorView> createState() =>
+      _DashboardEntrenadorViewState();
+}
+
+class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
+  late final EntrenadorController controller =
+      widget.controller ?? EntrenadorController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) controller.cargar();
+    });
+  }
+
+  @override
+  void dispose() {
+    if (widget.controller == null) controller.dispose();
+    super.dispose();
+  }
 
   static const opciones = [
     OpcionPanel(
@@ -24,7 +54,7 @@ class DashboardEntrenadorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PanelLayout(
-      auth: auth,
+      auth: widget.auth,
       opciones: opciones,
       rutaActiva: AppRoutes.dashboardEntrenador,
       subtituloPanel: 'Panel del entrenador',
@@ -61,12 +91,7 @@ class DashboardEntrenadorView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSizes.space24),
-          Text('Tu jornada de entrenamiento', style: AppTextStyles.subtitle),
-          const SizedBox(height: AppSizes.space8),
-          Text(
-            'Aquí encontrarás las disciplinas que te asigne la coordinación deportiva.',
-            style: AppTextStyles.body,
-          ),
+          DisciplinasNomina(controller: controller),
         ],
       ),
     );

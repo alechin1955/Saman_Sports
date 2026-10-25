@@ -1,3 +1,7 @@
+import 'package:saman_sports/controllers/entrenador_controller.dart';
+import 'package:saman_sports/models/deporte.dart';
+import 'package:saman_sports/models/alumno_inscrito.dart';
+import 'package:saman_sports/repositories/entrenador_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,8 +20,12 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final auth = AuthController();
       addTearDown(auth.dispose);
+      final controller = EntrenadorController(repository: _Vacio());
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
-        MaterialApp(home: DashboardEntrenadorView(auth: auth)),
+        MaterialApp(
+          home: DashboardEntrenadorView(auth: auth, controller: controller),
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.text('Dashboard del entrenador'), findsOneWidget);
@@ -33,4 +41,11 @@ void main() {
       }
     });
   }
+}
+
+class _Vacio implements EntrenadorRepository {
+  @override
+  Future<List<Deporte>> disciplinas() async => [];
+  @override
+  Future<List<AlumnoInscrito>> inscritos(String id) async => [];
 }
