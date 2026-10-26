@@ -131,7 +131,12 @@ class DisciplinasNomina extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             if (asistencia != null && !c.cargandoNomina && c.error == null) ...[
-              RegistroAsistencia(controller: asistencia!),
+              RegistroAsistencia(
+                controller: asistencia!,
+                disciplina: c.disciplinas
+                    .firstWhere((d) => d.id == c.seleccionId)
+                    .nombre,
+              ),
               const SizedBox(height: 24),
             ],
             Text('Nómina de inscritos', style: AppTextStyles.subtitle),

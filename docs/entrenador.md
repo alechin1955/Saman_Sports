@@ -23,3 +23,9 @@ El registro se almacena en `deportes/{deporteId}/asistencias/{YYYY-MM-DD}`: `fec
 Guardar usa una transacción para comprobar que la disciplina continúa asignada y que las inscripciones siguen confirmadas. El entrenador puede recuperar una sesión guardada y corregirla. Si falla una escritura, se mantiene el borrador para reintentar. El cambio de disciplina y fecha se bloquea con cambios pendientes; salir por el menú o retroceder solicita confirmación de descarte. Cerrar o recargar la pestaña puede perder cambios locales.
 
 Las reglas desplegadas deben comprobar el rol, la asignación `entrenadorUid`, las inscripciones permitidas y los campos escritos dentro de la subcolección de asistencias. No se ha validado ni desplegado ese control en un proyecto Firebase real. Dos dispositivos que editen la misma sesión pueden sobrescribir el último registro; se recomienda coordinar la edición de cada sesión. Se limita el registro a 450 inscritos por sesión.
+
+## Exportación del listado
+
+El botón descarga un CSV en web o copia el CSV al portapapeles en otras plataformas. Incluye toda la nómina confirmada, independientemente del filtro de búsqueda, el estado guardado de la fecha elegida y el porcentaje acumulado hasta ese día. El porcentaje se calcula como presentes / sesiones con estado explícito para esa inscripción; las sesiones sin registro no cuentan como ausencias. Si no existe historial se muestra `Sin registros`.
+
+La exportación consulta datos guardados; se bloquea mientras hay un borrador sin guardar. Un fallo al leer el historial no genera un archivo parcial. El CSV incluye BOM UTF-8, escapa comillas y separadores y neutraliza valores que podrían interpretarse como fórmulas. Las reglas del backend también deben autorizar la lectura del historial de la disciplina asignada.

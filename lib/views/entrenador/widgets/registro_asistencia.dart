@@ -1,3 +1,4 @@
+import 'package:saman_sports/views/entrenador/widgets/boton_exportar_asistencia.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/asistencia_controller.dart';
 import 'package:saman_sports/models/asistencia.dart';
@@ -5,8 +6,13 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 
 class RegistroAsistencia extends StatelessWidget {
-  const RegistroAsistencia({super.key, required this.controller});
+  const RegistroAsistencia({
+    super.key,
+    required this.controller,
+    this.disciplina = '',
+  });
   final AsistenciaController controller;
+  final String disciplina;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -21,6 +27,12 @@ class RegistroAsistencia extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text('Registro de asistencia', style: AppTextStyles.title),
+              const SizedBox(height: 12),
+              BotonExportarAsistencia(
+                key: ValueKey(c.deporteId),
+                controller: c,
+                disciplina: disciplina,
+              ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 12,
