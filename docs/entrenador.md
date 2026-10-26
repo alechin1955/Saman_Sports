@@ -29,3 +29,18 @@ Las reglas desplegadas deben comprobar el rol, la asignación `entrenadorUid`, l
 El botón descarga un CSV en web o copia el CSV al portapapeles en otras plataformas. Incluye toda la nómina confirmada, independientemente del filtro de búsqueda, el estado guardado de la fecha elegida y el porcentaje acumulado hasta ese día. El porcentaje se calcula como presentes / sesiones con estado explícito para esa inscripción; las sesiones sin registro no cuentan como ausencias. Si no existe historial se muestra `Sin registros`.
 
 La exportación consulta datos guardados; se bloquea mientras hay un borrador sin guardar. Un fallo al leer el historial no genera un archivo parcial. El CSV incluye BOM UTF-8, escapa comillas y separadores y neutraliza valores que podrían interpretarse como fórmulas. Las reglas del backend también deben autorizar la lectura del historial de la disciplina asignada.
+
+## Validación del módulo
+
+Comprobación local del 25 de octubre de 2026 con Flutter 3.47.7 y Dart 3.13.5:
+
+- Suite completa: 98 pruebas aprobadas después de integrar la exportación.
+- Compilación web de producción: correcta, incluido el análisis previo de compatibilidad Wasm.
+- Interfaz inspeccionada en capturas de 390 y 1440 px; pruebas adaptables adicionales a 320 y 768 px.
+- Análisis de los archivos del módulo y del componente compartido modificado: sin incidencias. El análisis global mantiene el aviso previo sobre el nombre `FirebaseServices.dart`.
+
+Las pruebas verifican controladores, búsqueda, cambios de disciplina durante consultas, errores, preservación del borrador, confirmación de salida, marcado y guardado de asistencia, exportación y porcentajes. Los repositorios de las pruebas son implementaciones en memoria: estos resultados no acreditan permisos ni lecturas/escrituras contra el Firebase desplegado.
+
+Para probar con datos reales se necesita una cuenta con rol `entrenador`, al menos un deporte activo con su `entrenadorUid`, inscripciones confirmadas y perfiles de sus alumnos, además de las reglas descritas arriba. La implementación no crea cuentas ni datos de demostración en el backend.
+
+La verificación final también cubre el botón de retroceso: cancelar conserva el borrador y confirmar lo descarta antes de volver a la pantalla anterior, sin cerrar la sesión. Esta prueba adicional pasó junto con la prueba de cierre de sesión.

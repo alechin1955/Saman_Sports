@@ -103,4 +103,49 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('retroceder conserva el borrador hasta confirmar descarte', (
+    tester,
+  ) async {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    final auth = _Auth();
+    final nomina = EntrenadorController(repository: _Nomina());
+    final asistencia = AsistenciaController(repository: _Asistencia());
+    addTearDown(auth.dispose);
+    addTearDown(nomina.dispose);
+    addTearDown(asistencia.dispose);
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigator,
+        home: const Scaffold(body: Text('Pantalla anterior')),
+      ),
+    );
+    navigator.currentState!.push(
+      MaterialPageRoute<void>(
+        builder: (_) => DashboardEntrenadorView(
+          auth: auth,
+          controller: nomina,
+          asistencia: asistencia,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    asistencia.marcar('i1', EstadoAsistencia.ausente);
+    await tester.pumpAndSettle();
+    navigator.currentState!.maybePop();
+    await tester.pumpAndSettle();
+    expect(find.text('Tienes asistencia sin guardar'), findsOneWidget);
+    await tester.tap(find.text('Continuar editando'));
+    await tester.pumpAndSettle();
+    expect(asistencia.cambios, isTrue);
+    expect(find.text('Dashboard del entrenador'), findsOneWidget);
+    navigator.currentState!.maybePop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Descartar y salir'));
+    await tester.pumpAndSettle();
+    expect(asistencia.cambios, isFalse);
+    expect(find.text('Pantalla anterior'), findsOneWidget);
+    expect(auth.cerro, isFalse);
+    expect(tester.takeException(), isNull);
+  });
 }
