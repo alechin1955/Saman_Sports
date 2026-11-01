@@ -6,7 +6,7 @@ abstract interface class HistorialAsistenciaRepository {
   Future<List<SesionAsistencia>> sesiones(String deporteId);
 }
 
-class FirestoreHistorialAsistenciaRepository
+class FirebaseHistorialAsistenciaAdapter
     implements HistorialAsistenciaRepository {
   @override
   Future<List<SesionAsistencia>> sesiones(String deporteId) async {
@@ -41,3 +41,8 @@ class FirestoreHistorialAsistenciaRepository
     return sesiones;
   }
 }
+
+/// Alias de compatibilidad para código que aún usa el nombre anterior.
+@Deprecated('Usa FirebaseHistorialAsistenciaAdapter')
+class FirestoreHistorialAsistenciaRepository
+    extends FirebaseHistorialAsistenciaAdapter {}

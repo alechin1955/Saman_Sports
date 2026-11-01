@@ -10,8 +10,8 @@ abstract interface class EntrenadorRepository {
 
 /// Las asignaciones utilizan el UID de Auth, nunca el nombre del entrenador.
 /// Las reglas de Firestore deben verificar el mismo vínculo en el servidor.
-class FirestoreEntrenadorRepository implements EntrenadorRepository {
-  FirestoreEntrenadorRepository({this.firestore, this.auth});
+class FirebaseEntrenadorAdapter implements EntrenadorRepository {
+  FirebaseEntrenadorAdapter({this.firestore, this.auth});
   final FirebaseFirestore? firestore;
   final FirebaseAuth? auth;
   FirebaseFirestore get db => firestore ?? FirebaseFirestore.instance;
@@ -75,4 +75,10 @@ class FirestoreEntrenadorRepository implements EntrenadorRepository {
     alumnos.sort((a, b) => a.nombre.compareTo(b.nombre));
     return alumnos;
   }
+}
+
+/// Alias de compatibilidad para código que aún usa el nombre anterior.
+@Deprecated('Usa FirebaseEntrenadorAdapter')
+class FirestoreEntrenadorRepository extends FirebaseEntrenadorAdapter {
+  FirestoreEntrenadorRepository({super.firestore, super.auth});
 }

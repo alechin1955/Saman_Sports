@@ -13,7 +13,7 @@ abstract interface class AsistenciaRepository {
 
 /// Una sesión por disciplina y fecha. La transacción comprueba asignación y
 /// matrícula vigente antes de sobrescribir el registro completo de esa sesión.
-class FirestoreAsistenciaRepository implements AsistenciaRepository {
+class FirebaseAsistenciaAdapter implements AsistenciaRepository {
   FirebaseFirestore get _db => FirebaseFirestore.instance;
   String get _uid {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -101,3 +101,7 @@ class FirestoreAsistenciaRepository implements AsistenciaRepository {
     });
   }
 }
+
+/// Alias de compatibilidad para código que aún usa el nombre anterior.
+@Deprecated('Usa FirebaseAsistenciaAdapter')
+class FirestoreAsistenciaRepository extends FirebaseAsistenciaAdapter {}

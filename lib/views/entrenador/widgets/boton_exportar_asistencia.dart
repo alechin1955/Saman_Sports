@@ -48,7 +48,7 @@ class _BotonExportarAsistenciaState extends State<BotonExportarAsistencia> {
     });
     try {
       final sesiones =
-          await (widget.repository ?? FirestoreHistorialAsistenciaRepository())
+          await (widget.repository ?? FirebaseHistorialAsistenciaAdapter())
               .sesiones(id)
               .timeout(const Duration(seconds: 20));
       if (!mounted) return;

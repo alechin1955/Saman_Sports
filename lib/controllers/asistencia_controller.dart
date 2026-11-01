@@ -5,7 +5,7 @@ import 'package:saman_sports/repositories/asistencia_repository.dart';
 
 class AsistenciaController extends ChangeNotifier {
   AsistenciaController({AsistenciaRepository? repository})
-    : _repository = repository ?? FirestoreAsistenciaRepository();
+    : _repository = repository ?? FirebaseAsistenciaAdapter();
   final AsistenciaRepository _repository;
   String? deporteId;
   DateTime fecha = DateTime.now();

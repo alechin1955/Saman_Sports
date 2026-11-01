@@ -1,5 +1,6 @@
 import 'package:saman_sports/controllers/asistencia_controller.dart';
 import 'package:saman_sports/controllers/entrenador_controller.dart';
+import 'package:saman_sports/controllers/entrenador_panel_bridge.dart';
 import 'package:saman_sports/views/entrenador/widgets/disciplinas_nomina.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
@@ -29,53 +30,28 @@ class DashboardEntrenadorView extends StatefulWidget {
 }
 
 class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
-  late final EntrenadorController controller =
-      widget.controller ?? EntrenadorController();
-
-  late final AsistenciaController asistencia =
-      widget.asistencia ?? AsistenciaController();
-  String? _seleccionCargada;
-  Object? _nominaCargada;
-
-  void _sincronizarAsistencia() {
-    if (!mounted ||
-        controller.cargando ||
-        controller.cargandoNomina ||
-        controller.error != null) {
-      return;
-    }
-    final id = controller.seleccionId;
-    if (id != null &&
-        (id != _seleccionCargada ||
-            !identical(_nominaCargada, controller.alumnos)) &&
-        !asistencia.cambios &&
-        !asistencia.guardando) {
-      _seleccionCargada = id;
-      _nominaCargada = controller.alumnos;
-      asistencia.abrir(id, asistencia.fecha, controller.alumnos);
-    }
-  }
+  late final EntrenadorPanelBridge panel = EntrenadorPanelBridge(
+    entrenador: widget.controller,
+    asistencia: widget.asistencia,
+  );
 
   @override
   void initState() {
     super.initState();
-    controller.addListener(_sincronizarAsistencia);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) controller.cargar();
+      if (mounted) panel.cargar();
     });
   }
 
   @override
   void dispose() {
-    controller.removeListener(_sincronizarAsistencia);
-    if (widget.controller == null) controller.dispose();
-    if (widget.asistencia == null) asistencia.dispose();
+    panel.dispose();
     super.dispose();
   }
 
   Future<bool> _permitirSalida() async {
-    if (asistencia.guardando) return false;
-    if (!asistencia.cambios) return true;
+    if (panel.asistencia.guardando) return false;
+    if (!panel.asistencia.cambios) return true;
     final salir = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -95,7 +71,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
         ],
       ),
     );
-    if (salir == true) asistencia.descartarBorrador();
+    if (salir == true) panel.descartarBorrador();
     return salir == true;
   }
 
@@ -110,9 +86,9 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: asistencia,
+      listenable: panel,
       builder: (context, _) => PopScope(
-        canPop: !asistencia.cambios && !asistencia.guardando,
+        canPop: !panel.bloqueaSalida,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
           if (await _permitirSalida()) {
@@ -165,7 +141,10 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                 ),
               ),
               const SizedBox(height: AppSizes.space24),
-              DisciplinasNomina(controller: controller, asistencia: asistencia),
+              DisciplinasNomina(
+                controller: panel.entrenador,
+                asistencia: panel.asistencia,
+              ),
             ],
           ),
         ),

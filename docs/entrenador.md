@@ -2,6 +2,29 @@
 
 La ruta `/entrenador` y la restauración de sesión comparten el panel adaptable del estudiante y conservan la validación del rol entrenador.
 
+## Patrones estructurales aplicados
+
+El módulo usa **Adapter** en el límite con Firebase. `EntrenadorRepository`,
+`AsistenciaRepository` e `HistorialAsistenciaRepository` son los contratos que
+entiende la aplicación; `FirebaseEntrenadorAdapter`,
+`FirebaseAsistenciaAdapter` y `FirebaseHistorialAsistenciaAdapter` traducen
+Firebase Auth y Cloud Firestore a modelos como `Deporte`, `AlumnoInscrito` y
+`EstadoAsistencia`. Así, los controladores no conocen consultas, documentos ni
+sesiones del SDK y las pruebas pueden sustituir Firebase por implementaciones
+en memoria.
+
+La vista usa **Bridge** mediante `EntrenadorPanelBridge`. El panel visible es la
+abstracción y los controladores de nómina y asistencia son sus implementaciones
+inyectables. El puente contiene la regla que abre la asistencia cuando cambia
+la disciplina o su nómina, conserva los borradores y expone el bloqueo de
+salida. De esta manera la vista se ocupa del renderizado y los diálogos, mientras
+cada lado puede evolucionar o probarse por separado.
+
+No se añadió un Composite propio. Flutter ya representa la pantalla como un
+árbol uniforme de `Widget`, y este módulo no tiene otra jerarquía de dominio que
+justifique duplicar ese mecanismo. Forzarlo agregaría clases sin ocultar una
+variación real.
+
 ## Contrato de datos
 
 - `deportes/{id}`: campos existentes del catálogo y `entrenadorUid` (UID de Firebase Auth del entrenador asignado), `activo: true`. El nombre visible del entrenador no se usa como identificador de asignación.
@@ -32,12 +55,12 @@ La exportación consulta datos guardados; se bloquea mientras hay un borrador si
 
 ## Validación del módulo
 
-Comprobación local del 25 de octubre de 2026 con Flutter 3.47.7 y Dart 3.13.5:
+Comprobación local del 1 de noviembre de 2026 con Flutter 3.47.9 y Dart 3.13.7:
 
-- Suite completa: 98 pruebas aprobadas después de integrar la exportación.
+- Suite completa: 101 pruebas aprobadas, incluidas las pruebas del Bridge.
 - Compilación web de producción: correcta, incluido el análisis previo de compatibilidad Wasm.
 - Interfaz inspeccionada en capturas de 390 y 1440 px; pruebas adaptables adicionales a 320 y 768 px.
-- Análisis de los archivos del módulo y del componente compartido modificado: sin incidencias. El análisis global mantiene el aviso previo sobre el nombre `FirebaseServices.dart`.
+- Análisis de los archivos modificados: sin incidencias. El análisis global mantiene el aviso previo sobre el nombre `FirebaseServices.dart`.
 
 Las pruebas verifican controladores, búsqueda, cambios de disciplina durante consultas, errores, preservación del borrador, confirmación de salida, marcado y guardado de asistencia, exportación y porcentajes. Los repositorios de las pruebas son implementaciones en memoria: estos resultados no acreditan permisos ni lecturas/escrituras contra el Firebase desplegado.
 

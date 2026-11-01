@@ -5,7 +5,7 @@ import 'package:saman_sports/repositories/entrenador_repository.dart';
 
 class EntrenadorController extends ChangeNotifier {
   EntrenadorController({EntrenadorRepository? repository})
-    : _repository = repository ?? FirestoreEntrenadorRepository();
+    : _repository = repository ?? FirebaseEntrenadorAdapter();
   final EntrenadorRepository _repository;
   List<Deporte> disciplinas = [];
   List<AlumnoInscrito> alumnos = [];
