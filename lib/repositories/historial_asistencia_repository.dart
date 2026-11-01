@@ -1,5 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/models/asistencia.dart';
 
 abstract interface class HistorialAsistenciaRepository {
@@ -10,19 +9,21 @@ class FirebaseHistorialAsistenciaAdapter
     implements HistorialAsistenciaRepository {
   @override
   Future<List<SesionAsistencia>> sesiones(String deporteId) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = FirebaseServices.currentUser?.uid;
     if (uid == null) throw StateError('Sesión requerida');
-    final deporte = FirebaseFirestore.instance
-        .collection('deportes')
-        .doc(deporteId);
-    final asignacion = (await deporte.get()).data();
-    if (asignacion?['entrenadorUid'] != uid || asignacion?['activo'] != true) {
+    final asignada = await FirebaseServices.esDisciplinaAsignada(
+      deporteId: deporteId,
+      entrenadorUid: uid,
+    );
+    if (!asignada) {
       throw StateError('Disciplina no asignada');
     }
-    final snapshot = await deporte.collection('asistencias').get();
-    final sesiones = snapshot.docs.map((doc) {
-      final fecha = DateTime.tryParse(doc.id);
-      final estados = doc.data()['estados'];
+    final registros = await FirebaseServices.getAsistenciasDisciplina(
+      deporteId: deporteId,
+    );
+    final sesiones = registros.map((registro) {
+      final fecha = DateTime.tryParse('${registro['id'] ?? ''}');
+      final estados = registro['estados'];
       if (fecha == null || estados is! Map) {
         throw const FormatException('Historial de asistencia inválido');
       }

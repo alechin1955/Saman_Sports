@@ -1,5 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/models/asistencia.dart';
 
 abstract interface class AsistenciaRepository {
@@ -14,21 +13,11 @@ abstract interface class AsistenciaRepository {
 /// Una sesión por disciplina y fecha. La transacción comprueba asignación y
 /// matrícula vigente antes de sobrescribir el registro completo de esa sesión.
 class FirebaseAsistenciaAdapter implements AsistenciaRepository {
-  FirebaseFirestore get _db => FirebaseFirestore.instance;
   String get _uid {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = FirebaseServices.currentUser?.uid;
     if (uid == null) throw StateError('Sesión requerida');
     return uid;
   }
-
-  DocumentReference<Map<String, dynamic>> _sesion(
-    String deporteId,
-    DateTime fecha,
-  ) => _db
-      .collection('deportes')
-      .doc(deporteId)
-      .collection('asistencias')
-      .doc(claveFecha(fecha));
 
   @override
   Future<Map<String, EstadoAsistencia>> leer(
@@ -36,16 +25,18 @@ class FirebaseAsistenciaAdapter implements AsistenciaRepository {
     DateTime fecha,
   ) async {
     final uid = _uid;
-    final deporte = await _db.collection('deportes').doc(deporteId).get();
-    if (deporte.data()?['entrenadorUid'] != uid ||
-        deporte.data()?['activo'] != true) {
+    final asignada = await FirebaseServices.esDisciplinaAsignada(
+      deporteId: deporteId,
+      entrenadorUid: uid,
+    );
+    if (!asignada) {
       throw StateError('Disciplina no asignada');
     }
-    final data = (await _sesion(deporteId, fecha).get()).data()?['estados'];
+    final data = await FirebaseServices.getAsistenciaSesion(
+      deporteId: deporteId,
+      fecha: fecha,
+    );
     if (data == null) return {};
-    if (data is! Map) {
-      throw const FormatException('Registro de asistencia inválido');
-    }
     final estados = <String, EstadoAsistencia>{};
     for (final entrada in data.entries) {
       final estado = switch (entrada.value) {
@@ -65,40 +56,15 @@ class FirebaseAsistenciaAdapter implements AsistenciaRepository {
     Map<String, EstadoAsistencia> estados,
   ) async {
     final uid = _uid;
-    if (estados.isEmpty || estados.length > 450) {
-      throw StateError('Nómina vacía o demasiado grande');
+    final respuesta = await FirebaseServices.guardarAsistenciaSesion(
+      deporteId: deporteId,
+      fecha: fecha,
+      entrenadorUid: uid,
+      estados: estados.map((id, estado) => MapEntry(id, estado.name)),
+    );
+    if (!respuesta.isSuccess) {
+      throw StateError(respuesta.errorMessage ?? 'No se pudo guardar');
     }
-    final hoy = DateTime.now();
-    if (DateTime(
-      fecha.year,
-      fecha.month,
-      fecha.day,
-    ).isAfter(DateTime(hoy.year, hoy.month, hoy.day))) {
-      throw StateError('No se puede registrar asistencia futura');
-    }
-    await _db.runTransaction((tx) async {
-      final deporte = await tx.get(_db.collection('deportes').doc(deporteId));
-      if (deporte.data()?['entrenadorUid'] != uid ||
-          deporte.data()?['activo'] != true) {
-        throw StateError('Disciplina no asignada');
-      }
-      // Todas las lecturas preceden a la escritura en la transacción.
-      for (final id in estados.keys) {
-        final inscripcion = await tx.get(
-          _db.collection('inscripciones').doc(id),
-        );
-        if (inscripcion.data()?['deporteId'] != deporteId ||
-            inscripcion.data()?['estado'] != 'confirmada') {
-          throw StateError('La nómina cambió. Actualiza antes de guardar');
-        }
-      }
-      tx.set(_sesion(deporteId, fecha), {
-        'fecha': claveFecha(fecha),
-        'entrenadorUid': uid,
-        'estados': estados.map((id, estado) => MapEntry(id, estado.name)),
-        'actualizadoEn': FieldValue.serverTimestamp(),
-      });
-    });
   }
 }
 

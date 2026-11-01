@@ -7,11 +7,13 @@ La ruta `/entrenador` y la restauración de sesión comparten el panel adaptable
 El módulo usa **Adapter** en el límite con Firebase. `EntrenadorRepository`,
 `AsistenciaRepository` e `HistorialAsistenciaRepository` son los contratos que
 entiende la aplicación; `FirebaseEntrenadorAdapter`,
-`FirebaseAsistenciaAdapter` y `FirebaseHistorialAsistenciaAdapter` traducen
-Firebase Auth y Cloud Firestore a modelos como `Deporte`, `AlumnoInscrito` y
-`EstadoAsistencia`. Así, los controladores no conocen consultas, documentos ni
-sesiones del SDK y las pruebas pueden sustituir Firebase por implementaciones
-en memoria.
+`FirebaseAsistenciaAdapter` y `FirebaseHistorialAsistenciaAdapter` traducen los
+mapas de la fachada `FirebaseServices` a modelos como `Deporte`,
+`AlumnoInscrito` y `EstadoAsistencia`. Las seis operaciones de lectura y
+escritura del entrenador, además de la sesión y la lectura de perfiles
+reutilizadas, viven en esa fachada. Así, los repositorios no conocen consultas,
+documentos ni transacciones del SDK y las pruebas pueden sustituirlos por
+implementaciones en memoria.
 
 La vista usa **Bridge** mediante `EntrenadorPanelBridge`. El panel visible es la
 abstracción y los controladores de nómina y asistencia son sus implementaciones
