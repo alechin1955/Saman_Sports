@@ -10,10 +10,8 @@ class FirebaseServices {
     required String password,
   }) async {
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
       return AuthResponse(credential: credential, isSuccess: true);
     } on FirebaseAuthException catch (e) {
       return AuthResponse(errorMessage: e.message, isSuccess: false);
@@ -22,7 +20,7 @@ class FirebaseServices {
     }
   }
 
-static Future<(UserCredential? credential, String? errorMessage)> signIn({
+  static Future<(UserCredential? credential, String? errorMessage)> signIn({
     required String email,
     required String password,
   }) async {
@@ -34,7 +32,6 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
 
       return (credential, null);
     } on FirebaseAuthException catch (e) {
-
       String message;
       switch (e.code) {
         case 'user-not-found':
@@ -134,7 +131,9 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
 
   /// Lee los datos del usuario desde usuarios/{uid}.
   /// Devuelve null si el documento no existe o si hubo un error.
-  static Future<Map<String, dynamic>?> getUserData({required String uid}) async {
+  static Future<Map<String, dynamic>?> getUserData({
+    required String uid,
+  }) async {
     try {
       final doc = await _db.collection(usuariosCollection).doc(uid).get();
       return doc.data();
@@ -213,10 +212,15 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
   static const String deportesCollection = 'deportes';
   static const String entrenadoresCollection = 'entrenadores';
   static const String resenasCollection = 'resenas';
+  static const String inscripcionesCollection = 'inscripciones';
+  static const String asistenciasCollection = 'asistencias';
 
   static Stream<List<Map<String, dynamic>>> streamDeportes() {
     return _streamConsulta(
-      _db.collection(deportesCollection).where('activo', isEqualTo: true).orderBy('nombre'),
+      _db
+          .collection(deportesCollection)
+          .where('activo', isEqualTo: true)
+          .orderBy('nombre'),
     );
   }
 
@@ -242,16 +246,168 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
   static Stream<List<Map<String, dynamic>>> _streamConsulta(
     Query<Map<String, dynamic>> consulta,
   ) {
-    return consulta.snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
-          .toList();
-    }).transform(
-      StreamTransformer<List<Map<String, dynamic>>, List<Map<String, dynamic>>>.fromHandlers(
-        handleError: (error, stack, sink) => sink.add(const []),
-      ),
-    );
+    return consulta
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+              .toList();
+        })
+        .transform(
+          StreamTransformer<
+            List<Map<String, dynamic>>,
+            List<Map<String, dynamic>>
+          >.fromHandlers(
+            handleError: (error, stack, sink) => sink.add(const []),
+          ),
+        );
   }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Diego (panel del entrenador)
+  // ---------------------------------------------------------------------------
+
+  /// Disciplinas activas asignadas al entrenador identificado por su UID.
+  static Future<List<Map<String, dynamic>>> getDisciplinasEntrenador({
+    required String entrenadorUid,
+  }) async {
+    final snapshot = await _db
+        .collection(deportesCollection)
+        .where('entrenadorUid', isEqualTo: entrenadorUid)
+        .get();
+    return snapshot.docs
+        .where((doc) => doc.data()['activo'] == true)
+        .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+        .toList();
+  }
+
+  /// Confirma que una disciplina activa continúa asignada al entrenador.
+  static Future<bool> esDisciplinaAsignada({
+    required String deporteId,
+    required String entrenadorUid,
+  }) async {
+    final deporte = await _db
+        .collection(deportesCollection)
+        .doc(deporteId)
+        .get();
+    return deporte.data()?['entrenadorUid'] == entrenadorUid &&
+        deporte.data()?['activo'] == true;
+  }
+
+  /// Inscripciones confirmadas de una disciplina.
+  /// Un solo filtro evita exigir un índice compuesto nuevo.
+  static Future<List<Map<String, dynamic>>> getInscripcionesConfirmadas({
+    required String deporteId,
+  }) async {
+    final snapshot = await _db
+        .collection(inscripcionesCollection)
+        .where('deporteId', isEqualTo: deporteId)
+        .get();
+    return snapshot.docs
+        .where((doc) => doc.data()['estado'] == 'confirmada')
+        .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+        .toList();
+  }
+
+  /// Estados guardados para una disciplina y fecha; null si no existe sesión.
+  static Future<Map<String, dynamic>?> getAsistenciaSesion({
+    required String deporteId,
+    required DateTime fecha,
+  }) async {
+    final data = (await _sesionAsistencia(deporteId, fecha).get()).data();
+    final estados = data?['estados'];
+    if (estados == null) return null;
+    if (estados is! Map) {
+      throw const FormatException('Registro de asistencia inválido');
+    }
+    return estados.map((id, estado) => MapEntry(id.toString(), estado));
+  }
+
+  /// Guarda una sesión completa y valida asignación y matrícula en transacción.
+  static Future<AuthResponse> guardarAsistenciaSesion({
+    required String deporteId,
+    required DateTime fecha,
+    required String entrenadorUid,
+    required Map<String, String> estados,
+  }) async {
+    try {
+      if (estados.isEmpty || estados.length > 450) {
+        throw StateError('Nómina vacía o demasiado grande');
+      }
+      final hoy = DateTime.now();
+      final dia = DateTime(fecha.year, fecha.month, fecha.day);
+      if (dia.isAfter(DateTime(hoy.year, hoy.month, hoy.day))) {
+        throw StateError('No se puede registrar asistencia futura');
+      }
+
+      await _db.runTransaction((tx) async {
+        final deporte = await tx.get(
+          _db.collection(deportesCollection).doc(deporteId),
+        );
+        if (deporte.data()?['entrenadorUid'] != entrenadorUid ||
+            deporte.data()?['activo'] != true) {
+          throw StateError('Disciplina no asignada');
+        }
+
+        // Firestore exige completar todas las lecturas antes de escribir.
+        for (final id in estados.keys) {
+          final inscripcion = await tx.get(
+            _db.collection(inscripcionesCollection).doc(id),
+          );
+          if (inscripcion.data()?['deporteId'] != deporteId ||
+              inscripcion.data()?['estado'] != 'confirmada') {
+            throw StateError('La nómina cambió. Actualiza antes de guardar');
+          }
+        }
+
+        tx.set(_sesionAsistencia(deporteId, fecha), {
+          'fecha': _claveFecha(fecha),
+          'entrenadorUid': entrenadorUid,
+          'estados': estados,
+          'actualizadoEn': FieldValue.serverTimestamp(),
+        });
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo guardar la asistencia. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Todas las sesiones guardadas de una disciplina, con su ID de fecha.
+  static Future<List<Map<String, dynamic>>> getAsistenciasDisciplina({
+    required String deporteId,
+  }) async {
+    final snapshot = await _db
+        .collection(deportesCollection)
+        .doc(deporteId)
+        .collection(asistenciasCollection)
+        .get();
+    return snapshot.docs
+        .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+        .toList();
+  }
+
+  static DocumentReference<Map<String, dynamic>> _sesionAsistencia(
+    String deporteId,
+    DateTime fecha,
+  ) => _db
+      .collection(deportesCollection)
+      .doc(deporteId)
+      .collection(asistenciasCollection)
+      .doc(_claveFecha(fecha));
+
+  static String _claveFecha(DateTime fecha) =>
+      '${fecha.year.toString().padLeft(4, '0')}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}';
 
   // ---------------------------------------------------------------------------
   // Funciones agregadas por Gonzalo (panel del estudiante: Comunidad)
@@ -336,7 +492,6 @@ static Future<(UserCredential? credential, String? errorMessage)> signIn({
     }
   }
 }
-
 
 class AuthResponse {
   final UserCredential? credential;

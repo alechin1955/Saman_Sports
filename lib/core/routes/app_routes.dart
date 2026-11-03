@@ -1,3 +1,4 @@
+import 'package:saman_sports/views/entrenador/dashboard_entrenador_view.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
@@ -103,10 +104,7 @@ class AppRoutes {
       dashboardEntrenador: (_) => GuardiaRol(
         auth: auth,
         esperado: DestinoLogin.entrenador,
-        child: DashboardPlaceholderView(
-          controller: auth,
-          titulo: AppStrings.panelEntrenador,
-        ),
+        child: DashboardEntrenadorView(auth: auth),
       ),
       dashboardAdmin: (_) => GuardiaRol(
         auth: auth,
