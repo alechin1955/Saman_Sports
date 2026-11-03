@@ -97,6 +97,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(AppStrings.panelAdmin),
         backgroundColor: AppColors.navy,
@@ -110,10 +111,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             backgroundColor: AppColors.surface,
             selectedIconTheme: const IconThemeData(color: AppColors.primary),
             unselectedIconTheme: const IconThemeData(color: AppColors.textSecondary),
+            extended: true,
             destinations: const [
               NavigationRailDestination(icon: Icon(Icons.dashboard), label: Text(AppStrings.dashboard)),
               NavigationRailDestination(icon: Icon(Icons.sports_soccer), label: Text(AppStrings.deportes)),
               NavigationRailDestination(icon: Icon(Icons.people), label: Text(AppStrings.entrenadores)),
+              NavigationRailDestination(icon: Icon(Icons.school), label: Text('Estudiantes')),
+              NavigationRailDestination(icon: Icon(Icons.sports_basketball), label: Text('Partidos')),
+              NavigationRailDestination(icon: Icon(Icons.support_agent), label: Text('Soporte')),
             ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
@@ -133,56 +138,67 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       case 0: return _buildDashboardOverview();
       case 1: return _buildSportsManagement();
       case 2: return _buildEntrenadoresManagement();
+      case 3: return _buildEstudiantesManagement();
+      case 4: return _buildPartidosManagement();
+      case 5: return _buildSoporteManagement();
       default: return const Center(child: Text('Error de navegación'));
     }
   }
 
+  // 1. DASHBOARD OVERVIEW CON RESUMEN GENERAL
   Widget _buildDashboardOverview() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(AppStrings.resumenGeneral, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.navy)),
-          const SizedBox(height: AppSizes.space16),
-          Wrap(
-            spacing: AppSizes.space16,
-            runSpacing: AppSizes.space16,
-            children: [
-              _buildStatCard(AppStrings.totalDeportes, '8', Icons.sports, AppColors.primary),
-              _buildStatCard(AppStrings.totalEntrenadores, '12', Icons.badge, AppColors.navy),
-              _buildStatCard(AppStrings.totalEstudiantes, '340', Icons.school, AppColors.success),
-            ],
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Dashboard', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1D2D44))),
+        const Text('Universidad Metropolitana - Samán Deportivo', style: TextStyle(fontSize: 16, color: Colors.grey)),
+        const SizedBox(height: 24),
+        Expanded(child: _buildSummaryCards()),
+      ],
     );
   }
 
-  Widget _buildStatCard(String title, String count, IconData icon, Color color) {
-    return SizedBox(
-      width: 240,
-      child: Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.space16),
-          child: Row(
-            children: [
-              CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color)),
-              const SizedBox(width: AppSizes.space12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                  Text(count, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
-                ],
-              ),
-            ],
-          ),
+  Widget _buildSummaryCards() {
+    return GridView.count(
+      crossAxisCount: 4,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 2.5,
+      children: [
+        _crearTarjeta('Estudiantes Registrados', '13', Icons.school),
+        _crearTarjeta('Deportes Activos', '6', Icons.sports_soccer),
+        _crearTarjeta('Entrenadores', '6', Icons.person),
+        _crearTarjeta('Inscripciones Pendientes', '1', Icons.assignment_late),
+      ],
+    );
+  }
+
+  Widget _crearTarjeta(String titulo, String valor, IconData icono) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(titulo, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                Icon(icono, color: const Color(0xFFE85D04), size: 20),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(valor, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2A9D8F))),
+          ],
         ),
       ),
     );
   }
 
+  // 2. GESTIÓN DE DEPORTES
   Widget _buildSportsManagement() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,6 +253,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  // 3. GESTIÓN DE ENTRENADORES
   Widget _buildEntrenadoresManagement() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,19 +288,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     margin: const EdgeInsets.only(bottom: AppSizes.space12),
                     child: ListTile(
                       leading: CircleAvatar(backgroundColor: AppColors.navy.withOpacity(0.1), child: const Icon(Icons.person, color: AppColors.navy)),
-                      title: Text('${entrenador.nombre} - ${entrenador.especialidad}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: Text('${entrenador.nombre}\n${entrenador.especialidad}', style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text('C.I: ${entrenador.cedula} | ${entrenador.correo} | ${entrenador.anosExperiencia} años exp.'),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: AppColors.navy),
-                            onPressed: () => _abrirEditarEntrenador(entrenador),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () { if (entrenador.id != null) _confirmarEliminacionEntrenador(entrenador.id!, entrenador.nombre); },
-                          ),
+                          IconButton(icon: const Icon(Icons.edit, color: AppColors.navy), onPressed: () => _abrirEditarEntrenador(entrenador)),
+                          IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () { if (entrenador.id != null) _confirmarEliminacionEntrenador(entrenador.id!, entrenador.nombre); }),
                         ],
                       ),
                     ),
@@ -291,6 +302,127 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 },
               );
             },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 4. GESTIÓN DE ESTUDIANTES
+  Widget _buildEstudiantesManagement() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Gestión de Estudiantes', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D2D44))),
+        const SizedBox(height: 24),
+        Expanded(
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade300)),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                ListTile(
+                  leading: const CircleAvatar(backgroundColor: Color(0xFFE85D04), child: Text('VM', style: TextStyle(color: Colors.white))),
+                  title: const Text('Valeria Martínez'),
+                  subtitle: const Text('valeria.martinez@correo.unimet.edu.ve'),
+                  trailing: SizedBox(
+                    width: 250,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _construirIndicadorSolvencia(true),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE85D04), foregroundColor: Colors.white),
+                          onPressed: () {},
+                          child: const Text('Ver perfil'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _construirIndicadorSolvencia(bool esSolvente) {
+    return Row(
+      children: [
+        Icon(Icons.circle, size: 12, color: esSolvente ? const Color(0xFF2A9D8F) : const Color(0xFFE63946)),
+        const SizedBox(width: 8),
+        Text(
+          esSolvente ? 'Solvente' : 'Pendiente',
+          style: TextStyle(color: esSolvente ? const Color(0xFF2A9D8F) : const Color(0xFFE63946), fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  // 5. SOLICITUDES DE PARTIDOS
+  Widget _buildPartidosManagement() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Solicitudes de Partidos', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D2D44))),
+        const SizedBox(height: 24),
+        Expanded(
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade300)),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.sports_basketball, size: 48, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text('No hay solicitudes pendientes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text('Las propuestas enviadas por los entrenadores aparecerán aquí.', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2A9D8F), foregroundColor: Colors.white),
+                    onPressed: () {},
+                    child: const Text('Aprobar Solicitud'),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 6. SOPORTE TÉCNICO
+  Widget _buildSoporteManagement() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Soporte Técnico', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1D2D44))),
+        const SizedBox(height: 24),
+        Expanded(
+          child: ListView(
+            children: [
+              Card(
+                child: ListTile(
+                  title: const Text('Problema con pago (SUP-001)'),
+                  subtitle: const Text('Valeria Martínez • 2024-11-20'),
+                  trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFFE85D04),
+                      side: const BorderSide(color: Color(0xFFE85D04)),
+                    ),
+                    onPressed: () {},
+                    child: const Text('Marcar Solventado'),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

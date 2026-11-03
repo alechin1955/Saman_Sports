@@ -24,7 +24,6 @@ class _EditEntrenadorDialogState extends State<EditEntrenadorDialog> {
   @override
   void initState() {
     super.initState();
-    // Pre-llenamos los campos con los datos actuales
     _nombreController = TextEditingController(text: widget.entrenador.nombre);
     _correoController = TextEditingController(text: widget.entrenador.correo);
     _especialidadController = TextEditingController(text: widget.entrenador.especialidad);
@@ -57,7 +56,7 @@ class _EditEntrenadorDialogState extends State<EditEntrenadorDialog> {
     if (mounted) {
       setState(() => _isLoading = false);
       if (exito) {
-        Navigator.pop(context, true); // Retorna true para actualizar la lista
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al actualizar'), backgroundColor: AppColors.error),
@@ -76,7 +75,6 @@ class _EditEntrenadorDialogState extends State<EditEntrenadorDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // La cédula generalmente no se edita porque es el identificador, la mostramos como texto
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: Text('C.I: ${widget.entrenador.cedula}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),

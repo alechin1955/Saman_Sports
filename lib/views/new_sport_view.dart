@@ -20,7 +20,7 @@ class _NewSportViewState extends State<NewSportView> {
   
   final SportController _controller = SportController();
   bool _isLoading = false;
-  String? _selectedEntrenadorId; // Variable para almacenar el entrenador seleccionado
+  String? _selectedEntrenadorId;
 
   @override
   void dispose() {
@@ -39,7 +39,7 @@ class _NewSportViewState extends State<NewSportView> {
       nombre: _nombreController.text.trim(),
       cupos: int.parse(_cuposController.text.trim()),
       horario: _horarioController.text.trim(),
-      entrenadorId: _selectedEntrenadorId!, // Enviamos el ID seleccionado
+      entrenadorId: _selectedEntrenadorId!,
     );
 
     if (mounted) {
@@ -109,8 +109,6 @@ class _NewSportViewState extends State<NewSportView> {
                         },
                       ),
                       const SizedBox(height: AppSizes.space16),
-                      
-                      // --- NUEVO: SELECTOR DE ENTRENADOR ---
                       FutureBuilder<List<EntrenadorModel>>(
                         future: EntrenadorRepository().getEntrenadores(),
                         builder: (context, snapshot) {

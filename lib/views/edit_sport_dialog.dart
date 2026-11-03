@@ -30,7 +30,6 @@ class _EditSportDialogState extends State<EditSportDialog> {
     _horarioController = TextEditingController(text: widget.sport.horario);
     _cuposController = TextEditingController(text: widget.sport.cuposTotales.toString());
     
-    // Inicializamos con el entrenador que ya tenía asignado (si no era el valor por defecto 'sin_asignar')
     if (widget.sport.entrenadorId != 'sin_asignar') {
       _selectedEntrenadorId = widget.sport.entrenadorId;
     }
@@ -55,7 +54,6 @@ class _EditSportDialogState extends State<EditSportDialog> {
       nombre: _nombreController.text.trim(),
       horario: _horarioController.text.trim(),
       cuposTotales: cuposNuevos,
-      // Si aumentan los cupos totales, sumamos la diferencia a los disponibles
       cuposDisponibles: cuposNuevos > widget.sport.cuposTotales 
           ? widget.sport.cuposDisponibles + (cuposNuevos - widget.sport.cuposTotales)
           : widget.sport.cuposDisponibles,
@@ -67,7 +65,7 @@ class _EditSportDialogState extends State<EditSportDialog> {
     if (mounted) {
       setState(() => _isLoading = false);
       if (exito) {
-        Navigator.pop(context, true); // Retorna true para refrescar la lista
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al actualizar'), backgroundColor: AppColors.error),
@@ -109,8 +107,6 @@ class _EditSportDialogState extends State<EditSportDialog> {
                 },
               ),
               const SizedBox(height: 16),
-              
-              // Selector de entrenador para la edición
               FutureBuilder<List<EntrenadorModel>>(
                 future: EntrenadorRepository().getEntrenadores(),
                 builder: (context, snapshot) {
@@ -122,8 +118,6 @@ class _EditSportDialogState extends State<EditSportDialog> {
                   }
 
                   final entrenadores = snapshot.data!;
-                  
-                  // Validación por si el entrenador asignado fue eliminado de la base de datos
                   final entrenadorExiste = entrenadores.any((e) => e.id == _selectedEntrenadorId);
                   if (!entrenadorExiste) _selectedEntrenadorId = null;
 
