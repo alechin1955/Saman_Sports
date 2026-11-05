@@ -14,6 +14,10 @@ class Pago {
     required this.idTransaccion,
     required this.estado,
     required this.fecha,
+    this.paypalOrderId = '',
+    this.fechaPago,
+    this.verificado = false,
+    this.verificadoPor = '',
   });
 
   final String id;
@@ -23,6 +27,10 @@ class Pago {
   final String idTransaccion;
   final EstadoPago estado;
   final DateTime fecha;
+  final String paypalOrderId;
+  final DateTime? fechaPago;
+  final bool verificado;
+  final String verificadoPor;
 
   factory Pago.fromMap(Map<String, dynamic> map) {
     final monto = map['monto'];
@@ -37,6 +45,10 @@ class Pago {
         orElse: () => EstadoPago.pendiente,
       ),
       fecha: _fecha(map['fecha']),
+      paypalOrderId: '${map['paypalOrderId'] ?? ''}',
+      fechaPago: _fechaOpcional(map['fechaPago']),
+      verificado: map['verificado'] == true,
+      verificadoPor: '${map['verificadoPor'] ?? ''}',
     );
   }
 
@@ -48,6 +60,10 @@ class Pago {
       'monto': monto,
       'idTransaccion': idTransaccion,
       'estado': estado.name,
+      'verificado': verificado,
+      if (paypalOrderId.isNotEmpty) 'paypalOrderId': paypalOrderId,
+      if (fechaPago != null) 'fechaPago': fechaPago,
+      if (verificadoPor.isNotEmpty) 'verificadoPor': verificadoPor,
     };
   }
 
@@ -58,5 +74,16 @@ class Pago {
       if (convertida is DateTime) return convertida;
     } catch (_) {}
     return DateTime.now();
+  }
+
+  static DateTime? _fechaOpcional(dynamic valor) {
+    if (valor == null) return null;
+    if (valor is DateTime) return valor;
+    if (valor is String) return DateTime.tryParse(valor);
+    try {
+      final convertida = (valor as dynamic).toDate();
+      if (convertida is DateTime) return convertida;
+    } catch (_) {}
+    return null;
   }
 }

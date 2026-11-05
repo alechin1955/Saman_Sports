@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:saman_sports/FirebaseServices.dart';
+import 'package:saman_sports/controllers/admin/admin_controladores.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/comunidad_controller.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
@@ -14,6 +15,7 @@ import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_theme.dart';
+import 'package:saman_sports/views/admin/admin_dashboard_view.dart';
 import 'package:saman_sports/views/dashboards/dashboard_placeholder_view.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
 import 'package:saman_sports/views/home/home_view.dart';
@@ -31,6 +33,7 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
   final EstudianteController _estudiante = EstudianteController();
   final ExplorarDeportesController _explorar = ExplorarDeportesController();
   final ComunidadController _comunidad = ComunidadController();
+  final AdminControladores _admin = AdminControladores();
   late final Stream<Object?> _sesion = _abrirSesion();
 
   @override
@@ -40,6 +43,7 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
     _estudiante.dispose();
     _explorar.dispose();
     _comunidad.dispose();
+    _admin.dispose();
     super.dispose();
   }
 
@@ -55,9 +59,10 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
           auth: _auth,
           home: _home,
           estudiante: _estudiante,
+          admin: _admin,
           sesion: _sesion,
         ),
-        ...AppRoutes.routes(_auth, _estudiante, _explorar, _comunidad),
+        ...AppRoutes.routes(_auth, _estudiante, _explorar, _comunidad, _admin),
       },
     );
   }
@@ -76,12 +81,14 @@ class _InicioSegunSesion extends StatefulWidget {
     required this.auth,
     required this.home,
     required this.estudiante,
+    required this.admin,
     required this.sesion,
   });
 
   final AuthController auth;
   final HomeController home;
   final EstudianteController estudiante;
+  final AdminControladores admin;
   final Stream<Object?> sesion;
 
   @override
@@ -178,6 +185,12 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
             }
             if (resultado.destino == DestinoLogin.entrenador) {
               return DashboardEntrenadorView(auth: widget.auth);
+            }
+            if (resultado.destino == DestinoLogin.administrador) {
+              return AdminDashboardView(
+                auth: widget.auth,
+                controladores: widget.admin,
+              );
             }
             return DashboardPlaceholderView(
               controller: widget.auth,
