@@ -31,31 +31,38 @@ class AppStrings {
   static const String queEsTexto =
       'Un lugar para ver la oferta deportiva de la UNIMET, conocer entrenadores y leer reseñas de la comunidad.';
   static const String inscribeteFacil = 'Inscríbete fácil';
-  static const String inscribeteFacilTexto = 'Revisa cupos y horarios antes de reservar.';
+  static const String inscribeteFacilTexto =
+      'Revisa cupos y horarios antes de reservar.';
   static const String conectaEntrenadores = 'Conecta con entrenadores';
-  static const String conectaEntrenadoresTexto = 'Conoce quién guía cada disciplina.';
+  static const String conectaEntrenadoresTexto =
+      'Conoce quién guía cada disciplina.';
   static const String comparteExperiencia = 'Comparte tu experiencia';
-  static const String comparteExperienciaTexto = 'Las reseñas ayudan a otros estudiantes.';
-  static const String descubreDeportesTexto = 'Explora las disciplinas activas del campus.';
+  static const String comparteExperienciaTexto =
+      'Las reseñas ayudan a otros estudiantes.';
+  static const String descubreDeportesTexto =
+      'Explora las disciplinas activas del campus.';
   static const String deportesDisponibles = 'Deportes disponibles';
   static const String verDetalles = 'Ver detalles';
   static const String datosEjemplo = 'Datos de ejemplo';
   static const String prontoDeportes = 'Pronto verás aquí los deportes.';
-  static const String prontoEntrenadores = 'Pronto verás aquí los entrenadores.';
+  static const String prontoEntrenadores =
+      'Pronto verás aquí los entrenadores.';
   static const String prontoResenas = 'Pronto verás aquí las reseñas.';
   static const String cupos = 'Cupos';
   static const String estadoDisponible = 'Disponible';
   static const String estadoPocos = 'Pocos cupos';
   static const String estadoCompleto = 'Completo';
   static const String listoParaEmpezar = '¿Listo para empezar?';
-  static const String ctaTexto = 'Crea tu cuenta de estudiante y sigue la actividad deportiva de la UNIMET.';
+  static const String ctaTexto =
+      'Crea tu cuenta de estudiante y sigue la actividad deportiva de la UNIMET.';
   static const String estudianteUnimet = 'Estudiante UNIMET';
 
   static const String loginTagline = 'El deporte universitario en tus manos.';
   static const String loginPalabraResaltada = 'tus manos';
   static const String loginDescripcion =
       'Gestiona tus actividades deportivas, inscríbete en disciplinas y mantente conectado con la comunidad UNIMET.';
-  static const String loginBienvenida = 'Bienvenido(a) de vuelta a Saman Sports.';
+  static const String loginBienvenida =
+      'Bienvenido(a) de vuelta a Saman Sports.';
   static const String featureReservas = 'Reservas fáciles';
   static const String featureReservasTexto =
       'Inscríbete en disciplinas y horarios en un clic.';
@@ -135,7 +142,8 @@ class AppStrings {
   static const String reenviarEnlace = 'Reenviar enlace';
   static const String usarOtroCorreo = 'Usar otro correo';
   static const String escribisteMalCorreo = '¿Escribiste mal tu correo?';
-  static const String recuperarTaglineCompleta = 'Recupera el acceso a tu cuenta.';
+  static const String recuperarTaglineCompleta =
+      'Recupera el acceso a tu cuenta.';
   static const String recuperarPalabraResaltada = 'cuenta';
   static const String recuperarPanelDescripcion =
       'Te ayudamos a restablecer tu contraseña de forma segura para que vuelvas a disfrutar del deporte en la UNIMET.';
@@ -158,8 +166,10 @@ class AppStrings {
 
   static const String cuentaNoHabilitada = 'La cuenta no está habilitada.';
   static const String errorInesperado = 'Ocurrió un error. Inténtalo de nuevo.';
-  static const String errorConexion = 'Sin conexión. Revisa tu internet e inténtalo de nuevo.';
-  static const String correoYaRegistrado = 'Ya existe una cuenta con ese correo.';
+  static const String errorConexion =
+      'Sin conexión. Revisa tu internet e inténtalo de nuevo.';
+  static const String correoYaRegistrado =
+      'Ya existe una cuenta con ese correo.';
   static const String reintentar = 'Reintentar';
   static const String campoObligatorio = 'Este campo es obligatorio.';
   static const String correoInvalido = 'Ingresa un correo válido.';
@@ -296,4 +306,158 @@ class AppStrings {
   static const String pasoPagar = 'Paga con PayPal para confirmar el cupo.';
   static const String pasoConfirmada =
       'Listo: tu inscripción queda confirmada.';
+
+  // ── Panel de administrador (Andrés) ──
+  static const String adminResumen = 'Resumen';
+  static const String adminResumenDescripcion =
+      'Vista general de la plataforma deportiva.';
+  static const String adminDeportesDescripcion =
+      'Administra disciplinas, horarios y canchas.';
+  static const String adminEntrenadoresDescripcion =
+      'Cuentas y asignaciones de entrenadores.';
+  static const String adminEstudiantes = 'Estudiantes';
+  static const String adminEstudiantesDescripcion =
+      'Estado y solvencia de los estudiantes.';
+  static const String adminInscripciones = 'Inscripciones';
+  static const String adminInscripcionesDescripcion =
+      'Cupos e inscripciones de las disciplinas.';
+  static const String adminPagosDescripcion =
+      'Pagos, verificación y fecha de corte.';
+  static const String adminEventos = 'Eventos';
+  static const String adminEventosDescripcion =
+      'Partidos y eventos que reservan cancha.';
+  static const String adminResenasDescripcion =
+      'Modera las reseñas de la comunidad.';
+  static const String adminTransacciones = 'Transacciones';
+  static const String adminTransaccionesDescripcion =
+      'Historial de acciones del administrador.';
+  static const String adminSoporteMenuDescripcion =
+      'Tickets de soporte de la comunidad.';
+  static const String adminEnConstruccion = 'En construcción';
+  static const String adminActualizar = 'Actualizar';
+  static const String adminOcupacion = 'Ocupación por deporte';
+  static const String adminActividadReciente = 'Actividad reciente';
+  static const String adminSinActividad = 'Aún no hay actividad reciente.';
+  static const String adminSinDeportes = 'No hay deportes para mostrar.';
+  static const String adminCanchas = 'Canchas';
+  static const String adminIngresos = 'Ingresos';
+  static const String adminEntrenadoresActivos = 'Entrenadores activos';
+  static const String adminDeportesActivos = 'Deportes activos';
+  static const String adminInscripcionesConfirmadas =
+      'Inscripciones confirmadas';
+  static const String adminInscripcionesPendientes = 'Inscripciones pendientes';
+  static const String adminPagosPendientes = 'Pagos pendientes';
+  static const String adminPagosRealizados = 'Pagos realizados';
+  static const String adminResenasOcultas = 'Reseñas ocultas';
+  static const String adminTicketsAbiertos = 'Tickets abiertos';
+  static const String adminEventosAprobados = 'Eventos aprobados';
+  static const String adminVerificacionSimulada = 'Verificación simulada';
+  static const String adminAplicarCorte = 'Aplicar corte';
+  static const String adminDesactivar = 'Desactivar';
+  static const String adminReactivar = 'Reactivar';
+  static const String adminNuevaCancha = 'Nueva cancha';
+  static const String adminChoqueHorario =
+      'Ese horario choca con otra reserva.';
+  static const String adminNuevoDeporte = 'Nuevo deporte';
+  static const String adminAgregarHorario = 'Agregar horario';
+  static const String adminQuitarHorario = 'Quitar';
+  static const String adminOcupacionDe = 'Ocupación de';
+  static const String adminSinAsignar = 'Sin asignar';
+  static const String adminDisponible = 'Disponible';
+  static const String adminLimitado = 'Limitado';
+  static const String adminCompleto = 'Completo';
+  static const String adminInactivo = 'Inactivo';
+  static const String adminActivo = 'Activo';
+  static const String adminTodos = 'Todos';
+  static const String adminActivos = 'Activos';
+  static const String adminInactivos = 'Inactivos';
+  static const String adminInscritos = 'Inscritos';
+  static const String adminDisponibles = 'Disponibles';
+  static const String adminCancha = 'Cancha';
+  static const String adminUbicacion = 'Ubicación';
+  static const String adminAsignarEntrenador = 'Asignar entrenador';
+  static const String adminConfirmarDesactivar = '¿Desactivar este elemento?';
+  static const String adminNoEliminaEntrenador =
+      'El entrenador no se elimina; queda inactivo y deja de aparecer en el sitio.';
+  static const String adminCuentaSinCerrarSesion =
+      'La cuenta se crea sin cerrar tu sesión de administrador. Comparte la contraseña con el entrenador por un canal seguro.';
+  static const String adminNuevoEntrenador = 'Nuevo entrenador';
+  static const String adminExperiencia = 'Experiencia';
+  static const String adminAnos = 'años';
+  static const String adminEspecialidad = 'Especialidad';
+  static const String adminDisciplina = 'Disciplina';
+  static const String adminDeportesAsignados = 'Deportes asignados';
+  static const String adminIcono = 'Ícono';
+  static const String adminElegirHora = 'Elegir hora';
+  static const String adminHoraInicio = 'Hora de inicio';
+  static const String adminHoraFin = 'Hora de fin';
+  static const String adminFecha = 'Fecha';
+  static const String adminTipo = 'Tipo';
+  static const String adminPartido = 'Partido';
+  static const String adminEventoTipo = 'Evento';
+  static const String adminNuevoEvento = 'Nuevo evento';
+  static const String adminSinSolicitudes = 'No hay solicitudes de eventos';
+  static const String adminAprobar = 'Aprobar';
+  static const String adminRechazar = 'Rechazar';
+  static const String adminPendientes = 'Pendientes';
+  static const String adminAprobados = 'Aprobados';
+  static const String adminRechazados = 'Rechazados';
+  static const String adminCancelados = 'Cancelados';
+  static const String adminConfirmarClave = 'Confirmar contraseña';
+  static const String adminAnosExperiencia = 'Años de experiencia';
+  static const String adminDescripcion = 'Descripción';
+  static const String adminEstado = 'Estado';
+  static const String adminActivar = 'Activar';
+  static const String adminVerDetalle = 'Ver detalle';
+  static const String adminCarnet = 'Carnet';
+  static const String adminSolventes = 'Solventes';
+  static const String adminConfirmarActivar = '¿Activar este estudiante?';
+  static const String adminSinEstudiantes = 'No hay estudiantes para mostrar.';
+  static const String adminTodas = 'Todas';
+  static const String adminVisibles = 'Visibles';
+  static const String adminOcultas = 'Ocultas';
+  static const String adminVisible = 'Visible';
+  static const String adminSinResenas = 'No hay reseñas para mostrar.';
+  static const String adminEstudiante = 'Estudiante';
+  static const String adminPago = 'Pago';
+  static const String adminConfirmar = 'Confirmar';
+  static const String adminConfirmadas = 'Confirmadas';
+  static const String adminSinInscripciones =
+      'No hay inscripciones para mostrar.';
+  static const String adminSinDato = '—';
+  static const String adminPeriodo = 'Período';
+  static const String adminFechaInicio = 'Fecha de inicio';
+  static const String adminFechaCorte = 'Fecha de corte';
+  static const String adminMonto = 'Monto';
+  static const String adminDiasCorte = 'Días para el corte';
+  static const String adminVerificacionPaypalSimulada =
+      'Verificación PayPal simulada';
+  static const String adminVerificacionPaypalAyuda =
+      'La verificación real la hará una Cloud Function. Hoy el resultado es simulado.';
+  static const String adminIdPaypal = 'ID PayPal';
+  static const String adminFechaPago = 'Fecha de pago';
+  static const String adminVerificado = 'Verificado';
+  static const String adminVerificadoPor = 'Verificado por';
+  static const String adminVerificarPaypal = 'Verificar con PayPal';
+  static const String adminConfirmarCorte =
+      'Se marcará como no solventes a quienes no tengan un pago verificado en el período y se enviarán notificaciones.';
+  static const String adminSinPagos = 'No hay pagos para mostrar.';
+  static const String adminAbiertos = 'Abiertos';
+  static const String adminResueltos = 'Resueltos';
+  static const String adminSolventar = 'Solventar';
+  static const String adminRespuesta = 'Respuesta';
+  static const String adminSinTickets = 'No hay tickets de soporte';
+  static const String adminDesde = 'Desde';
+  static const String adminHasta = 'Hasta';
+  static const String adminModulo = 'Módulo';
+  static const String adminRol = 'Rol';
+  static const String adminLimpiar = 'Limpiar';
+  static const String adminUsuario = 'Usuario';
+  static const String adminAccion = 'Acción';
+  static const String adminUltimas200 = 'Se muestran las últimas 200 acciones';
+  static const String adminSinTransacciones = 'No hay acciones para mostrar.';
+  static const String adminRolEstudiante = 'Estudiante';
+  static const String adminRolEntrenador = 'Entrenador';
+  static const String adminRolAdministrador = 'Administrador';
+  static const String adminRealizado = 'Realizado';
 }
