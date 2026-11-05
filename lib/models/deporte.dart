@@ -1,7 +1,10 @@
 // Esquema Firestore deportes/{id}:
 // nombre, descripcion, icono ('futbol','baloncesto','tenis','voleibol',
 // 'natacion','running','otro'), horario, cupos (int), inscritos (int),
-// entrenadorNombre, activo (bool).
+// entrenadorNombre, activo (bool), entrenadorUid, canchaId, canchaNombre,
+// horarios (lista de franjas).
+
+import 'package:saman_sports/models/reserva_horario.dart';
 
 enum EstadoCupos { disponible, pocosCupos, completo }
 
@@ -15,6 +18,11 @@ class Deporte {
     required this.cupos,
     required this.inscritos,
     required this.entrenadorNombre,
+    this.entrenadorUid = '',
+    this.activo = true,
+    this.canchaId = '',
+    this.canchaNombre = '',
+    this.horarios = const <FranjaHorario>[],
   });
 
   final String id;
@@ -25,6 +33,11 @@ class Deporte {
   final int cupos;
   final int inscritos;
   final String entrenadorNombre;
+  final String entrenadorUid;
+  final bool activo;
+  final String canchaId;
+  final String canchaNombre;
+  final List<FranjaHorario> horarios;
 
   int get disponibles => cupos - inscritos;
 
@@ -44,7 +57,35 @@ class Deporte {
       cupos: _entero(map['cupos']),
       inscritos: _entero(map['inscritos']),
       entrenadorNombre: '${map['entrenadorNombre'] ?? ''}',
+      entrenadorUid: '${map['entrenadorUid'] ?? ''}',
+      activo: map['activo'] != false,
+      canchaId: '${map['canchaId'] ?? ''}',
+      canchaNombre: '${map['canchaNombre'] ?? ''}',
+      horarios: _franjas(map['horarios']),
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'icono': icono,
+      'horario': horario,
+      'cupos': cupos,
+      'entrenadorNombre': entrenadorNombre,
+      'entrenadorUid': entrenadorUid,
+      'canchaId': canchaId,
+      'canchaNombre': canchaNombre,
+      'horarios': horarios.map((franja) => franja.toMap()).toList(),
+      'activo': activo,
+    };
+  }
+
+  static List<FranjaHorario> _franjas(dynamic valor) {
+    if (valor is! List) return const [];
+    return valor.whereType<Map>().map((item) {
+      return FranjaHorario.fromMap(Map<String, dynamic>.from(item));
+    }).toList();
   }
 
   static int _entero(dynamic valor) {
