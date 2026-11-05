@@ -1,3 +1,4 @@
+import 'package:saman_sports/views/admin/admin_dashboard_view.dart';
 import 'package:saman_sports/views/entrenador/dashboard_entrenador_view.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
@@ -7,7 +8,7 @@ import 'package:saman_sports/views/auth/login_view.dart';
 import 'package:saman_sports/views/auth/register_view.dart';
 import 'package:saman_sports/controllers/resultado_login.dart';
 import 'package:saman_sports/views/auth/guardia_rol.dart';
-import 'package:saman_sports/views/dashboards/dashboard_placeholder_view.dart';
+import 'package:saman_sports/controllers/admin/admin_controladores.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/proximamente_estudiante_view.dart';
@@ -40,8 +41,9 @@ class AppRoutes {
     AuthController auth,
     EstudianteController estudiante,
     ExplorarDeportesController explorar,
-    ComunidadController comunidad,
-  ) {
+    ComunidadController comunidad, [
+    AdminControladores? admin,
+  ]) {
     return {
       login: (_) => LoginView(controller: auth),
       registro: (_) => RegisterView(controller: auth),
@@ -109,9 +111,9 @@ class AppRoutes {
       dashboardAdmin: (_) => GuardiaRol(
         auth: auth,
         esperado: DestinoLogin.administrador,
-        child: DashboardPlaceholderView(
-          controller: auth,
-          titulo: AppStrings.panelAdmin,
+        child: AdminDashboardView(
+          auth: auth,
+          controladores: admin ?? AdminControladores(),
         ),
       ),
     };
