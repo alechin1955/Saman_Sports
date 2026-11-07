@@ -6,6 +6,7 @@ import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
+import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/evento.dart';
 import 'package:saman_sports/views/entrenador/opciones_entrenador.dart';
 import 'package:saman_sports/views/entrenador/widgets/crear_evento_dialog.dart';
@@ -162,7 +163,7 @@ class _EventoCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.space8),
           Text(
-            '${evento.deporteNombre ?? 'Disciplina'} · ${evento.fecha} · ${evento.horaInicio.toString().padLeft(2, '0')}:00–${evento.horaFin.toString().padLeft(2, '0')}:00',
+            '${evento.deporteNombre ?? 'Disciplina'} · ${evento.fecha} · ${minutosATexto(evento.horaInicio)}–${minutosATexto(evento.horaFin)}',
             style: AppTextStyles.body,
           ),
           const SizedBox(height: AppSizes.space4),

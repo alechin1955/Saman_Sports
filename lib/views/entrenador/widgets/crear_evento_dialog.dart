@@ -4,6 +4,7 @@ import 'package:saman_sports/controllers/eventos_entrenador_controller.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
+import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 
@@ -28,8 +29,8 @@ class _CrearEventoDialogState extends State<CrearEventoDialog> {
   final descripcion = TextEditingController();
   Deporte? disciplina;
   DateTime fecha = DateTime.now();
-  int horaInicio = 14;
-  int horaFin = 16;
+  int horaInicio = 840;
+  int horaFin = 960;
 
   @override
   void initState() {
@@ -145,9 +146,7 @@ class _CrearEventoDialogState extends State<CrearEventoDialog> {
                                 .map(
                                   (hora) => DropdownMenuItem(
                                     value: hora,
-                                    child: Text(
-                                      '${hora.toString().padLeft(2, '0')}:00',
-                                    ),
+                                    child: Text(minutosATexto(hora)),
                                   ),
                                 )
                                 .toList(),
@@ -171,9 +170,7 @@ class _CrearEventoDialogState extends State<CrearEventoDialog> {
                                 .map(
                                   (hora) => DropdownMenuItem(
                                     value: hora,
-                                    child: Text(
-                                      '${hora.toString().padLeft(2, '0')}:00',
-                                    ),
+                                    child: Text(minutosATexto(hora)),
                                   ),
                                 )
                                 .toList(),
@@ -263,23 +260,23 @@ class _CrearEventoDialogState extends State<CrearEventoDialog> {
   }
 
   static const _horas = [
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-    16,
-    17,
-    18,
-    19,
-    20,
-    21,
-    22,
+    360,
+    420,
+    480,
+    540,
+    600,
+    660,
+    720,
+    780,
+    840,
+    900,
+    960,
+    1020,
+    1080,
+    1140,
+    1200,
+    1260,
+    1320,
   ];
 
   String _fecha(DateTime valor) =>

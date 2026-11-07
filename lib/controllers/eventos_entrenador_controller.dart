@@ -114,7 +114,7 @@ class EventosEntrenadorController extends ChangeNotifier {
     final hoy = DateTime(ahora.year, ahora.month, ahora.day);
     final dia = DateTime(fecha.year, fecha.month, fecha.day);
     if (dia.isBefore(hoy)) return 'La fecha no puede estar en el pasado.';
-    if (horaInicio < 0 || horaFin > 24 || horaFin <= horaInicio) {
+    if (horaInicio < 0 || horaFin > 1440 || horaFin <= horaInicio) {
       return 'El horario del evento no es válido.';
     }
     if (ubicacion.trim().isEmpty) return 'Indica la ubicación.';

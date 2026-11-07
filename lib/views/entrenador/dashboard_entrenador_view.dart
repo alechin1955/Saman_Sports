@@ -5,6 +5,7 @@ import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
+import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/views/entrenador/opciones_entrenador.dart';
 import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
@@ -121,13 +122,26 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
               const SizedBox(height: AppSizes.space32),
               Text('Asistencia reciente', style: AppTextStyles.title),
               const SizedBox(height: AppSizes.space16),
-              if (controller.asistenciasRecientes.isEmpty)
+              if (controller.advertenciaAsistencias != null) ...[
+                MensajeError(texto: controller.advertenciaAsistencias!),
+                const SizedBox(height: AppSizes.space12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: BotonSecundario(
+                    texto: 'Reintentar',
+                    onPressed: controller.cargar,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.space16),
+              ],
+              if (controller.asistenciasRecientes.isEmpty &&
+                  controller.advertenciaAsistencias == null)
                 const EstadoVacio(
                   icono: Icons.fact_check_outlined,
                   titulo: 'Aún no hay asistencias registradas',
                   texto: 'Cuando pases lista, las sesiones más recientes aparecerán aquí.',
                 )
-              else
+              else if (controller.asistenciasRecientes.isNotEmpty)
                 for (final registro in controller.asistenciasRecientes)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSizes.space12),
@@ -240,6 +254,7 @@ class _ProximaClase extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clase = controller.proximaClase;
+    final disciplina = clase?.disciplina;
     return _Tarjeta(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,14 +268,14 @@ class _ProximaClase extends StatelessWidget {
                 Text('Próxima clase', style: AppTextStyles.subtitle),
                 const SizedBox(height: AppSizes.space8),
                 Text(
-                  clase == null
+                  disciplina == null
                       ? 'No tienes una clase programada.'
-                      : '${clase.nombre} · ${clase.horario}',
+                      : '${disciplina.nombre} · ${_horario(clase!)}',
                   style: AppTextStyles.body,
                 ),
-                if (clase != null && clase.canchaNombre.isNotEmpty)
+                if (disciplina != null && disciplina.canchaNombre.isNotEmpty)
                   Text(
-                    clase.canchaNombre,
+                    disciplina.canchaNombre,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -271,6 +286,22 @@ class _ProximaClase extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _horario(ProximaClaseEntrenador clase) {
+    final inicio = clase.inicio;
+    final franja = clase.franja;
+    if (inicio == null || franja == null) return clase.disciplina.horario;
+    const dias = [
+      'lunes',
+      'martes',
+      'miércoles',
+      'jueves',
+      'viernes',
+      'sábado',
+      'domingo',
+    ];
+    return '${dias[inicio.weekday - 1]} ${minutosATexto(franja.horaInicio)}–${minutosATexto(franja.horaFin)}';
   }
 }
 

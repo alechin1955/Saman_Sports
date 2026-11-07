@@ -27,7 +27,7 @@ class ResenasEntrenadorController extends ChangeNotifier {
         const Duration(seconds: 15),
       );
       final ids = disciplinas.map((disciplina) => disciplina.id).toSet();
-      _sub = _repository.resenas().listen((lista) {
+      _sub = _repository.resenas(ids.toList()).listen((lista) {
         if (_cerrado) return;
         resenas =
             lista.where((resena) => ids.contains(resena.deporteId)).toList()

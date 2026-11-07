@@ -5,7 +5,7 @@ import 'package:saman_sports/repositories/entrenador_repository.dart';
 
 abstract interface class ResenasEntrenadorRepository {
   Future<List<Deporte>> disciplinas();
-  Stream<List<Resena>> resenas();
+  Stream<List<Resena>> resenas(List<String> deporteIds);
 }
 
 class FirebaseResenasEntrenadorAdapter implements ResenasEntrenadorRepository {
@@ -18,8 +18,8 @@ class FirebaseResenasEntrenadorAdapter implements ResenasEntrenadorRepository {
   Future<List<Deporte>> disciplinas() => _entrenador.disciplinas();
 
   @override
-  Stream<List<Resena>> resenas() {
-    return FirebaseServices.streamResenas(limite: 100)
+  Stream<List<Resena>> resenas(List<String> deporteIds) {
+    return FirebaseServices.streamResenasDisciplinas(deporteIds: deporteIds)
         .map((lista) => lista.map(Resena.fromMap).toList());
   }
 }

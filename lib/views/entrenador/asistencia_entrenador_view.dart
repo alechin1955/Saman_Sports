@@ -38,6 +38,7 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
     entrenador: widget.controller,
     asistencia: widget.asistencia,
   );
+  int _revisionSelector = 0;
 
   @override
   void initState() {
@@ -83,7 +84,10 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
 
   Future<void> _cambiarDisciplina(String? id) async {
     if (id == null || id == panel.entrenador.seleccionId) return;
-    if (!await _permitirSalida()) return;
+    if (!await _permitirSalida()) {
+      if (mounted) setState(() => _revisionSelector++);
+      return;
+    }
     await panel.entrenador.seleccionar(id);
   }
 
@@ -104,6 +108,11 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
       panel.entrenador.alumnos,
       descartar: true,
     );
+  }
+
+  Future<void> _volverADisciplinas() async {
+    if (!await _permitirSalida() || !mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.entrenadorDisciplinas);
   }
 
   @override
@@ -148,10 +157,7 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
         titulo: 'No hay una disciplina para registrar',
         texto: 'Primero necesitas una disciplina activa asignada.',
         textoAccion: 'Volver a disciplinas',
-        onAccion: () => Navigator.pushReplacementNamed(
-          context,
-          AppRoutes.entrenadorDisciplinas,
-        ),
+        onAccion: _volverADisciplinas,
       );
     }
     final seleccionada = entrenador.disciplinas
@@ -175,6 +181,7 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
               SizedBox(
                 width: 280,
                 child: DropdownButtonFormField<String>(
+                  key: ValueKey('${entrenador.seleccionId}-$_revisionSelector'),
                   initialValue: entrenador.seleccionId,
                   decoration: const InputDecoration(
                     labelText: 'Disciplina',
@@ -198,10 +205,7 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
                 label: Text(_fecha(asistencia.fecha)),
               ),
               TextButton.icon(
-                onPressed: () => Navigator.pushReplacementNamed(
-                  context,
-                  AppRoutes.entrenadorDisciplinas,
-                ),
+                onPressed: _volverADisciplinas,
                 icon: const Icon(Icons.arrow_back),
                 label: const Text('Volver a disciplinas'),
               ),

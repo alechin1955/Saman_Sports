@@ -141,8 +141,8 @@ class _EventosRepo implements EventosEntrenadorRepository {
       canchaId: 'c1',
       canchaNombre: 'Cancha 1',
       fecha: '2026-11-10',
-      horaInicio: 14,
-      horaFin: 16,
+      horaInicio: 840,
+      horaFin: 960,
       descripcion: 'Cierre de semestre',
       estado: EstadoEvento.pendiente,
       creadoPorUid: 'e1',
@@ -176,7 +176,7 @@ class _ResenasRepo implements ResenasEntrenadorRepository {
   Future<List<Deporte>> disciplinas() async => const [deporte];
 
   @override
-  Stream<List<Resena>> resenas() => Stream.value([
+  Stream<List<Resena>> resenas(List<String> deporteIds) => Stream.value([
     Resena(
       id: 'r1',
       autorUid: 'a1',

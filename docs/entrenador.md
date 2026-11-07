@@ -4,11 +4,11 @@ La ruta `/entrenador` y la restauración de sesión comparten el panel adaptable
 
 ## Vistas del panel
 
-- **Inicio** muestra el saludo, cantidad de disciplinas, total de inscritos, próxima clase, accesos rápidos y las cinco asistencias más recientes.
+- **Inicio** muestra el saludo, cantidad de disciplinas, total de inscritos, la próxima franja real según día y hora, accesos rápidos y las cinco asistencias más recientes.
 - **Disciplinas** presenta horario, cancha, inscritos/cupos y abre el registro de asistencia de la disciplina elegida.
 - **Asistencia** conserva la selección de disciplina y fecha, protege los borradores y exporta el historial en CSV compatible con Excel.
 - **Eventos** permite solicitar un evento y consultar su estado. El entrenador no aprueba eventos: cada solicitud nace en estado `pendiente` y el administrador conserva el cambio a aprobado o rechazado.
-- **Reseñas** es de solo lectura y filtra las reseñas visibles por las disciplinas asignadas al entrenador.
+- **Reseñas** es de solo lectura y consulta en vivo las reseñas visibles de cada disciplina asignada, sin depender del límite de reseñas de la portada.
 - **Mi perfil** combina `entrenadores/{uid}` con los datos de la cuenta propia para mostrar experiencia, estudiantes, biografía, certificaciones y contacto.
 - **Soporte** mantiene el mismo estado provisional del panel de estudiante hasta que exista un flujo de tickets para ambos roles.
 
@@ -75,7 +75,7 @@ La exportación consulta datos guardados; se bloquea mientras hay un borrador si
 
 Comprobación local del 7 de noviembre de 2026 con Flutter 3.47.9 y Dart 3.13.7:
 
-- Suite completa: 163 pruebas aprobadas, incluidas las nuevas vistas, controladores y el Bridge.
+- Suite completa: 174 pruebas aprobadas, incluidas las nuevas vistas, controladores, políticas y el Bridge.
 - Compilación web de producción: correcta, incluido el análisis previo de compatibilidad Wasm.
 - Pruebas de widgets adaptables a 320, 390, 768 y 1440 px, incluido el diálogo móvil de solicitud de eventos.
 - Análisis de los archivos modificados: sin incidencias. El análisis global mantiene el aviso previo sobre el nombre `FirebaseServices.dart`.

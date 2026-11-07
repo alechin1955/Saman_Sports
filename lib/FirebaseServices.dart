@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
+import 'package:saman_sports/core/utils/solicitud_evento_entrenador.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 
 class FirebaseServices {
@@ -255,24 +256,70 @@ class FirebaseServices {
     );
   }
 
+  /// Reseñas visibles de las disciplinas indicadas, sin depender del límite de
+  /// la portada. Cada consulta usa una sola disciplina y las combina en vivo.
+  static Stream<List<Map<String, dynamic>>> streamResenasDisciplinas({
+    required List<String> deporteIds,
+  }) {
+    final ids = deporteIds.where((id) => id.trim().isNotEmpty).toSet().toList();
+    if (ids.isEmpty) return Stream.value(const []);
+
+    late StreamController<List<Map<String, dynamic>>> controller;
+    final ultimas = <String, List<Map<String, dynamic>>>{};
+    final suscripciones = <StreamSubscription<List<Map<String, dynamic>>>>[];
+
+    void emitir() {
+      if (ultimas.length != ids.length || controller.isClosed) return;
+      final unicas = <String, Map<String, dynamic>>{};
+      for (final lista in ultimas.values) {
+        for (final resena in lista) {
+          unicas['${resena['id'] ?? ''}'] = resena;
+        }
+      }
+      controller.add(unicas.values.toList(growable: false));
+    }
+
+    controller = StreamController<List<Map<String, dynamic>>>(
+      onListen: () {
+        for (final id in ids) {
+          final stream = _streamConsulta(
+            _db
+                .collection(resenasCollection)
+                .where('deporteId', isEqualTo: id)
+                .where('visible', isEqualTo: true),
+            silenciarErrores: false,
+          );
+          suscripciones.add(
+            stream.listen((lista) {
+              ultimas[id] = lista;
+              emitir();
+            }, onError: controller.addError),
+          );
+        }
+      },
+      onCancel: () async {
+        await Future.wait(suscripciones.map((sub) => sub.cancel()));
+      },
+    );
+    return controller.stream;
+  }
+
   static Stream<List<Map<String, dynamic>>> _streamConsulta(
-    Query<Map<String, dynamic>> consulta,
-  ) {
-    return consulta
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
-              .toList();
-        })
-        .transform(
-          StreamTransformer<
-            List<Map<String, dynamic>>,
-            List<Map<String, dynamic>>
-          >.fromHandlers(
-            handleError: (error, stack, sink) => sink.add(const []),
-          ),
-        );
+    Query<Map<String, dynamic>> consulta, {
+    bool silenciarErrores = true,
+  }) {
+    final stream = consulta.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+          .toList();
+    });
+    if (!silenciarErrores) return stream;
+    return stream.transform(
+      StreamTransformer<
+        List<Map<String, dynamic>>,
+        List<Map<String, dynamic>>
+      >.fromHandlers(handleError: (error, stack, sink) => sink.add(const [])),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -438,6 +485,7 @@ class FirebaseServices {
     }
     return _streamConsulta(
       _db.collection(eventosCollection).where('creadoPorUid', isEqualTo: uid),
+      silenciarErrores: false,
     );
   }
 
@@ -452,57 +500,22 @@ class FirebaseServices {
       if (actual == null || actual != entrenadorUid) {
         throw StateError('Sesión de entrenador requerida');
       }
-      final titulo = '${datos['titulo'] ?? ''}'.trim();
       final deporteId = '${datos['deporteId'] ?? ''}'.trim();
-      final fecha = '${datos['fecha'] ?? ''}'.trim();
-      final ubicacion = '${datos['ubicacion'] ?? ''}'.trim();
-      final horaInicio = _enteroAdmin(datos['horaInicio']);
-      final horaFin = _enteroAdmin(datos['horaFin']);
-      final capacidad = _enteroAdmin(datos['capacidad']);
-      if (titulo.isEmpty) throw StateError('El nombre es obligatorio.');
       if (deporteId.isEmpty) throw StateError('Elige una disciplina.');
-      if (ubicacion.isEmpty) throw StateError('La ubicación es obligatoria.');
-      if (capacidad <= 0) {
-        throw StateError('La capacidad debe ser mayor que cero.');
-      }
-      _validarFechaEvento(fecha);
-      final errorFranja = validarFranja(
-        FranjaHorario(
-          dia: DateTime.parse(fecha).weekday,
-          horaInicio: horaInicio,
-          horaFin: horaFin,
-        ),
-      );
-      if (errorFranja != null) throw StateError(errorFranja);
 
       final deporte = await _db
           .collection(deportesCollection)
           .doc(deporteId)
           .get();
-      final deporteDatos = deporte.data();
-      if (deporteDatos?['entrenadorUid'] != entrenadorUid ||
-          deporteDatos?['activo'] != true) {
-        throw StateError('La disciplina no está asignada al entrenador.');
-      }
-
-      final evento = Map<String, dynamic>.from(datos)
-        ..remove('id')
-        ..remove('estado')
-        ..remove('creadoPorUid')
-        ..remove('creadoEn');
+      final deporteDatos = deporte.data() ?? const <String, dynamic>{};
+      final solicitud = construirSolicitudEventoEntrenador(
+        datos: datos,
+        entrenadorUid: entrenadorUid,
+        deporte: {'id': deporte.id, ...deporteDatos},
+        ahora: DateTime.now(),
+      );
       await _db.collection(eventosCollection).add({
-        ...evento,
-        'titulo': titulo,
-        'deporteId': deporteId,
-        'deporteNombre': '${deporteDatos?['nombre'] ?? ''}',
-        'canchaId': '${deporteDatos?['canchaId'] ?? ''}',
-        'canchaNombre': ubicacion,
-        'fecha': fecha,
-        'horaInicio': horaInicio,
-        'horaFin': horaFin,
-        'capacidad': capacidad,
-        'estado': 'pendiente',
-        'creadoPorUid': entrenadorUid,
+        ...solicitud,
         'creadoEn': FieldValue.serverTimestamp(),
       });
       return AuthResponse(isSuccess: true);

@@ -10,6 +10,7 @@ import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/evento.dart';
 import 'package:saman_sports/models/perfil_entrenador.dart';
 import 'package:saman_sports/models/resena.dart';
+import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/entrenador_repository.dart';
 import 'package:saman_sports/repositories/eventos_entrenador_repository.dart';
 import 'package:saman_sports/repositories/historial_asistencia_repository.dart';
@@ -69,10 +70,46 @@ void main() {
     expect(controller.perfil, _perfil);
     expect(controller.disciplinas, [_tenis]);
     expect(controller.totalEstudiantes, 8);
-    expect(controller.proximaClase?.nombre, 'Tenis');
+    expect(controller.proximaClase?.disciplina.nombre, 'Tenis');
     expect(controller.asistenciasRecientes, hasLength(1));
     expect(controller.asistenciasRecientes.single.presentes, 1);
   });
+
+  test(
+    'Inicio elige la próxima franja real y no la primera disciplina',
+    () async {
+      final controller = InicioEntrenadorController(
+        entrenadorRepository: _AgendaRepo(),
+        perfilRepository: _PerfilRepo(),
+        historialRepository: _HistorialRepo(),
+        reloj: () => DateTime(2026, 11, 3, 9),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.cargar();
+
+      expect(controller.proximaClase?.disciplina.nombre, 'Voleibol');
+      expect(controller.proximaClase?.inicio, DateTime(2026, 11, 3, 18));
+    },
+  );
+
+  test(
+    'Inicio distingue un fallo de historial de un historial vacío',
+    () async {
+      final controller = InicioEntrenadorController(
+        entrenadorRepository: _EntrenadorRepo(),
+        perfilRepository: _PerfilRepo(),
+        historialRepository: _HistorialFalla(),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.cargar();
+
+      expect(controller.error, isNull);
+      expect(controller.advertenciaAsistencias, isNotNull);
+      expect(controller.asistenciasRecientes, isEmpty);
+    },
+  );
 
   test(
     'una solicitud de evento conserva disciplina, horario y capacidad',
@@ -88,8 +125,8 @@ void main() {
         nombre: 'Torneo interno',
         disciplina: _tenis,
         fecha: DateTime(2026, 11, 10),
-        horaInicio: 14,
-        horaFin: 16,
+        horaInicio: 840,
+        horaFin: 960,
         ubicacion: 'Cancha 1',
         capacidad: 24,
         descripcion: 'Encuentro de cierre de semestre.',
@@ -97,8 +134,10 @@ void main() {
 
       expect(ok, isTrue);
       expect(repo.solicitud?['deporteId'], 'tenis');
-      expect(repo.solicitud?['horaInicio'], 14);
+      expect(repo.solicitud?['horaInicio'], 840);
       expect(repo.solicitud?['capacidad'], 24);
+      expect(repo.solicitud, isNot(contains('estado')));
+      expect(repo.solicitud, isNot(contains('creadoPorUid')));
     },
   );
 
@@ -116,6 +155,19 @@ void main() {
       expect(controller.eventos.single.estado, EstadoEvento.pendiente);
     },
   );
+
+  test('Eventos distingue un error de una lista vacía', () async {
+    final controller = EventosEntrenadorController(
+      repository: _EventosErrorRepo(),
+    );
+    addTearDown(controller.dispose);
+
+    controller.iniciar();
+    await pumpEventQueue();
+
+    expect(controller.error, isNotNull);
+    expect(controller.eventos, isEmpty);
+  });
 
   test('Perfil carga todos los datos propios del entrenador', () async {
     final controller = PerfilEntrenadorController(
@@ -135,9 +187,8 @@ void main() {
   test(
     'Reseñas muestra solo las asociadas a disciplinas del entrenador',
     () async {
-      final controller = ResenasEntrenadorController(
-        repository: _ResenasRepo(),
-      );
+      final repo = _ResenasRepo();
+      final controller = ResenasEntrenadorController(repository: repo);
       addTearDown(controller.dispose);
 
       await controller.iniciar();
@@ -145,13 +196,58 @@ void main() {
 
       expect(controller.resenas, hasLength(1));
       expect(controller.resenas.single.deporteId, 'tenis');
+      expect(repo.deporteIds, ['tenis']);
     },
   );
+
+  test('Reseñas distingue un error de una lista vacía', () async {
+    final controller = ResenasEntrenadorController(
+      repository: _ResenasErrorRepo(),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.iniciar();
+    await pumpEventQueue();
+
+    expect(controller.error, isNotNull);
+    expect(controller.resenas, isEmpty);
+  });
 }
 
 class _EntrenadorRepo implements EntrenadorRepository {
   @override
   Future<List<Deporte>> disciplinas() async => const [_tenis];
+
+  @override
+  Future<List<AlumnoInscrito>> inscritos(String deporteId) async => const [];
+}
+
+class _AgendaRepo implements EntrenadorRepository {
+  @override
+  Future<List<Deporte>> disciplinas() async => const [
+    Deporte(
+      id: 'natacion',
+      nombre: 'Natación',
+      descripcion: '',
+      icono: 'natacion',
+      horario: 'Miércoles 08:00',
+      cupos: 20,
+      inscritos: 5,
+      entrenadorNombre: 'Juan Pérez',
+      horarios: [FranjaHorario(dia: 3, horaInicio: 480, horaFin: 600)],
+    ),
+    Deporte(
+      id: 'voleibol',
+      nombre: 'Voleibol',
+      descripcion: '',
+      icono: 'voleibol',
+      horario: 'Martes 18:00',
+      cupos: 20,
+      inscritos: 5,
+      entrenadorNombre: 'Juan Pérez',
+      horarios: [FranjaHorario(dia: 2, horaInicio: 1080, horaFin: 1200)],
+    ),
+  ];
 
   @override
   Future<List<AlumnoInscrito>> inscritos(String deporteId) async => const [];
@@ -175,6 +271,13 @@ class _HistorialRepo implements HistorialAsistenciaRepository {
   ];
 }
 
+class _HistorialFalla implements HistorialAsistenciaRepository {
+  @override
+  Future<List<SesionAsistencia>> sesiones(String deporteId) async {
+    throw StateError('sin permisos');
+  }
+}
+
 class _EventosRepo implements EventosEntrenadorRepository {
   Map<String, dynamic>? solicitud;
 
@@ -189,8 +292,8 @@ class _EventosRepo implements EventosEntrenadorRepository {
       canchaId: '',
       canchaNombre: 'Cancha 1',
       fecha: '2026-11-10',
-      horaInicio: 14,
-      horaFin: 16,
+      horaInicio: 840,
+      horaFin: 960,
       descripcion: '',
       estado: EstadoEvento.pendiente,
       creadoPorUid: 'entrenador-1',
@@ -205,31 +308,53 @@ class _EventosRepo implements EventosEntrenadorRepository {
   }
 }
 
+class _EventosErrorRepo implements EventosEntrenadorRepository {
+  @override
+  Stream<List<Evento>> eventos() => Stream.error(StateError('sin permisos'));
+
+  @override
+  Future<String?> solicitar(Map<String, dynamic> datos) async => null;
+}
+
 class _ResenasRepo implements ResenasEntrenadorRepository {
+  List<String>? deporteIds;
+
   @override
   Future<List<Deporte>> disciplinas() async => const [_tenis];
 
   @override
-  Stream<List<Resena>> resenas() => Stream.value([
-    Resena(
-      id: 'r1',
-      autorUid: 'a1',
-      autorNombre: 'Ana P.',
-      disciplina: 'Tenis',
-      deporteId: 'tenis',
-      estrellas: 5,
-      comentario: 'Excelente entrenamiento.',
-      fecha: DateTime(2026, 11, 1),
-    ),
-    Resena(
-      id: 'r2',
-      autorUid: 'a2',
-      autorNombre: 'Luis G.',
-      disciplina: 'Natación',
-      deporteId: 'natacion',
-      estrellas: 4,
-      comentario: 'Buen entrenamiento.',
-      fecha: DateTime(2026, 11, 2),
-    ),
-  ]);
+  Stream<List<Resena>> resenas(List<String> deporteIds) {
+    this.deporteIds = deporteIds;
+    return Stream.value([
+      Resena(
+        id: 'r1',
+        autorUid: 'a1',
+        autorNombre: 'Ana P.',
+        disciplina: 'Tenis',
+        deporteId: 'tenis',
+        estrellas: 5,
+        comentario: 'Excelente entrenamiento.',
+        fecha: DateTime(2026, 11, 1),
+      ),
+      Resena(
+        id: 'r2',
+        autorUid: 'a2',
+        autorNombre: 'Luis G.',
+        disciplina: 'Natación',
+        deporteId: 'natacion',
+        estrellas: 4,
+        comentario: 'Buen entrenamiento.',
+        fecha: DateTime(2026, 11, 2),
+      ),
+    ]);
+  }
+}
+
+class _ResenasErrorRepo implements ResenasEntrenadorRepository {
+  @override
+  Future<List<Deporte>> disciplinas() async => const [_tenis];
+
+  @override
+  Stream<List<Resena>> resenas(List<String> deporteIds) =>
+      Stream.error(StateError('sin permisos'));
 }
