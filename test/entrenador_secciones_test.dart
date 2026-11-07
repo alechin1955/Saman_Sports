@@ -45,18 +45,15 @@ const _perfil = PerfilEntrenador(
 
 void main() {
   test('el menú separa todas las funciones del entrenador', () {
-    expect(
-      OpcionesEntrenador.menu.map((opcion) => opcion.ruta),
-      [
-        AppRoutes.dashboardEntrenador,
-        AppRoutes.entrenadorDisciplinas,
-        AppRoutes.entrenadorAsistencia,
-        AppRoutes.entrenadorEventos,
-        AppRoutes.entrenadorResenas,
-        AppRoutes.entrenadorSoporte,
-        AppRoutes.entrenadorPerfil,
-      ],
-    );
+    expect(OpcionesEntrenador.menu.map((opcion) => opcion.ruta), [
+      AppRoutes.dashboardEntrenador,
+      AppRoutes.entrenadorDisciplinas,
+      AppRoutes.entrenadorAsistencia,
+      AppRoutes.entrenadorEventos,
+      AppRoutes.entrenadorResenas,
+      AppRoutes.entrenadorSoporte,
+      AppRoutes.entrenadorPerfil,
+    ]);
   });
 
   test('Inicio resume disciplinas, alumnos y asistencia reciente', () async {
@@ -77,45 +74,54 @@ void main() {
     expect(controller.asistenciasRecientes.single.presentes, 1);
   });
 
-  test('una solicitud de evento conserva disciplina, horario y capacidad', () async {
-    final repo = _EventosRepo();
-    final controller = EventosEntrenadorController(
-      repository: repo,
-      reloj: () => DateTime(2026, 11, 7),
-    );
-    addTearDown(controller.dispose);
+  test(
+    'una solicitud de evento conserva disciplina, horario y capacidad',
+    () async {
+      final repo = _EventosRepo();
+      final controller = EventosEntrenadorController(
+        repository: repo,
+        reloj: () => DateTime(2026, 11, 7),
+      );
+      addTearDown(controller.dispose);
 
-    final ok = await controller.solicitar(
-      nombre: 'Torneo interno',
-      disciplina: _tenis,
-      fecha: DateTime(2026, 11, 10),
-      horaInicio: 14,
-      horaFin: 16,
-      ubicacion: 'Cancha 1',
-      capacidad: 24,
-      descripcion: 'Encuentro de cierre de semestre.',
-    );
+      final ok = await controller.solicitar(
+        nombre: 'Torneo interno',
+        disciplina: _tenis,
+        fecha: DateTime(2026, 11, 10),
+        horaInicio: 14,
+        horaFin: 16,
+        ubicacion: 'Cancha 1',
+        capacidad: 24,
+        descripcion: 'Encuentro de cierre de semestre.',
+      );
 
-    expect(ok, isTrue);
-    expect(repo.solicitud?['deporteId'], 'tenis');
-    expect(repo.solicitud?['horaInicio'], 14);
-    expect(repo.solicitud?['capacidad'], 24);
-  });
+      expect(ok, isTrue);
+      expect(repo.solicitud?['deporteId'], 'tenis');
+      expect(repo.solicitud?['horaInicio'], 14);
+      expect(repo.solicitud?['capacidad'], 24);
+    },
+  );
 
-  test('Eventos escucha únicamente la lista entregada por su repositorio', () async {
-    final repo = _EventosRepo();
-    final controller = EventosEntrenadorController(repository: repo);
-    addTearDown(controller.dispose);
+  test(
+    'Eventos escucha únicamente la lista entregada por su repositorio',
+    () async {
+      final repo = _EventosRepo();
+      final controller = EventosEntrenadorController(repository: repo);
+      addTearDown(controller.dispose);
 
-    controller.iniciar();
-    await pumpEventQueue();
+      controller.iniciar();
+      await pumpEventQueue();
 
-    expect(controller.eventos, hasLength(1));
-    expect(controller.eventos.single.estado, EstadoEvento.pendiente);
-  });
+      expect(controller.eventos, hasLength(1));
+      expect(controller.eventos.single.estado, EstadoEvento.pendiente);
+    },
+  );
 
   test('Perfil carga todos los datos propios del entrenador', () async {
-    final controller = PerfilEntrenadorController(repository: _PerfilRepo());
+    final controller = PerfilEntrenadorController(
+      repository: _PerfilRepo(),
+      entrenadorRepository: _EntrenadorRepo(),
+    );
     addTearDown(controller.dispose);
 
     await controller.cargar();
@@ -123,18 +129,24 @@ void main() {
     expect(controller.perfil?.nombreCompleto, 'Juan Pérez');
     expect(controller.perfil?.certificaciones, ['ITF Nivel 1']);
     expect(controller.perfil?.anosExperiencia, 6);
+    expect(controller.totalEstudiantes, 8);
   });
 
-  test('Reseñas muestra solo las asociadas a disciplinas del entrenador', () async {
-    final controller = ResenasEntrenadorController(repository: _ResenasRepo());
-    addTearDown(controller.dispose);
+  test(
+    'Reseñas muestra solo las asociadas a disciplinas del entrenador',
+    () async {
+      final controller = ResenasEntrenadorController(
+        repository: _ResenasRepo(),
+      );
+      addTearDown(controller.dispose);
 
-    await controller.iniciar();
-    await pumpEventQueue();
+      await controller.iniciar();
+      await pumpEventQueue();
 
-    expect(controller.resenas, hasLength(1));
-    expect(controller.resenas.single.deporteId, 'tenis');
-  });
+      expect(controller.resenas, hasLength(1));
+      expect(controller.resenas.single.deporteId, 'tenis');
+    },
+  );
 }
 
 class _EntrenadorRepo implements EntrenadorRepository {

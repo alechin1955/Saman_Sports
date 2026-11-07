@@ -1,6 +1,16 @@
 # Módulo del entrenador
 
-La ruta `/entrenador` y la restauración de sesión comparten el panel adaptable del estudiante y conservan la validación del rol entrenador.
+La ruta `/entrenador` y la restauración de sesión comparten el panel adaptable del estudiante y conservan la validación del rol entrenador. El menú separa Inicio, Disciplinas, Asistencia, Eventos, Reseñas, Soporte y Mi perfil; todas las rutas pasan por `GuardiaRol`.
+
+## Vistas del panel
+
+- **Inicio** muestra el saludo, cantidad de disciplinas, total de inscritos, próxima clase, accesos rápidos y las cinco asistencias más recientes.
+- **Disciplinas** presenta horario, cancha, inscritos/cupos y abre el registro de asistencia de la disciplina elegida.
+- **Asistencia** conserva la selección de disciplina y fecha, protege los borradores y exporta el historial en CSV compatible con Excel.
+- **Eventos** permite solicitar un evento y consultar su estado. El entrenador no aprueba eventos: cada solicitud nace en estado `pendiente` y el administrador conserva el cambio a aprobado o rechazado.
+- **Reseñas** es de solo lectura y filtra las reseñas visibles por las disciplinas asignadas al entrenador.
+- **Mi perfil** combina `entrenadores/{uid}` con los datos de la cuenta propia para mostrar experiencia, estudiantes, biografía, certificaciones y contacto.
+- **Soporte** mantiene el mismo estado provisional del panel de estudiante hasta que exista un flujo de tickets para ambos roles.
 
 ## Patrones estructurales aplicados
 
@@ -49,6 +59,12 @@ Guardar usa una transacción para comprobar que la disciplina continúa asignada
 
 Las reglas desplegadas deben comprobar el rol, la asignación `entrenadorUid`, las inscripciones permitidas y los campos escritos dentro de la subcolección de asistencias. No se ha validado ni desplegado ese control en un proyecto Firebase real. Dos dispositivos que editen la misma sesión pueden sobrescribir el último registro; se recomienda coordinar la edición de cada sesión. Se limita el registro a 450 inscritos por sesión.
 
+## Solicitudes de eventos
+
+`FirebaseServices.solicitarEventoEntrenador` valida que el UID corresponda a la sesión, que la disciplina esté activa y asignada, y que fecha, horario, ubicación y capacidad sean válidos. La fachada descarta cualquier `estado` o `creadoPorUid` recibido desde la interfaz y escribe sus valores autoritativos (`pendiente` y el UID autenticado). `streamEventosEntrenador` filtra las solicitudes por el mismo UID.
+
+Las reglas de Firestore desplegadas deben permitir al entrenador crear únicamente solicitudes pendientes con su propio UID. La implementación del cliente no sustituye esa regla; la aprobación y la reserva definitiva de cancha continúan en el módulo administrador.
+
 ## Exportación del listado
 
 El botón descarga un CSV en web o copia el CSV al portapapeles en otras plataformas. Incluye toda la nómina confirmada, independientemente del filtro de búsqueda, el estado guardado de la fecha elegida y el porcentaje acumulado hasta ese día. El porcentaje se calcula como presentes / sesiones con estado explícito para esa inscripción; las sesiones sin registro no cuentan como ausencias. Si no existe historial se muestra `Sin registros`.
@@ -57,11 +73,11 @@ La exportación consulta datos guardados; se bloquea mientras hay un borrador si
 
 ## Validación del módulo
 
-Comprobación local del 1 de noviembre de 2026 con Flutter 3.47.9 y Dart 3.13.7:
+Comprobación local del 7 de noviembre de 2026 con Flutter 3.47.9 y Dart 3.13.7:
 
-- Suite completa: 101 pruebas aprobadas, incluidas las pruebas del Bridge.
+- Suite completa: 163 pruebas aprobadas, incluidas las nuevas vistas, controladores y el Bridge.
 - Compilación web de producción: correcta, incluido el análisis previo de compatibilidad Wasm.
-- Interfaz inspeccionada en capturas de 390 y 1440 px; pruebas adaptables adicionales a 320 y 768 px.
+- Pruebas de widgets adaptables a 320, 390, 768 y 1440 px, incluido el diálogo móvil de solicitud de eventos.
 - Análisis de los archivos modificados: sin incidencias. El análisis global mantiene el aviso previo sobre el nombre `FirebaseServices.dart`.
 
 Las pruebas verifican controladores, búsqueda, cambios de disciplina durante consultas, errores, preservación del borrador, confirmación de salida, marcado y guardado de asistencia, exportación y porcentajes. Los repositorios de las pruebas son implementaciones en memoria: estos resultados no acreditan permisos ni lecturas/escrituras contra el Firebase desplegado.

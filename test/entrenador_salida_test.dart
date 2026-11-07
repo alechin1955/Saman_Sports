@@ -9,7 +9,7 @@ import 'package:saman_sports/models/asistencia.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/repositories/asistencia_repository.dart';
 import 'package:saman_sports/repositories/entrenador_repository.dart';
-import 'package:saman_sports/views/entrenador/dashboard_entrenador_view.dart';
+import 'package:saman_sports/views/entrenador/asistencia_entrenador_view.dart';
 
 const alumno = AlumnoInscrito(
   inscripcionId: 'i1',
@@ -72,10 +72,10 @@ void main() {
       addTearDown(asistencia.dispose);
       await tester.pumpWidget(
         MaterialApp(
-          initialRoute: '/entrenador',
+          initialRoute: '/entrenador/asistencia',
           routes: {
             '/': (_) => const Scaffold(body: Text('Inicio público')),
-            '/entrenador': (_) => DashboardEntrenadorView(
+            '/entrenador/asistencia': (_) => AsistenciaEntrenadorView(
               auth: auth,
               controller: nomina,
               asistencia: asistencia,
@@ -122,7 +122,7 @@ void main() {
     );
     navigator.currentState!.push(
       MaterialPageRoute<void>(
-        builder: (_) => DashboardEntrenadorView(
+        builder: (_) => AsistenciaEntrenadorView(
           auth: auth,
           controller: nomina,
           asistencia: asistencia,
@@ -138,7 +138,7 @@ void main() {
     await tester.tap(find.text('Continuar editando'));
     await tester.pumpAndSettle();
     expect(asistencia.cambios, isTrue);
-    expect(find.text('Dashboard del entrenador'), findsOneWidget);
+    expect(find.text('Asistencia'), findsOneWidget);
     navigator.currentState!.maybePop();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Descartar y salir'));

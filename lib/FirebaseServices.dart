@@ -409,6 +409,118 @@ class FirebaseServices {
         .toList();
   }
 
+  /// Perfil del entrenador autenticado. Une su ficha pública con los datos de
+  /// cuenta que solo necesita ver el propio usuario (correo y teléfono).
+  static Future<Map<String, dynamic>?> getPerfilEntrenador({
+    required String uid,
+  }) async {
+    final actual = _auth.currentUser?.uid;
+    if (actual == null || actual != uid) {
+      throw StateError('Sesión de entrenador requerida');
+    }
+    final documentos = await Future.wait([
+      _db.collection(entrenadoresCollection).doc(uid).get(),
+      _db.collection(usuariosCollection).doc(uid).get(),
+    ]);
+    final publico = documentos[0].data();
+    if (publico == null) return null;
+    return <String, dynamic>{...?documentos[1].data(), ...publico};
+  }
+
+  /// Solicitudes creadas por un entrenador. El filtro por UID evita exponer
+  /// solicitudes de otros entrenadores y el orden se aplica en el controlador.
+  static Stream<List<Map<String, dynamic>>> streamEventosEntrenador({
+    required String uid,
+  }) {
+    final actual = _auth.currentUser?.uid;
+    if (actual == null || actual != uid) {
+      return Stream.error(StateError('Sesión de entrenador requerida'));
+    }
+    return _streamConsulta(
+      _db.collection(eventosCollection).where('creadoPorUid', isEqualTo: uid),
+    );
+  }
+
+  /// Registra una solicitud pendiente; aprobarla y reservar la cancha sigue
+  /// siendo responsabilidad exclusiva del flujo de administración.
+  static Future<AuthResponse> solicitarEventoEntrenador({
+    required String entrenadorUid,
+    required Map<String, dynamic> datos,
+  }) async {
+    try {
+      final actual = _auth.currentUser?.uid;
+      if (actual == null || actual != entrenadorUid) {
+        throw StateError('Sesión de entrenador requerida');
+      }
+      final titulo = '${datos['titulo'] ?? ''}'.trim();
+      final deporteId = '${datos['deporteId'] ?? ''}'.trim();
+      final fecha = '${datos['fecha'] ?? ''}'.trim();
+      final ubicacion = '${datos['ubicacion'] ?? ''}'.trim();
+      final horaInicio = _enteroAdmin(datos['horaInicio']);
+      final horaFin = _enteroAdmin(datos['horaFin']);
+      final capacidad = _enteroAdmin(datos['capacidad']);
+      if (titulo.isEmpty) throw StateError('El nombre es obligatorio.');
+      if (deporteId.isEmpty) throw StateError('Elige una disciplina.');
+      if (ubicacion.isEmpty) throw StateError('La ubicación es obligatoria.');
+      if (capacidad <= 0) {
+        throw StateError('La capacidad debe ser mayor que cero.');
+      }
+      _validarFechaEvento(fecha);
+      final errorFranja = validarFranja(
+        FranjaHorario(
+          dia: DateTime.parse(fecha).weekday,
+          horaInicio: horaInicio,
+          horaFin: horaFin,
+        ),
+      );
+      if (errorFranja != null) throw StateError(errorFranja);
+
+      final deporte = await _db
+          .collection(deportesCollection)
+          .doc(deporteId)
+          .get();
+      final deporteDatos = deporte.data();
+      if (deporteDatos?['entrenadorUid'] != entrenadorUid ||
+          deporteDatos?['activo'] != true) {
+        throw StateError('La disciplina no está asignada al entrenador.');
+      }
+
+      final evento = Map<String, dynamic>.from(datos)
+        ..remove('id')
+        ..remove('estado')
+        ..remove('creadoPorUid')
+        ..remove('creadoEn');
+      await _db.collection(eventosCollection).add({
+        ...evento,
+        'titulo': titulo,
+        'deporteId': deporteId,
+        'deporteNombre': '${deporteDatos?['nombre'] ?? ''}',
+        'canchaId': '${deporteDatos?['canchaId'] ?? ''}',
+        'canchaNombre': ubicacion,
+        'fecha': fecha,
+        'horaInicio': horaInicio,
+        'horaFin': horaFin,
+        'capacidad': capacidad,
+        'estado': 'pendiente',
+        'creadoPorUid': entrenadorUid,
+        'creadoEn': FieldValue.serverTimestamp(),
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo solicitar el evento. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
   static DocumentReference<Map<String, dynamic>> _sesionAsistencia(
     String deporteId,
     DateTime fecha,

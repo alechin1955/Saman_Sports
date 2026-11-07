@@ -1,5 +1,11 @@
 import 'package:saman_sports/views/admin/admin_dashboard_view.dart';
 import 'package:saman_sports/views/entrenador/dashboard_entrenador_view.dart';
+import 'package:saman_sports/views/entrenador/asistencia_entrenador_view.dart';
+import 'package:saman_sports/views/entrenador/disciplinas_entrenador_view.dart';
+import 'package:saman_sports/views/entrenador/eventos_entrenador_view.dart';
+import 'package:saman_sports/views/entrenador/perfil_entrenador_view.dart';
+import 'package:saman_sports/views/entrenador/resenas_entrenador_view.dart';
+import 'package:saman_sports/views/entrenador/soporte_entrenador_view.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
@@ -36,6 +42,12 @@ class AppRoutes {
   static const String estudianteHistorial = '/estudiante/historial';
   static const String estudianteRecordatorios = '/estudiante/recordatorios';
   static const String estudianteSoporte = '/estudiante/soporte';
+  static const String entrenadorDisciplinas = '/entrenador/disciplinas';
+  static const String entrenadorAsistencia = '/entrenador/asistencia';
+  static const String entrenadorEventos = '/entrenador/eventos';
+  static const String entrenadorResenas = '/entrenador/resenas';
+  static const String entrenadorSoporte = '/entrenador/soporte';
+  static const String entrenadorPerfil = '/entrenador/perfil';
 
   static Map<String, WidgetBuilder> routes(
     AuthController auth,
@@ -103,11 +115,26 @@ class AppRoutes {
         auth,
         PerfilEstudianteView(auth: auth, controller: estudiante),
       ),
-      dashboardEntrenador: (_) => GuardiaRol(
-        auth: auth,
-        esperado: DestinoLogin.entrenador,
-        child: DashboardEntrenadorView(auth: auth),
+      dashboardEntrenador: (_) =>
+          _soloEntrenador(auth, DashboardEntrenadorView(auth: auth)),
+      entrenadorDisciplinas: (_) =>
+          _soloEntrenador(auth, DisciplinasEntrenadorView(auth: auth)),
+      entrenadorAsistencia: (context) => _soloEntrenador(
+        auth,
+        AsistenciaEntrenadorView(
+          auth: auth,
+          deporteInicialId:
+              ModalRoute.of(context)?.settings.arguments as String?,
+        ),
       ),
+      entrenadorEventos: (_) =>
+          _soloEntrenador(auth, EventosEntrenadorView(auth: auth)),
+      entrenadorResenas: (_) =>
+          _soloEntrenador(auth, ResenasEntrenadorView(auth: auth)),
+      entrenadorSoporte: (_) =>
+          _soloEntrenador(auth, SoporteEntrenadorView(auth: auth)),
+      entrenadorPerfil: (_) =>
+          _soloEntrenador(auth, PerfilEntrenadorView(auth: auth)),
       dashboardAdmin: (_) => GuardiaRol(
         auth: auth,
         esperado: DestinoLogin.administrador,
@@ -125,6 +152,14 @@ class AppRoutes {
     return GuardiaRol(
       auth: auth,
       esperado: DestinoLogin.estudiante,
+      child: pantalla,
+    );
+  }
+
+  static Widget _soloEntrenador(AuthController auth, Widget pantalla) {
+    return GuardiaRol(
+      auth: auth,
+      esperado: DestinoLogin.entrenador,
       child: pantalla,
     );
   }

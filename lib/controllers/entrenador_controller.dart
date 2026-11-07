@@ -28,7 +28,10 @@ class EntrenadorController extends ChangeNotifier {
         .toList();
   }
 
-  Future<void> cargar() async {
+  Future<void> cargar({
+    String? seleccionInicialId,
+    bool cargarNominaInicial = true,
+  }) async {
     final consulta = ++_consulta;
     cargando = true;
     cargandoNomina = false;
@@ -43,8 +46,11 @@ class EntrenadorController extends ChangeNotifier {
       disciplinas = lista;
       seleccionId = null;
       cargando = false;
-      if (lista.isNotEmpty) {
-        await seleccionar(lista.first.id);
+      if (lista.isNotEmpty && cargarNominaInicial) {
+        final inicial = lista.any((item) => item.id == seleccionInicialId)
+            ? seleccionInicialId!
+            : lista.first.id;
+        await seleccionar(inicial);
       }
     } catch (_) {
       if (_cerrado || consulta != _consulta) return;

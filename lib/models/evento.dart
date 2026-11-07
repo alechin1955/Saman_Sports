@@ -47,6 +47,7 @@ class Evento {
     required this.descripcion,
     required this.estado,
     required this.creadoPorUid,
+    this.capacidad = 0,
     this.deporteId,
     this.deporteNombre,
     this.creadoEn,
@@ -65,6 +66,7 @@ class Evento {
   final String descripcion;
   final EstadoEvento estado;
   final String creadoPorUid;
+  final int capacidad;
   final DateTime? creadoEn;
 
   FranjaHorario get franja => FranjaHorario(
@@ -88,6 +90,7 @@ class Evento {
       descripcion: '${map['descripcion'] ?? ''}',
       estado: EstadoEvento.desde(map['estado']?.toString()),
       creadoPorUid: '${map['creadoPorUid'] ?? ''}',
+      capacidad: _entero(map['capacidad']),
       creadoEn: _fecha(map['creadoEn']),
     );
   }
@@ -106,6 +109,7 @@ class Evento {
       'descripcion': descripcion,
       'estado': estado.valor,
       'creadoPorUid': creadoPorUid,
+      'capacidad': capacidad,
       'creadoEn': creadoEn,
     };
   }
