@@ -20,7 +20,6 @@ class DeportesSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(AppStrings.deportesDisponibles, style: AppTextStyles.title),
-          if (controller.ejemplosDeportes) const EtiquetaEjemplo(),
           const SizedBox(height: AppSizes.space16),
           if (controller.cargando)
             const _Skeleton()

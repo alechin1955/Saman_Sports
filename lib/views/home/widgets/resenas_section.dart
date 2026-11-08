@@ -20,7 +20,6 @@ class ResenasSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(AppStrings.resenas, style: AppTextStyles.title),
-          if (controller.ejemplosResenas) const EtiquetaEjemplo(),
           const SizedBox(height: AppSizes.space8),
           Wrap(
             spacing: AppSizes.space8,
