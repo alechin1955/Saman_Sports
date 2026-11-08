@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:saman_sports/FirebaseServices.dart';
-import 'package:saman_sports/core/constants/datos_ejemplo.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/entrenador_publico.dart';
 import 'package:saman_sports/models/resena.dart';
@@ -16,8 +15,6 @@ class HomeController extends ChangeNotifier {
         _entrenadoresOrigen = entrenadoresOrigen ?? FirebaseServices.streamEntrenadores,
         _resenasOrigen = resenasOrigen ?? FirebaseServices.streamResenas;
 
-  static const bool mostrarEjemplosSiVacio = true;
-
   final Stream<List<Map<String, dynamic>>> Function() _deportesOrigen;
   final Stream<List<Map<String, dynamic>>> Function() _entrenadoresOrigen;
   final Stream<List<Map<String, dynamic>>> Function() _resenasOrigen;
@@ -26,10 +23,6 @@ class HomeController extends ChangeNotifier {
   List<EntrenadorPublico> entrenadores = [];
   List<Resena> resenas = [];
   bool cargando = true;
-  bool usandoEjemplo = false;
-  bool ejemplosDeportes = false;
-  bool ejemplosEntrenadores = false;
-  bool ejemplosResenas = false;
 
   StreamSubscription<List<Map<String, dynamic>>>? _subDeportes;
   StreamSubscription<List<Map<String, dynamic>>>? _subEntrenadores;
@@ -52,35 +45,17 @@ class HomeController extends ChangeNotifier {
     if (_subDeportes != null) return;
     _subDeportes = _escuchar(_deportesOrigen, (lista) {
       _recibioDeportes = true;
-      if (lista.isEmpty && mostrarEjemplosSiVacio) {
-        deportes = DatosEjemplo.deportes;
-        ejemplosDeportes = true;
-      } else {
-        deportes = lista.map(Deporte.fromMap).toList();
-        ejemplosDeportes = false;
-      }
+      deportes = lista.map(Deporte.fromMap).toList();
       _cerrarCarga();
     });
     _subEntrenadores = _escuchar(_entrenadoresOrigen, (lista) {
       _recibioEntrenadores = true;
-      if (lista.isEmpty && mostrarEjemplosSiVacio) {
-        entrenadores = DatosEjemplo.entrenadores;
-        ejemplosEntrenadores = true;
-      } else {
-        entrenadores = lista.map(EntrenadorPublico.fromMap).toList();
-        ejemplosEntrenadores = false;
-      }
+      entrenadores = lista.map(EntrenadorPublico.fromMap).toList();
       _cerrarCarga();
     });
     _subResenas = _escuchar(_resenasOrigen, (lista) {
       _recibioResenas = true;
-      if (lista.isEmpty && mostrarEjemplosSiVacio) {
-        resenas = DatosEjemplo.resenas;
-        ejemplosResenas = true;
-      } else {
-        resenas = lista.map(Resena.fromMap).toList();
-        ejemplosResenas = false;
-      }
+      resenas = lista.map(Resena.fromMap).toList();
       _cerrarCarga();
     });
   }
@@ -102,15 +77,7 @@ class HomeController extends ChangeNotifier {
     }
 
     try {
-      return origen()
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: (sink) {
-              sink.add(const []);
-              sink.close();
-            },
-          )
-          .listen(recibir, onError: (_) => recibir(const []));
+      return origen().listen(recibir, onError: (_) => recibir(const []));
     } catch (_) {
       recibir(const []);
       return null;
@@ -118,7 +85,6 @@ class HomeController extends ChangeNotifier {
   }
 
   void _cerrarCarga() {
-    usandoEjemplo = ejemplosDeportes || ejemplosEntrenadores || ejemplosResenas;
     cargando = !(_recibioDeportes && _recibioEntrenadores && _recibioResenas);
     notifyListeners();
   }

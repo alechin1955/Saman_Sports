@@ -13,7 +13,8 @@ void main() {
 
     expect(find.text(AppStrings.queEsTitulo), findsOneWidget);
     expect(find.text(AppStrings.deportesDisponibles), findsOneWidget);
-    expect(find.text(AppStrings.datosEjemplo), findsWidgets);
+    expect(find.text(AppStrings.datosEjemplo), findsNothing);
+    expect(find.text(AppStrings.prontoDeportes), findsOneWidget);
 
     for (final texto in [AppStrings.iniciarSesion, AppStrings.registrarse]) {
       final boton = tester.widget<ElevatedButton>(

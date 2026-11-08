@@ -19,7 +19,6 @@ class EntrenadoresSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(AppStrings.entrenadores, style: AppTextStyles.title),
-          if (controller.ejemplosEntrenadores) const EtiquetaEjemplo(),
           const SizedBox(height: AppSizes.space16),
           if (controller.cargando)
             const EtiquetaEjemplo(cargando: true)
