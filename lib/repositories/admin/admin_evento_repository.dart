@@ -1,10 +1,12 @@
 import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/models/cancha.dart';
+import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/evento.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 
 abstract interface class AdminEventoRepository {
   Stream<List<Evento>> eventos();
+  Stream<List<Deporte>> deportes();
   Stream<List<Cancha>> canchas();
   Stream<List<ReservaHorario>> reservasCancha(String canchaId);
   Future<String?> crearEvento({
@@ -26,9 +28,25 @@ abstract interface class AdminEventoRepository {
     required String id,
     required String estado,
   });
+  Future<String?> notificarInscritos({
+    required String deporteId,
+    required String titulo,
+    required String fecha,
+    required int horaInicio,
+    required int horaFin,
+    required String canchaNombre,
+    required bool reemplazaPractica,
+  });
 }
 
 class FirebaseAdminEventoAdapter implements AdminEventoRepository {
+  @override
+  Stream<List<Deporte>> deportes() {
+    return FirebaseServices.streamDeportesAdmin().map(
+      (lista) => lista.map(Deporte.fromMap).toList(),
+    );
+  }
+
   @override
   Stream<List<Evento>> eventos() {
     return FirebaseServices.streamEventos().map(
@@ -102,6 +120,29 @@ class FirebaseAdminEventoAdapter implements AdminEventoRepository {
     required String estado,
   }) {
     return _texto(FirebaseServices.cambiarEstadoEvento(id: id, estado: estado));
+  }
+
+  @override
+  Future<String?> notificarInscritos({
+    required String deporteId,
+    required String titulo,
+    required String fecha,
+    required int horaInicio,
+    required int horaFin,
+    required String canchaNombre,
+    required bool reemplazaPractica,
+  }) {
+    return _texto(
+      FirebaseServices.notificarInscritosEvento(
+        deporteId: deporteId,
+        titulo: titulo,
+        fecha: fecha,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+        canchaNombre: canchaNombre,
+        reemplazaPractica: reemplazaPractica,
+      ),
+    );
   }
 }
 

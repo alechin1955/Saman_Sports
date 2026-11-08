@@ -132,6 +132,29 @@ void main() {
     expect(configLeida.fechaCorte, config.fechaCorte);
   });
 
+  test('Evento combina autor antiguo, capacidad y reemplazo de práctica', () {
+    final evento = Evento.fromMap('e-antiguo', {
+      'titulo': 'Partido de recuperación',
+      'tipo': 'partido',
+      'deporteId': 'dep-1',
+      'deporteNombre': 'Fútbol',
+      'canchaId': 'c1',
+      'canchaNombre': 'Cancha 1',
+      'fecha': '2026-11-10',
+      'horaInicio': 960,
+      'horaFin': 1080,
+      'descripcion': 'Recupera la práctica del lunes',
+      'estado': 'aprobado',
+      'creadoPor': 'admin-antiguo',
+      'capacidad': 24,
+      'reemplazaPractica': true,
+    });
+
+    expect(evento.creadoPorUid, 'admin-antiguo');
+    expect(evento.capacidad, 24);
+    expect(evento.reemplazaPractica, isTrue);
+  });
+
   test('un deporte viejo sigue leyéndose y el mapa público no filtra datos privados', () {
     final viejo = Deporte.fromMap({
       'id': 'dep-1',

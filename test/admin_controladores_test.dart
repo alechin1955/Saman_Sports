@@ -28,6 +28,7 @@ import 'package:saman_sports/repositories/admin/admin_estudiante_repository.dart
 import 'package:saman_sports/repositories/admin/admin_evento_repository.dart';
 import 'package:saman_sports/repositories/admin/admin_inscripcion_repository.dart';
 import 'package:saman_sports/repositories/admin/admin_pago_repository.dart';
+import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 import 'package:saman_sports/repositories/admin/admin_resena_repository.dart';
 import 'package:saman_sports/repositories/admin/admin_resumen_repository.dart';
 import 'package:saman_sports/repositories/admin/admin_soporte_repository.dart';
@@ -56,6 +57,8 @@ void main() {
 class _Resumen implements AdminResumenRepository {
   @override
   Future<Map<String, num>> contar() async => {};
+  @override
+  Future<Map<String, dynamic>> graficos() async => {};
 }
 
 class _Deportes implements AdminDeporteRepository {
@@ -136,6 +139,11 @@ class _Estudiantes implements AdminEstudianteRepository {
   }) async => null;
   @override
   Stream<List<Estudiante>> estudiantes() => const Stream.empty();
+  @override
+  Future<String?> actualizarSolvencia({
+    required String uid,
+    required bool solvente,
+  }) async => null;
 }
 
 class _Resenas implements AdminResenaRepository {
@@ -181,6 +189,19 @@ class _Pagos implements AdminPagoRepository {
     required DateTime fechaPago,
     required bool verificado,
     required String verificadoPor,
+    String? periodo,
+  }) async => null;
+  @override
+  Future<AdminCorteEstudiante> aplicarCorteEstudiante({
+    required String uid,
+    required String periodo,
+    required DateTime fechaCorte,
+    required double monto,
+  }) async => const AdminCorteEstudiante();
+  @override
+  Future<String?> cambiarEstadoPago({
+    required String pagoId,
+    required String estado,
   }) async => null;
 }
 
@@ -220,10 +241,22 @@ class _Eventos implements AdminEventoRepository {
     required int horaFin,
   }) async => null;
   @override
+  Stream<List<Deporte>> deportes() => const Stream.empty();
+  @override
   Stream<List<Evento>> eventos() => const Stream.empty();
   @override
   Stream<List<ReservaHorario>> reservasCancha(String canchaId) =>
       const Stream.empty();
+  @override
+  Future<String?> notificarInscritos({
+    required String deporteId,
+    required String titulo,
+    required String fecha,
+    required int horaInicio,
+    required int horaFin,
+    required String canchaNombre,
+    required bool reemplazaPractica,
+  }) async => null;
 }
 
 class _Soporte implements AdminSoporteRepository {

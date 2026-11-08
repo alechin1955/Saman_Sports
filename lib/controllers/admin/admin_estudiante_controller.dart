@@ -34,7 +34,7 @@ class AdminEstudianteController extends ChangeNotifier {
       };
       if (!visible) return false;
       if (texto.isEmpty) return true;
-      return '${estudiante.nombre} ${estudiante.apellido} ${estudiante.carnet}'
+      return '${estudiante.nombre} ${estudiante.apellido} ${estudiante.carnet} ${estudiante.correo}'
           .toLowerCase()
           .contains(texto);
     }).toList();
@@ -71,6 +71,16 @@ class AdminEstudianteController extends ChangeNotifier {
     return _guardar(
       () => _repository.cambiarEstado(uid: estudiante.uid, activo: activo),
       activo ? 'Estudiante activado.' : 'Estudiante desactivado.',
+    );
+  }
+
+  Future<String?> marcarSolvencia(Estudiante estudiante, bool solvente) {
+    return _guardar(
+      () => _repository.actualizarSolvencia(
+        uid: estudiante.uid,
+        solvente: solvente,
+      ),
+      solvente ? 'Estudiante marcado solvente.' : 'Estudiante marcado no solvente.',
     );
   }
 

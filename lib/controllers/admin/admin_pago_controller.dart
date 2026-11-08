@@ -5,9 +5,10 @@ import 'package:saman_sports/models/configuracion_pagos.dart';
 import 'package:saman_sports/models/estudiante.dart';
 import 'package:saman_sports/models/pago.dart';
 import 'package:saman_sports/repositories/admin/admin_pago_repository.dart';
+import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 import 'package:saman_sports/services/pagos/paypal_verificador.dart';
 
-enum FiltroPago { todos, pendientes, realizados, verificados }
+enum FiltroPago { todos, pendientes, realizados, verificados, rechazados }
 
 class AdminPagoController extends ChangeNotifier {
   AdminPagoController({
@@ -47,6 +48,7 @@ class AdminPagoController extends ChangeNotifier {
         FiltroPago.pendientes => pago.estado == EstadoPago.pendiente,
         FiltroPago.realizados => pago.estado == EstadoPago.realizado,
         FiltroPago.verificados => pago.verificado,
+        FiltroPago.rechazados => pago.estado == EstadoPago.rechazado,
         FiltroPago.todos => true,
       };
     }).toList();
@@ -57,28 +59,11 @@ class AdminPagoController extends ChangeNotifier {
     required List<Pago> pagos,
     required ConfiguracionPagos config,
   }) {
-    final inicio = DateTime(
-      config.fechaInicio.year,
-      config.fechaInicio.month,
-      config.fechaInicio.day,
-    );
-    final fin = DateTime(
-      config.fechaCorte.year,
-      config.fechaCorte.month,
-      config.fechaCorte.day,
-      23,
-      59,
-      59,
-    );
-    return pagos.any((pago) {
-      final fecha = pago.fechaPago;
-      return pago.estudianteUid == uid &&
-          pago.estado == EstadoPago.realizado &&
-          pago.verificado &&
-          fecha != null &&
-          !fecha.isBefore(inicio) &&
-          !fecha.isAfter(fin);
-    });
+    return AdminSolvencia.esSolvente(uid: uid, pagos: pagos, config: config);
+  }
+
+  static AdminPuntualidad puntualidad(Pago pago, ConfiguracionPagos config) {
+    return AdminSolvencia.puntualidad(pago: pago, config: config);
   }
 
   void iniciar() {
@@ -125,9 +110,30 @@ class AdminPagoController extends ChangeNotifier {
           fechaPago: resultado.fechaPago!,
           verificado: resultado.verificado,
           verificadoPor: resultado.fuente,
+          periodo: configuracion?.periodo,
         );
       },
       verificacionSimulada ? 'Pago verificado (simulado).' : 'Pago verificado.',
+    );
+  }
+
+  Future<String?> rechazarPago(Pago pago) {
+    return _guardar(
+      () => _repository.cambiarEstadoPago(
+        pagoId: pago.id,
+        estado: EstadoPago.rechazado.name,
+      ),
+      'Pago rechazado.',
+    );
+  }
+
+  Future<String?> marcarPendiente(Pago pago) {
+    return _guardar(
+      () => _repository.cambiarEstadoPago(
+        pagoId: pago.id,
+        estado: EstadoPago.pendiente.name,
+      ),
+      'Pago marcado como pendiente.',
     );
   }
 
@@ -148,46 +154,31 @@ class AdminPagoController extends ChangeNotifier {
     );
   }
 
-  /// Una Cloud Function programada podría hacer esto automáticamente.
-  /// Hoy lo dispara el administrador con un botón.
+  /// El administrador lo dispara con un botón. No hay programador ni correo.
   Future<String?> aplicarCorte() {
     return _guardar(() async {
+      if (_cerrado) return 'La operación ya no está disponible.';
       final config = configuracion;
-      if (config == null) return sinConfiguracion;
-      final fin = DateTime(
-        config.fechaCorte.year,
-        config.fechaCorte.month,
-        config.fechaCorte.day,
-        23,
-        59,
-        59,
-      );
-      if (_reloj().isBefore(fin)) return cortePendiente;
+      if (config == null || config.periodo.trim().isEmpty) {
+        return sinConfiguracion;
+      }
+      if (!AdminSolvencia.corteVencido(_reloj(), config.fechaCorte)) {
+        return cortePendiente;
+      }
       var solventes = 0;
       var notificados = 0;
       for (final estudiante in estudiantes.where((item) => item.activo)) {
-        final solvente = esSolvente(
+        if (_cerrado) return 'La operación ya no está disponible.';
+        final resultado = await _repository.aplicarCorteEstudiante(
           uid: estudiante.uid,
-          pagos: pagos,
-          config: config,
+          periodo: config.periodo,
+          fechaCorte: config.fechaCorte,
+          monto: config.monto,
         );
-        if (solvente) solventes++;
-        if (solvente != estudiante.solvente) {
-          final error = await _repository.actualizarSolvencia(
-            uid: estudiante.uid,
-            solvente: solvente,
-          );
-          if (error != null) return error;
-        }
-        if (!solvente) {
-          final error = await _repository.crearNotificacionPago(
-            uid: estudiante.uid,
-            periodo: config.periodo,
-            fechaCorte: config.fechaCorte,
-          );
-          if (error != null) return error;
-          notificados++;
-        }
+        if (_cerrado) return 'La operación ya no está disponible.';
+        if (resultado.error != null) return resultado.error;
+        if (resultado.solvente) solventes++;
+        if (resultado.avisoCreado) notificados++;
       }
       mensaje = '$solventes solventes, $notificados notificados';
       return null;
@@ -199,6 +190,7 @@ class AdminPagoController extends ChangeNotifier {
     String exito,
   ) async {
     if (_cerrado) return 'La operación ya no está disponible.';
+    if (guardando) return 'Espera a que termine la operación.';
     guardando = true;
     error = null;
     mensaje = null;

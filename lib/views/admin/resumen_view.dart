@@ -7,6 +7,7 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/deporte.dart';
+import 'package:saman_sports/views/admin/widgets/grafico_barras.dart';
 import 'package:saman_sports/views/admin/widgets/tarjeta_resumen.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
 
@@ -60,6 +61,8 @@ class ResumenView extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.space16),
             _Grilla(resumen: resumen),
+            const SizedBox(height: AppSizes.space24),
+            _Graficos(resumen: resumen, deportes: deportes),
             const SizedBox(height: AppSizes.space24),
             Text(AppStrings.adminOcupacion, style: AppTextStyles.title),
             const SizedBox(height: AppSizes.space12),
@@ -172,6 +175,64 @@ class _Grilla extends StatelessWidget {
         valor: numero('eventosAprobados'),
       ),
     ];
+  }
+}
+
+class _Graficos extends StatelessWidget {
+  const _Graficos({required this.resumen, required this.deportes});
+
+  final AdminResumenController resumen;
+  final AdminDeporteController deportes;
+
+  @override
+  Widget build(BuildContext context) {
+    final populares = resumen.deportesPopulares.isNotEmpty
+        ? resumen.deportesPopulares
+        : (deportes.deportes.toList()
+            ..sort((a, b) => b.inscritos.compareTo(a.inscritos)))
+            .take(5)
+            .map(
+              (deporte) => {
+                'nombre': deporte.nombre,
+                'inscritos': deporte.inscritos,
+              },
+            )
+            .toList();
+    final promedio = resumen.resenasPromedio.toStringAsFixed(1);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GraficoBarras(
+          titulo: AppStrings.adminDeportesPopulares,
+          horizontal: true,
+          barras: [
+            for (final item in populares)
+              BarraGrafico(
+                etiqueta: '${item['nombre'] ?? ''}',
+                valor: item['inscritos'] as num? ?? 0,
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.space24),
+        GraficoBarras(
+          titulo: AppStrings.adminInscripcionesPorMes,
+          barras: [
+            for (final item in resumen.inscripcionesPorMes)
+              BarraGrafico(
+                etiqueta: '${item['mes'] ?? ''}',
+                valor: item['total'] as num? ?? 0,
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.space24),
+        TarjetaResumen(
+          icono: Icons.star_outline,
+          titulo: AppStrings.adminResumenResenas,
+          valor: promedio,
+          detalle: '${resumen.resenasCantidad}',
+        ),
+      ],
+    );
   }
 }
 

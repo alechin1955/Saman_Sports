@@ -6,6 +6,9 @@ import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/configuracion_pagos.dart';
 import 'package:saman_sports/models/pago.dart';
+import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
+import 'package:saman_sports/views/admin/widgets/grafico_barras.dart';
+import 'package:saman_sports/views/admin/widgets/tarjeta_resumen.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
 import 'package:saman_sports/views/widgets/campo_texto.dart';
 
@@ -42,16 +45,8 @@ class _PagosAdminViewState extends State<PagosAdminView> {
   }
 
   bool _corteVencido(ConfiguracionPagos? config) {
-    if (config == null) return false;
-    final fin = DateTime(
-      config.fechaCorte.year,
-      config.fechaCorte.month,
-      config.fechaCorte.day,
-      23,
-      59,
-      59,
-    );
-    return !DateTime.now().isBefore(fin);
+    if (config == null || widget.pagos.guardando) return false;
+    return AdminSolvencia.corteVencido(DateTime.now(), config.fechaCorte);
   }
 
   int _dias(ConfiguracionPagos? config) {
@@ -137,8 +132,7 @@ class _PagosAdminViewState extends State<PagosAdminView> {
           });
         }
         final movil = MediaQuery.sizeOf(context).width < AppSizes.mobile;
-        final conteo = _conteo(widget.pagos);
-        return Column(
+        final columna = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Card(
@@ -205,9 +199,11 @@ class _PagosAdminViewState extends State<PagosAdminView> {
                 ),
               ),
             const SizedBox(height: AppSizes.space8),
-            Text(
-              '${AppStrings.adminSolventes}: ${conteo.$1} · ${AppStrings.adminPendientes}: ${conteo.$2}',
-              style: AppTextStyles.body,
+            _Estadisticas(panel: widget.pagos),
+            const SizedBox(height: AppSizes.space12),
+            GraficoBarras(
+              titulo: AppStrings.adminEstadoPagos,
+              barras: _barrasPagos(widget.pagos),
             ),
             const SizedBox(height: AppSizes.space8),
             BotonPrimario(
@@ -235,6 +231,7 @@ class _PagosAdminViewState extends State<PagosAdminView> {
                     DataColumn(label: Text(AppStrings.adminIdPaypal)),
                     DataColumn(label: Text(AppStrings.adminFechaPago)),
                     DataColumn(label: Text(AppStrings.adminEstado)),
+                    DataColumn(label: Text(AppStrings.adminPagoPendienteEtiqueta)),
                     DataColumn(label: Text(AppStrings.adminVerificado)),
                     DataColumn(label: Text(AppStrings.adminVerificadoPor)),
                     DataColumn(label: Text(AppStrings.editar)),
@@ -248,6 +245,7 @@ class _PagosAdminViewState extends State<PagosAdminView> {
                           DataCell(Text(_idPaypal(pago))),
                           DataCell(Text(_fechaPago(pago))),
                           DataCell(Text(_estadoPago(pago.estado))),
+                          DataCell(Text(_puntualidad(widget.pagos, pago))),
                           DataCell(
                             _IconoVerificado(verificado: pago.verificado),
                           ),
@@ -259,15 +257,7 @@ class _PagosAdminViewState extends State<PagosAdminView> {
                             ),
                           ),
                           DataCell(
-                            pago.verificado
-                                ? const SizedBox.shrink()
-                                : TextButton(
-                                    onPressed: () =>
-                                        widget.pagos.verificarPago(pago),
-                                    child: Text(
-                                      AppStrings.adminVerificarPaypal,
-                                    ),
-                                  ),
+                            _AccionesPago(pago: pago, panel: widget.pagos),
                           ),
                         ],
                       ),
@@ -275,6 +265,12 @@ class _PagosAdminViewState extends State<PagosAdminView> {
                 ),
               ),
           ],
+        );
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            if (!constraints.hasBoundedHeight) return columna;
+            return SingleChildScrollView(child: columna);
+          },
         );
       },
     );
@@ -297,13 +293,11 @@ class _PagoTile extends StatelessWidget {
           children: [
             Text(_estudiante(panel, pago), style: AppTextStyles.subtitle),
             Text('${pago.monto} · ${_idPaypal(pago)}'),
-            Text('${_fechaPago(pago)} · ${_estadoPago(pago.estado)}'),
+            Text(
+              '${_fechaPago(pago)} · ${_estadoPago(pago.estado)} · ${_puntualidad(panel, pago)}',
+            ),
             _IconoVerificado(verificado: pago.verificado),
-            if (!pago.verificado)
-              TextButton(
-                onPressed: () => panel.verificarPago(pago),
-                child: Text(AppStrings.adminVerificarPaypal),
-              ),
+            _AccionesPago(pago: pago, panel: panel),
           ],
         ),
       ),
@@ -325,22 +319,6 @@ class _IconoVerificado extends StatelessWidget {
   }
 }
 
-(int, int) _conteo(AdminPagoController panel) {
-  final config = panel.configuracion;
-  if (config == null) return (0, panel.estudiantes.length);
-  var solventes = 0;
-  for (final estudiante in panel.estudiantes) {
-    if (AdminPagoController.esSolvente(
-      uid: estudiante.uid,
-      pagos: panel.pagos,
-      config: config,
-    )) {
-      solventes++;
-    }
-  }
-  return (solventes, panel.estudiantes.length - solventes);
-}
-
 String _estudiante(AdminPagoController panel, Pago pago) {
   for (final estudiante in panel.estudiantes) {
     if (estudiante.uid == pago.estudianteUid) return estudiante.nombreCompleto;
@@ -360,11 +338,149 @@ String _fechaPago(Pago pago) {
   return _diaHora(fecha);
 }
 
+String _puntualidad(AdminPagoController panel, Pago pago) {
+  final config = panel.configuracion;
+  if (config == null) return AppStrings.adminPagoPendienteEtiqueta;
+  return switch (AdminPagoController.puntualidad(pago, config)) {
+    AdminPuntualidad.aTiempo => AppStrings.adminATiempo,
+    AdminPuntualidad.tardio => AppStrings.adminTardio,
+    AdminPuntualidad.pendiente => AppStrings.adminPagoPendienteEtiqueta,
+  };
+}
+
 String _estadoPago(EstadoPago estado) {
   return switch (estado) {
     EstadoPago.pendiente => AppStrings.adminPendientes,
     EstadoPago.realizado => AppStrings.adminRealizado,
+    EstadoPago.rechazado => AppStrings.adminRechazados,
   };
+}
+
+class _AccionesPago extends StatelessWidget {
+  const _AccionesPago({required this.pago, required this.panel});
+
+  final Pago pago;
+  final AdminPagoController panel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      children: [
+        if (!pago.verificado)
+          TextButton(
+            onPressed: panel.guardando ? null : () => panel.verificarPago(pago),
+            child: Text(AppStrings.adminVerificarPaypal),
+          ),
+        if (pago.estado != EstadoPago.rechazado)
+          TextButton(
+            onPressed: panel.guardando
+                ? null
+                : () => _confirmar(
+                    context,
+                    AppStrings.adminConfirmarRechazarPago,
+                    () => panel.rechazarPago(pago),
+                  ),
+            child: Text(AppStrings.adminRechazar),
+          ),
+        if (pago.estado != EstadoPago.pendiente)
+          TextButton(
+            onPressed: panel.guardando
+                ? null
+                : () => _confirmar(
+                    context,
+                    AppStrings.adminConfirmarPendientePago,
+                    () => panel.marcarPendiente(pago),
+                  ),
+            child: Text(AppStrings.adminMarcarPendiente),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _confirmar(
+    BuildContext context,
+    String titulo,
+    Future<String?> Function() accion,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(titulo),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppStrings.cancelar),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppStrings.adminConfirmar),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await accion();
+  }
+}
+
+class _Estadisticas extends StatelessWidget {
+  const _Estadisticas({required this.panel});
+
+  final AdminPagoController panel;
+
+  @override
+  Widget build(BuildContext context) {
+    final pagos = panel.pagos;
+    final verificados = pagos.where((pago) => pago.verificado).length;
+    final pendientes = pagos
+        .where((pago) => pago.estado == EstadoPago.pendiente)
+        .length;
+    final rechazados = pagos
+        .where((pago) => pago.estado == EstadoPago.rechazado)
+        .length;
+    final monto = pagos
+        .where((pago) => pago.verificado)
+        .fold<double>(0, (suma, pago) => suma + pago.monto);
+    final tarjetas = [
+      (AppStrings.adminTotal, '${pagos.length}'),
+      (AppStrings.adminVerificados, '$verificados'),
+      (AppStrings.adminPendientes, '$pendientes'),
+      (AppStrings.adminRechazados, '$rechazados'),
+      (AppStrings.adminMontoRecaudado, '\$${monto.toStringAsFixed(2)}'),
+    ];
+    return Wrap(
+      spacing: AppSizes.space12,
+      runSpacing: AppSizes.space12,
+      children: [
+        for (final tarjeta in tarjetas)
+          SizedBox(
+            width: 180,
+            child: TarjetaResumen(
+              icono: Icons.payments_outlined,
+              titulo: tarjeta.$1,
+              valor: tarjeta.$2,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+List<BarraGrafico> _barrasPagos(AdminPagoController panel) {
+  final pagos = panel.pagos;
+  return [
+    BarraGrafico(
+      etiqueta: AppStrings.adminVerificados,
+      valor: pagos.where((pago) => pago.verificado).length,
+    ),
+    BarraGrafico(
+      etiqueta: AppStrings.adminPendientes,
+      valor: pagos.where((pago) => pago.estado == EstadoPago.pendiente).length,
+    ),
+    BarraGrafico(
+      etiqueta: AppStrings.adminRechazados,
+      valor: pagos.where((pago) => pago.estado == EstadoPago.rechazado).length,
+    ),
+  ];
 }
 
 String _dia(DateTime fecha) {

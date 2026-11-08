@@ -36,6 +36,8 @@ void main() {
       expect(find.text('Ana Pérez'), findsNothing);
       expect(find.text('Luis Gómez'), findsOneWidget);
       expect(find.text('V-12345678'), findsNothing);
+      expect(find.text(AppStrings.adminVerDetalle), findsWidgets);
+      expect(find.text(AppStrings.adminDesactivar), findsWidgets);
       expect(tester.takeException(), isNull);
     });
   }
@@ -72,5 +74,11 @@ class _Estudiantes implements AdminEstudianteRepository {
   Future<String?> cambiarEstado({
     required String uid,
     required bool activo,
+  }) async => null;
+
+  @override
+  Future<String?> actualizarSolvencia({
+    required String uid,
+    required bool solvente,
   }) async => null;
 }

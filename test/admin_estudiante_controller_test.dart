@@ -26,6 +26,18 @@ void main() {
     expect(controller.estudiantesFiltrados.map((e) => e.uid), ['2']);
     controller.dispose();
   });
+
+  test('marcar solvencia llama al repositorio', () async {
+    final repo = _FalsoEstudiantes();
+    final controller = AdminEstudianteController(repository: repo);
+    final estudiante = _estudiante('1', apellido: 'Pérez', carnet: '111');
+
+    final resultado = await controller.marcarSolvencia(estudiante, true);
+
+    expect(resultado, isNull);
+    expect(repo.solvencias, [('1', true)]);
+    controller.dispose();
+  });
 }
 
 Estudiante _estudiante(
@@ -50,6 +62,7 @@ Estudiante _estudiante(
 
 class _FalsoEstudiantes implements AdminEstudianteRepository {
   List<Estudiante> lista = [];
+  List<(String, bool)> solvencias = [];
 
   @override
   Stream<List<Estudiante>> estudiantes() => Stream.value(lista);
@@ -59,6 +72,15 @@ class _FalsoEstudiantes implements AdminEstudianteRepository {
     required String uid,
     required bool activo,
   }) async {
+    return null;
+  }
+
+  @override
+  Future<String?> actualizarSolvencia({
+    required String uid,
+    required bool solvente,
+  }) async {
+    solvencias.add((uid, solvente));
     return null;
   }
 }
