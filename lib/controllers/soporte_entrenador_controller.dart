@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:saman_sports/core/utils/ticket_soporte_entrenador.dart';
 import 'package:saman_sports/models/ticket_soporte.dart';
 import 'package:saman_sports/repositories/soporte_entrenador_repository.dart';
 
@@ -8,15 +9,9 @@ class SoporteEntrenadorController extends ChangeNotifier {
   SoporteEntrenadorController({SoporteEntrenadorRepository? repository})
     : _repository = repository ?? FirebaseSoporteEntrenadorAdapter();
 
-  static const Map<String, String> categorias = {
-    'cuenta': 'Cuenta y acceso',
-    'disciplinas': 'Disciplinas',
-    'asistencia': 'Asistencia',
-    'eventos': 'Eventos',
-    'otro': 'Otro',
-  };
-  static const int maximoAsunto = 80;
-  static const int maximoDescripcion = 500;
+  static const Map<String, String> categorias = categoriasSoporteEntrenador;
+  static const int maximoAsunto = maximoAsuntoSoporteEntrenador;
+  static const int maximoDescripcion = maximoDescripcionSoporteEntrenador;
 
   final SoporteEntrenadorRepository _repository;
   final List<TicketSoporte> tickets = [];
@@ -60,7 +55,7 @@ class SoporteEntrenadorController extends ChangeNotifier {
     final categoriaLimpia = categoria?.trim() ?? '';
     final asuntoLimpio = asunto.trim();
     final descripcionLimpia = descripcion.trim();
-    errorFormulario = _validar(
+    errorFormulario = validarTicketSoporteEntrenador(
       categoria: categoriaLimpia,
       asunto: asuntoLimpio,
       descripcion: descripcionLimpia,
@@ -108,29 +103,6 @@ class SoporteEntrenadorController extends ChangeNotifier {
 
   static String categoriaEtiqueta(String categoria) =>
       categorias[categoria] ?? categoria;
-
-  String? _validar({
-    required String categoria,
-    required String asunto,
-    required String descripcion,
-  }) {
-    if (!categorias.containsKey(categoria)) {
-      return 'Elige una categoría.';
-    }
-    if (asunto.length < 5) {
-      return 'El asunto debe tener al menos 5 caracteres.';
-    }
-    if (asunto.length > maximoAsunto) {
-      return 'El asunto puede tener máximo $maximoAsunto caracteres.';
-    }
-    if (descripcion.length < 10) {
-      return 'Describe el problema con al menos 10 caracteres.';
-    }
-    if (descripcion.length > maximoDescripcion) {
-      return 'La descripción puede tener máximo $maximoDescripcion caracteres.';
-    }
-    return null;
-  }
 
   void _falloCarga() {
     if (_cerrado) return;

@@ -227,7 +227,9 @@ class _HistorialSoporte extends StatelessWidget {
           MensajeError(texto: controller.error!),
           const SizedBox(height: AppSizes.space16),
         ],
-        if (controller.cargando && controller.tickets.isEmpty)
+        if (controller.error != null && controller.tickets.isEmpty)
+          const SizedBox.shrink()
+        else if (controller.cargando && controller.tickets.isEmpty)
           const Center(child: CircularProgressIndicator())
         else if (controller.tickets.isEmpty)
           const EstadoVacio(

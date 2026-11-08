@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/core/utils/solicitud_evento_entrenador.dart';
+import 'package:saman_sports/core/utils/ticket_soporte_entrenador.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 
 class FirebaseServices {
@@ -601,51 +602,19 @@ class FirebaseServices {
       if (actual == null || actual != entrenadorUid) {
         throw StateError('Sesión de entrenador requerida');
       }
-      const categorias = {
-        'cuenta',
-        'disciplinas',
-        'asistencia',
-        'eventos',
-        'otro',
-      };
-      final categoriaLimpia = categoria.trim();
-      final asuntoLimpio = asunto.trim();
-      final descripcionLimpia = descripcion.trim();
-      if (!categorias.contains(categoriaLimpia)) {
-        throw StateError('La categoría no es válida.');
-      }
-      if (asuntoLimpio.length < 5 || asuntoLimpio.length > 80) {
-        throw StateError('El asunto debe tener entre 5 y 80 caracteres.');
-      }
-      if (descripcionLimpia.length < 10 || descripcionLimpia.length > 500) {
-        throw StateError(
-          'La descripción debe tener entre 10 y 500 caracteres.',
-        );
-      }
-
       final perfil = await getUserData(uid: entrenadorUid);
-      if (perfil?['rol'] != 'entrenador') {
-        throw StateError('Sesión de entrenador requerida');
-      }
-      final nombre = [
-        perfil?['nombre'],
-        perfil?['apellido'],
-      ].whereType<String>().where((parte) => parte.trim().isNotEmpty).join(' ');
-
-      await _db.collection(ticketsCollection).add({
-        'asunto': asuntoLimpio,
-        'categoria': categoriaLimpia,
-        'descripcion': descripcionLimpia,
-        'autorUid': entrenadorUid,
-        'autorNombre': nombre.isEmpty
-            ? (_auth.currentUser?.email ?? 'Entrenador')
-            : nombre,
-        'autorRol': 'entrenador',
-        'estado': 'abierto',
-        'respuesta': '',
-        'fecha': FieldValue.serverTimestamp(),
-        'resueltoEn': null,
-      });
+      await _db
+          .collection(ticketsCollection)
+          .add(
+            construirTicketSoporteEntrenador(
+              entrenadorUid: entrenadorUid,
+              perfil: perfil,
+              categoria: categoria,
+              asunto: asunto,
+              descripcion: descripcion,
+              fechaServidor: FieldValue.serverTimestamp(),
+            ),
+          );
       return AuthResponse(isSuccess: true);
     } on FirebaseException catch (e) {
       return AuthResponse(

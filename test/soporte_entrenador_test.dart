@@ -51,11 +51,38 @@ void main() {
     expect(repository.asunto, isNull);
   });
 
+  test('distingue los fallos de carga y envío de un estado vacío', () async {
+    final carga = SoporteEntrenadorController(
+      repository: _SoporteRepo(errorCarga: true),
+    );
+    final envio = SoporteEntrenadorController(
+      repository: _SoporteRepo(errorCreacion: 'No se pudo crear el ticket.'),
+    );
+    addTearDown(carga.dispose);
+    addTearDown(envio.dispose);
+
+    carga.iniciar();
+    await pumpEventQueue();
+    final creado = await envio.crear(
+      categoria: 'asistencia',
+      asunto: 'Problema con asistencia',
+      descripcion: 'No aparece un alumno confirmado en la lista.',
+    );
+
+    expect(carga.cargando, isFalse);
+    expect(carga.error, isNotNull);
+    expect(carga.tickets, isEmpty);
+    expect(creado, isFalse);
+    expect(envio.errorFormulario, 'No se pudo crear el ticket.');
+    expect(envio.mensaje, isNull);
+  });
+
   testWidgets('muestra formulario, estado y respuesta en móvil', (
     tester,
   ) async {
     final auth = AuthController();
-    final controller = SoporteEntrenadorController(repository: _SoporteRepo());
+    final repository = _SoporteRepo();
+    final controller = SoporteEntrenadorController(repository: repository);
     addTearDown(auth.dispose);
     addTearDown(controller.dispose);
     await tester.binding.setSurfaceSize(const Size(390, 900));
@@ -77,42 +104,91 @@ void main() {
       find.text('Actualiza la página y vuelve a intentarlo.'),
       findsOneWidget,
     );
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Asistencia').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(_campo('Asunto'), 'Problema con asistencia');
+    await tester.enterText(
+      _campo('Descripción'),
+      'No aparece un alumno confirmado en la lista.',
+    );
+    await tester.tap(find.text('Enviar solicitud'));
+    await tester.pumpAndSettle();
+
+    expect(repository.categoria, 'asistencia');
+    expect(repository.asunto, 'Problema con asistencia');
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('muestra un error de carga en lugar del estado vacío', (
+    tester,
+  ) async {
+    final auth = AuthController();
+    final controller = SoporteEntrenadorController(
+      repository: _SoporteRepo(errorCarga: true),
+    );
+    addTearDown(auth.dispose);
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SoporteEntrenadorView(auth: auth, controller: controller),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('No se pudieron cargar tus solicitudes de soporte.'),
+      findsOneWidget,
+    );
+    expect(find.text('No tienes solicitudes'), findsNothing);
   });
 }
 
+Finder _campo(String etiqueta) => find.byWidgetPredicate(
+  (widget) => widget is TextField && widget.decoration?.labelText == etiqueta,
+);
+
 class _SoporteRepo implements SoporteEntrenadorRepository {
+  _SoporteRepo({this.errorCarga = false, this.errorCreacion});
+
+  final bool errorCarga;
+  final String? errorCreacion;
   String? categoria;
   String? asunto;
   String? descripcion;
 
   @override
-  Stream<List<TicketSoporte>> tickets() => Stream.value([
-    TicketSoporte(
-      id: 'viejo',
-      asunto: 'Consulta de evento',
-      categoria: 'eventos',
-      descripcion: 'Necesito información sobre una solicitud.',
-      autorUid: 'entrenador-1',
-      autorNombre: 'Juan Pérez',
-      autorRol: 'entrenador',
-      estado: EstadoTicket.abierto,
-      fecha: DateTime(2026, 11, 1),
-    ),
-    TicketSoporte(
-      id: 'nuevo',
-      asunto: 'Problema con asistencia',
-      categoria: 'asistencia',
-      descripcion: 'No puedo ver la nómina completa.',
-      autorUid: 'entrenador-1',
-      autorNombre: 'Juan Pérez',
-      autorRol: 'entrenador',
-      estado: EstadoTicket.resuelto,
-      respuesta: 'Actualiza la página y vuelve a intentarlo.',
-      fecha: DateTime(2026, 11, 8),
-      resueltoEn: DateTime(2026, 11, 8, 12),
-    ),
-  ]);
+  Stream<List<TicketSoporte>> tickets() => errorCarga
+      ? Stream.error(StateError('sin conexión'))
+      : Stream.value([
+          TicketSoporte(
+            id: 'viejo',
+            asunto: 'Consulta de evento',
+            categoria: 'eventos',
+            descripcion: 'Necesito información sobre una solicitud.',
+            autorUid: 'entrenador-1',
+            autorNombre: 'Juan Pérez',
+            autorRol: 'entrenador',
+            estado: EstadoTicket.abierto,
+            fecha: DateTime(2026, 11, 1),
+          ),
+          TicketSoporte(
+            id: 'nuevo',
+            asunto: 'Problema con asistencia',
+            categoria: 'asistencia',
+            descripcion: 'No puedo ver la nómina completa.',
+            autorUid: 'entrenador-1',
+            autorNombre: 'Juan Pérez',
+            autorRol: 'entrenador',
+            estado: EstadoTicket.resuelto,
+            respuesta: 'Actualiza la página y vuelve a intentarlo.',
+            fecha: DateTime(2026, 11, 8),
+            resueltoEn: DateTime(2026, 11, 8, 12),
+          ),
+        ]);
 
   @override
   Future<String?> crear({
@@ -123,6 +199,6 @@ class _SoporteRepo implements SoporteEntrenadorRepository {
     this.categoria = categoria;
     this.asunto = asunto;
     this.descripcion = descripcion;
-    return null;
+    return errorCreacion;
   }
 }
