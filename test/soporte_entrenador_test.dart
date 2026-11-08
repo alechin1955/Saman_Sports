@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,7 +12,7 @@ import 'package:saman_sports/views/entrenador/soporte_entrenador_view.dart';
 void main() {
   setUp(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-  test('crea un ticket validado y conserva la lista propia en vivo', () async {
+  test('crea un ticket validado y ordena la lista propia', () async {
     final repository = _SoporteRepo();
     final controller = SoporteEntrenadorController(repository: repository);
     addTearDown(controller.dispose);
@@ -34,6 +36,33 @@ void main() {
     );
     expect(controller.errorFormulario, isNull);
   });
+
+  test(
+    'actualiza la lista cuando el repositorio publica otro estado',
+    () async {
+      final repository = _SoporteVivoRepo();
+      final controller = SoporteEntrenadorController(repository: repository);
+      addTearDown(controller.dispose);
+      addTearDown(repository.cerrar);
+      controller.iniciar();
+
+      repository.publicar([
+        _ticket(id: 'primero', fecha: DateTime(2026, 11, 1)),
+      ]);
+      await pumpEventQueue();
+      expect(controller.tickets.map((ticket) => ticket.id), ['primero']);
+
+      repository.publicar([
+        _ticket(id: 'primero', fecha: DateTime(2026, 11, 1)),
+        _ticket(id: 'segundo', fecha: DateTime(2026, 11, 9)),
+      ]);
+      await pumpEventQueue();
+      expect(controller.tickets.map((ticket) => ticket.id), [
+        'segundo',
+        'primero',
+      ]);
+    },
+  );
 
   test('no envía un ticket incompleto', () async {
     final repository = _SoporteRepo();
@@ -202,3 +231,34 @@ class _SoporteRepo implements SoporteEntrenadorRepository {
     return errorCreacion;
   }
 }
+
+class _SoporteVivoRepo implements SoporteEntrenadorRepository {
+  final _tickets = StreamController<List<TicketSoporte>>();
+
+  @override
+  Stream<List<TicketSoporte>> tickets() => _tickets.stream;
+
+  void publicar(List<TicketSoporte> tickets) => _tickets.add(tickets);
+
+  Future<void> cerrar() => _tickets.close();
+
+  @override
+  Future<String?> crear({
+    required String categoria,
+    required String asunto,
+    required String descripcion,
+  }) async => null;
+}
+
+TicketSoporte _ticket({required String id, required DateTime fecha}) =>
+    TicketSoporte(
+      id: id,
+      asunto: 'Solicitud $id',
+      categoria: 'otro',
+      descripcion: 'Descripción de la solicitud de soporte.',
+      autorUid: 'entrenador-1',
+      autorNombre: 'Juan Pérez',
+      autorRol: 'entrenador',
+      estado: EstadoTicket.abierto,
+      fecha: fecha,
+    );

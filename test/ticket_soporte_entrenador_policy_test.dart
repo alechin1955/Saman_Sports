@@ -49,6 +49,59 @@ void main() {
     );
   });
 
+  test('valida categoría y límites de texto en un único contrato', () {
+    const asunto = 'Necesito ayuda';
+    const descripcion = 'No puedo acceder a esta sección.';
+    expect(
+      validarTicketSoporteEntrenador(
+        categoria: 'otro',
+        asunto: asunto,
+        descripcion: descripcion,
+      ),
+      isNull,
+    );
+
+    final invalidos = [
+      (categoria: 'invalida', asunto: asunto, descripcion: descripcion),
+      (categoria: 'otro', asunto: '1234', descripcion: descripcion),
+      (
+        categoria: 'otro',
+        asunto: List.filled(81, 'a').join(),
+        descripcion: descripcion,
+      ),
+      (categoria: 'otro', asunto: asunto, descripcion: '123456789'),
+      (
+        categoria: 'otro',
+        asunto: asunto,
+        descripcion: List.filled(501, 'a').join(),
+      ),
+    ];
+    for (final caso in invalidos) {
+      expect(
+        validarTicketSoporteEntrenador(
+          categoria: caso.categoria,
+          asunto: caso.asunto,
+          descripcion: caso.descripcion,
+        ),
+        isNotNull,
+      );
+    }
+  });
+
+  test('rechaza un UID vacío aunque el perfil diga entrenador', () {
+    expect(
+      () => construirTicketSoporteEntrenador(
+        entrenadorUid: '',
+        perfil: const {'rol': 'entrenador'},
+        categoria: 'otro',
+        asunto: 'Necesito ayuda',
+        descripcion: 'No puedo acceder a esta sección.',
+        fechaServidor: DateTime(2026, 11, 8),
+      ),
+      throwsStateError,
+    );
+  });
+
   test('Firebase conserva el filtro y el constructor de seguridad', () async {
     final fuente = await File('lib/FirebaseServices.dart').readAsString();
     final inicioStream = fuente.indexOf('streamTicketsEntrenador({');
@@ -69,9 +122,19 @@ void main() {
       reason: 'La consulta debe estar limitada al UID autenticado.',
     );
     expect(
+      stream,
+      contains('actual == null || actual != entrenadorUid'),
+      reason: 'La consulta debe pertenecer a la sesión autenticada.',
+    );
+    expect(
       crear,
       contains('construirTicketSoporteEntrenador('),
       reason: 'La escritura debe usar el constructor autoritativo probado.',
+    );
+    expect(
+      crear,
+      contains('actual == null || actual != entrenadorUid'),
+      reason: 'La escritura debe pertenecer a la sesión autenticada.',
     );
     expect(
       crear,
