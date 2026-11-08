@@ -4,6 +4,10 @@ import 'package:saman_sports/models/estudiante.dart';
 abstract interface class AdminEstudianteRepository {
   Stream<List<Estudiante>> estudiantes();
   Future<String?> cambiarEstado({required String uid, required bool activo});
+  Future<String?> actualizarSolvencia({
+    required String uid,
+    required bool solvente,
+  });
 }
 
 class FirebaseAdminEstudianteAdapter implements AdminEstudianteRepository {
@@ -20,6 +24,16 @@ class FirebaseAdminEstudianteAdapter implements AdminEstudianteRepository {
   Future<String?> cambiarEstado({required String uid, required bool activo}) {
     return _texto(
       FirebaseServices.actualizarEstadoEstudiante(uid: uid, activo: activo),
+    );
+  }
+
+  @override
+  Future<String?> actualizarSolvencia({
+    required String uid,
+    required bool solvente,
+  }) {
+    return _texto(
+      FirebaseServices.actualizarSolvencia(uid: uid, solvente: solvente),
     );
   }
 }

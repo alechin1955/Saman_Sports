@@ -170,6 +170,11 @@ class _DeporteFormDialogState extends State<DeporteFormDialog> {
                     onFranjasChanged: (franjas) =>
                         setState(() => _franjas = franjas),
                   ),
+                  if (_franjas.isEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(AppStrings.adminAyudaHorario),
+                    ),
                   DropdownButtonFormField<String?>(
                     initialValue: _entrenadorUid,
                     decoration: InputDecoration(
