@@ -3,7 +3,7 @@
 // (identificador de PayPal simulado), estado ('pendiente' | 'realizado'),
 // fecha (Timestamp).
 
-enum EstadoPago { pendiente, realizado }
+enum EstadoPago { pendiente, realizado, rechazado }
 
 class Pago {
   const Pago({
@@ -18,6 +18,7 @@ class Pago {
     this.fechaPago,
     this.verificado = false,
     this.verificadoPor = '',
+    this.periodo,
   });
 
   final String id;
@@ -31,6 +32,7 @@ class Pago {
   final DateTime? fechaPago;
   final bool verificado;
   final String verificadoPor;
+  final String? periodo;
 
   factory Pago.fromMap(Map<String, dynamic> map) {
     final monto = map['monto'];
@@ -49,6 +51,7 @@ class Pago {
       fechaPago: _fechaOpcional(map['fechaPago']),
       verificado: map['verificado'] == true,
       verificadoPor: '${map['verificadoPor'] ?? ''}',
+      periodo: _periodo(map['periodo']),
     );
   }
 
@@ -64,6 +67,7 @@ class Pago {
       if (paypalOrderId.isNotEmpty) 'paypalOrderId': paypalOrderId,
       if (fechaPago != null) 'fechaPago': fechaPago,
       if (verificadoPor.isNotEmpty) 'verificadoPor': verificadoPor,
+      if (periodo != null && periodo!.isNotEmpty) 'periodo': periodo,
     };
   }
 
@@ -74,6 +78,13 @@ class Pago {
       if (convertida is DateTime) return convertida;
     } catch (_) {}
     return DateTime.now();
+  }
+
+  static String? _periodo(dynamic valor) {
+    if (valor is! String) return null;
+    final texto = valor.trim();
+    if (texto.isEmpty) return null;
+    return texto;
   }
 
   static DateTime? _fechaOpcional(dynamic valor) {
