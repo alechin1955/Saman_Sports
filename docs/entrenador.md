@@ -83,7 +83,7 @@ La exportación consulta datos guardados; se bloquea mientras hay un borrador si
 
 Comprobación local del 8 de noviembre de 2026 con Flutter 3.47.9 y Dart 3.13.7:
 
-- Suite completa: 183 pruebas aprobadas, incluidas las nuevas vistas, controladores, políticas y el Bridge.
+- Suite completa: 191 pruebas aprobadas, incluidas las nuevas vistas, controladores, políticas y el Bridge.
 - Compilación web de producción: correcta, incluido el análisis previo de compatibilidad Wasm.
 - Pruebas de widgets adaptables a 320, 390, 768 y 1440 px, incluido el diálogo móvil de solicitud de eventos.
 - Análisis de los archivos modificados: sin incidencias. El análisis global mantiene el aviso previo sobre el nombre `FirebaseServices.dart`.

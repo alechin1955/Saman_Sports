@@ -30,6 +30,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/usuarios/$(uid())).data.rol;
     }
 
+    function nombreUsuarioActual() {
+      let usuario = get(/databases/$(database)/documents/usuarios/$(uid())).data;
+      return usuario.nombre + ' ' + usuario.apellido;
+    }
+
     function isAdmin() {
       return firmado() && rol() == 'administrador';
     }
@@ -228,10 +233,26 @@ match /tickets/{id} {
     || (firmado() && resource.data.autorUid == uid());
 
   allow create: if (isEstudiante() || isEntrenador())
+    && request.resource.data.keys().hasOnly([
+      'asunto', 'categoria', 'descripcion', 'autorUid', 'autorNombre',
+      'autorRol', 'estado', 'respuesta', 'fecha', 'resueltoEn'
+    ])
     && request.resource.data.autorUid == uid()
+    && request.resource.data.autorNombre == nombreUsuarioActual()
     && request.resource.data.autorRol == rol()
     && request.resource.data.estado == 'abierto'
-    && request.resource.data.respuesta == '';
+    && request.resource.data.respuesta == ''
+    && request.resource.data.resueltoEn == null
+    && request.resource.data.fecha == request.time
+    && request.resource.data.categoria in [
+      'cuenta', 'disciplinas', 'asistencia', 'eventos', 'otro'
+    ]
+    && request.resource.data.asunto is string
+    && request.resource.data.asunto.size() >= 5
+    && request.resource.data.asunto.size() <= 80
+    && request.resource.data.descripcion is string
+    && request.resource.data.descripcion.size() >= 10
+    && request.resource.data.descripcion.size() <= 500;
 
   allow update: if isAdmin()
     && soloCambia(['respuesta', 'estado', 'resueltoEn']);
@@ -239,6 +260,8 @@ match /tickets/{id} {
   allow delete: if false;
 }
 ```
+
+La comparación de `autorNombre` supone que los perfiles tienen `nombre` y `apellido`, como exige el registro actual. Si el esquema remoto admite perfiles antiguos sin esos campos, hay que normalizarlos antes de desplegar esta regla; no se debe reemplazar la comparación por un nombre enviado libremente por el cliente.
 
 ### notificaciones
 
