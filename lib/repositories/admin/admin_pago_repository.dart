@@ -1,4 +1,5 @@
 import 'package:saman_sports/FirebaseServices.dart';
+import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 import 'package:saman_sports/models/configuracion_pagos.dart';
 import 'package:saman_sports/models/estudiante.dart';
 import 'package:saman_sports/models/pago.dart';
@@ -13,6 +14,7 @@ abstract interface class AdminPagoRepository {
     required DateTime fechaPago,
     required bool verificado,
     required String verificadoPor,
+    String? periodo,
   });
   Future<String?> guardarFechaCorte({
     required String periodo,
@@ -28,6 +30,16 @@ abstract interface class AdminPagoRepository {
     required String uid,
     required String periodo,
     required DateTime fechaCorte,
+  });
+  Future<String?> cambiarEstadoPago({
+    required String pagoId,
+    required String estado,
+  });
+  Future<AdminCorteEstudiante> aplicarCorteEstudiante({
+    required String uid,
+    required String periodo,
+    required DateTime fechaCorte,
+    required double monto,
   });
 }
 
@@ -62,6 +74,7 @@ class FirebaseAdminPagoAdapter implements AdminPagoRepository {
     required DateTime fechaPago,
     required bool verificado,
     required String verificadoPor,
+    String? periodo,
   }) {
     return _texto(
       FirebaseServices.registrarPagoPaypal(
@@ -70,6 +83,7 @@ class FirebaseAdminPagoAdapter implements AdminPagoRepository {
         fechaPago: fechaPago,
         verificado: verificado,
         verificadoPor: verificadoPor,
+        periodo: periodo,
       ),
     );
   }
@@ -113,6 +127,40 @@ class FirebaseAdminPagoAdapter implements AdminPagoRepository {
         periodo: periodo,
         fechaCorte: fechaCorte,
       ),
+    );
+  }
+
+  @override
+  Future<String?> cambiarEstadoPago({
+    required String pagoId,
+    required String estado,
+  }) {
+    return _texto(
+      FirebaseServices.cambiarEstadoPago(pagoId: pagoId, estado: estado),
+    );
+  }
+
+  @override
+  Future<AdminCorteEstudiante> aplicarCorteEstudiante({
+    required String uid,
+    required String periodo,
+    required DateTime fechaCorte,
+    required double monto,
+  }) async {
+    final resultado = await FirebaseServices.aplicarCorteEstudiante(
+      uid: uid,
+      periodo: periodo,
+      fechaCorte: fechaCorte,
+      monto: monto,
+    );
+    if (!resultado.isSuccess) {
+      return AdminCorteEstudiante(
+        error: resultado.errorMessage ?? 'Ocurrió un error. Inténtalo de nuevo.',
+      );
+    }
+    return AdminCorteEstudiante(
+      solvente: resultado.errorMessage == 'solvente',
+      avisoCreado: resultado.errorMessage == 'aviso_creado',
     );
   }
 }

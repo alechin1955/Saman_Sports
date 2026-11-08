@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
+import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 
 class FirebaseServices {
   static Future<AuthResponse> register({
@@ -1345,12 +1346,15 @@ class FirebaseServices {
       if (error != null) throw StateError(error);
       final canchaRef = _db.collection(canchasCollection).doc(canchaId);
       final eventoRef = _db.collection(eventosCollection).doc();
+      final deporteId = '${datos['deporteId'] ?? ''}'.trim();
+      var canchaNombre = '';
+      var ignoroPractica = false;
       await _db.runTransaction((tx) async {
         final cancha = await tx.get(canchaRef);
         if (!cancha.exists || cancha.data()?['activa'] != true) {
           throw StateError('La cancha no existe o está inactiva');
         }
-        final canchaNombre = '${cancha.data()?['nombre'] ?? ''}';
+        canchaNombre = '${cancha.data()?['nombre'] ?? ''}';
         final existentes = await _ocupadas(canchaId);
         final nueva = _reservaEvento(
           canchaId: canchaId,
@@ -1361,16 +1365,23 @@ class FirebaseServices {
           refId: eventoRef.id,
           refNombre: titulo,
         );
-        _exigirSinChoque(existentes, nueva);
+        final choque = _exigirChoqueEvento(
+          existentes,
+          nueva,
+          deporteId: deporteId,
+        );
+        ignoroPractica = choque.ignoroPractica;
         tx.set(eventoRef, {
           ...datos,
           'titulo': titulo,
+          'deporteId': deporteId.isEmpty ? null : deporteId,
           'canchaId': canchaId,
           'canchaNombre': canchaNombre,
           'fecha': fecha,
           'horaInicio': horaInicio,
           'horaFin': horaFin,
           'estado': 'aprobado',
+          'reemplazaPractica': ignoroPractica,
           'creadoPorUid': _auth.currentUser?.uid ?? '',
           'creadoEn': FieldValue.serverTimestamp(),
         });
@@ -1388,6 +1399,17 @@ class FirebaseServices {
           ),
         );
       });
+      if (deporteId.isNotEmpty) {
+        await _escribirNotificacionesEvento(
+          deporteId: deporteId,
+          titulo: titulo,
+          fecha: fecha,
+          horaInicio: horaInicio,
+          horaFin: horaFin,
+          canchaNombre: canchaNombre,
+          reemplazaPractica: ignoroPractica,
+        );
+      }
     });
   }
 
@@ -1526,18 +1548,21 @@ class FirebaseServices {
             ? null
             : await tx.get(_db.collection(canchasCollection).doc(canchaId));
         final reservas = await _reservasDelEvento(id);
+        final tituloAprobado = '${actual['titulo'] ?? ''}';
+        final deporteAprobado = '${actual['deporteId'] ?? ''}'.trim();
         if (estado == 'aprobado') {
-          if (cancha == null ||
+          if (canchaId.isEmpty ||
+              cancha == null ||
               !cancha.exists ||
               cancha.data()?['activa'] != true) {
-            throw StateError('La cancha no existe o está inactiva');
+            throw StateError(AppStrings.adminAsignaCancha);
           }
           final fecha = '${actual['fecha'] ?? ''}';
           final inicio = _enteroAdmin(actual['horaInicio']);
           final fin = _enteroAdmin(actual['horaFin']);
           final canchaNombre =
               '${actual['canchaNombre'] ?? cancha.data()?['nombre'] ?? ''}';
-          _exigirSinChoque(
+          final choque = _exigirChoqueEvento(
             await _ocupadas(canchaId),
             _reservaEvento(
               canchaId: canchaId,
@@ -1546,11 +1571,15 @@ class FirebaseServices {
               horaInicio: inicio,
               horaFin: fin,
               refId: id,
-              refNombre: '${actual['titulo'] ?? ''}',
+              refNombre: tituloAprobado,
             ),
             ignorarRefId: id,
+            deporteId: deporteAprobado,
           );
-          tx.update(eventoRef, {'estado': estado});
+          tx.update(eventoRef, {
+            'estado': estado,
+            'reemplazaPractica': choque.ignoroPractica,
+          });
           if (reservas.docs.isEmpty) {
             tx.set(_db.collection(reservasCollection).doc(), {
               ..._reservaEvento(
@@ -1591,6 +1620,75 @@ class FirebaseServices {
         );
       });
     });
+  }
+
+  static Future<AuthResponse> notificarInscritosEvento({
+    required String deporteId,
+    required String titulo,
+    required String fecha,
+    required int horaInicio,
+    required int horaFin,
+    required String canchaNombre,
+    required bool reemplazaPractica,
+  }) {
+    return _ejecutarAdmin(
+      () => _escribirNotificacionesEvento(
+        deporteId: deporteId,
+        titulo: titulo,
+        fecha: fecha,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+        canchaNombre: canchaNombre,
+        reemplazaPractica: reemplazaPractica,
+      ),
+    );
+  }
+
+  static Future<void> _escribirNotificacionesEvento({
+    required String deporteId,
+    required String titulo,
+    required String fecha,
+    required int horaInicio,
+    required int horaFin,
+    required String canchaNombre,
+    required bool reemplazaPractica,
+  }) async {
+    final inscritos = await _db
+        .collection(inscripcionesCollection)
+        .where('deporteId', isEqualTo: deporteId)
+        .where('estado', isEqualTo: 'confirmada')
+        .get();
+    if (inscritos.docs.isEmpty) return;
+    final mensaje = mensajeNotificacionEvento(
+      titulo: titulo,
+      fecha: fecha,
+      horaInicio: horaInicio,
+      horaFin: horaFin,
+      canchaNombre: canchaNombre,
+      reemplazaPractica: reemplazaPractica,
+    );
+    var batch = _db.batch();
+    var escritos = 0;
+    for (final doc in inscritos.docs) {
+      final datos = doc.data();
+      final uid = '${datos['estudianteUid'] ?? datos['uid'] ?? ''}';
+      if (uid.isEmpty) continue;
+      batch.set(_db.collection(notificacionesCollection).doc(), {
+        'destinatarioUid': uid,
+        'tipo': 'evento',
+        'titulo': titulo,
+        'mensaje': mensaje,
+        'leida': false,
+        'fecha': FieldValue.serverTimestamp(),
+      });
+      escritos++;
+      if (escritos == 400) {
+        await batch.commit();
+        batch = _db.batch();
+        escritos = 0;
+      }
+    }
+    if (escritos > 0) await batch.commit();
   }
 
   static Stream<List<Map<String, dynamic>>> streamEstudiantesAdmin() {
@@ -1741,6 +1839,24 @@ class FirebaseServices {
     );
   }
 
+  static ResultadoChoqueEvento _exigirChoqueEvento(
+    List<ReservaHorario> existentes,
+    ReservaHorario nueva, {
+    String? ignorarRefId,
+    String? deporteId,
+  }) {
+    final resultado = evaluarChoqueEvento(
+      nuevas: [nueva],
+      existentes: existentes,
+      ignorarRefId: ignorarRefId,
+      deporteId: deporteId,
+    );
+    if (resultado.choque != null) {
+      throw StateError(mensajeChoque(resultado.choque!));
+    }
+    return resultado;
+  }
+
   static void _exigirSinChoque(
     List<ReservaHorario> existentes,
     ReservaHorario nueva, {
@@ -1782,22 +1898,177 @@ class FirebaseServices {
     required DateTime fechaPago,
     required bool verificado,
     required String verificadoPor,
+    String? periodo,
   }) {
     return _ejecutarAdmin(() async {
-      await _db.collection(pagosCollection).doc(pagoId).update({
-        'paypalOrderId': paypalOrderId,
-        'idTransaccion': paypalOrderId,
-        'fechaPago': fechaPago,
-        'verificado': verificado,
-        'verificadoPor': verificadoPor,
-        'verificadoEn': FieldValue.serverTimestamp(),
-        'estado': verificado ? 'realizado' : 'pendiente',
+      final pagoRef = _db.collection(pagosCollection).doc(pagoId);
+      final configRef = _db.collection(configuracionCollection).doc('pagos');
+      await _db.runTransaction((tx) async {
+        final pago = await tx.get(pagoRef);
+        if (!pago.exists) throw StateError('El pago no existe.');
+        final datos = pago.data() ?? {};
+        final uid = '${datos['estudianteUid'] ?? ''}'.trim();
+        final monto = _numeroAdmin(datos['monto']);
+        final config = await tx.get(configRef);
+        final periodoConfig = '${config.data()?['periodo'] ?? ''}'.trim();
+        final montoEsperado = _numeroAdmin(config.data()?['monto']);
+        final periodoPago = (periodo ?? '${datos['periodo'] ?? ''}').trim();
+        final concede = verificado &&
+            AdminSolvencia.datosValidos(
+              uidPago: uid,
+              uid: uid,
+              periodoPago: periodoPago.isEmpty ? null : periodoPago,
+              periodo: periodoConfig,
+              estado: 'realizado',
+              verificado: true,
+              fechaPago: fechaPago,
+              monto: monto,
+              montoEsperado: montoEsperado,
+            );
+        final cambios = <String, dynamic>{
+          'paypalOrderId': paypalOrderId,
+          'idTransaccion': paypalOrderId,
+          'fechaPago': fechaPago,
+          'verificado': verificado,
+          'verificadoPor': verificadoPor,
+          'verificadoEn': FieldValue.serverTimestamp(),
+          'estado': verificado ? 'realizado' : 'pendiente',
+        };
+        if (periodoPago.isNotEmpty) cambios['periodo'] = periodoPago;
+        tx.update(pagoRef, cambios);
+        if (concede) {
+          tx.update(_db.collection(usuariosCollection).doc(uid), {
+            'solvente': true,
+          });
+        }
+        tx.set(
+          _db.collection(transaccionesCollection).doc(),
+          _datosTransaccion(
+            accion: verificado ? 'verificar' : 'rechazar',
+            modulo: 'pagos',
+            descripcion: concede
+                ? 'Verificó el pago $pagoId y dejó solvente a $uid. La fecha es la del momento de verificar, no una fecha bancaria.'
+                : 'Registró el pago $pagoId sin conceder solvencia',
+          ),
+        );
       });
+    });
+  }
+
+  static Future<AuthResponse> aplicarCorteEstudiante({
+    required String uid,
+    required String periodo,
+    required DateTime fechaCorte,
+    required double monto,
+  }) async {
+    try {
+      final userRef = _db.collection(usuariosCollection).doc(uid);
+      final avisoRef = _db.collection(notificacionesCollection).doc(
+        'pago-$periodo-$uid',
+      );
+      final conocidos = await _db
+          .collection(pagosCollection)
+          .where('estudianteUid', isEqualTo: uid)
+          .get();
+      var solvente = false;
+      var avisoCreado = false;
+      await _db.runTransaction((tx) async {
+        solvente = false;
+        avisoCreado = false;
+        final usuario = await tx.get(userRef);
+        if (!usuario.exists) throw StateError('El estudiante no existe.');
+        final datosUsuario = usuario.data() ?? {};
+        final activo = datosUsuario['estado'] == 'activo';
+        if (!activo) return;
+        final aviso = await tx.get(avisoRef);
+        var valido = false;
+        for (final doc in conocidos.docs) {
+          final actual = await tx.get(doc.reference);
+          if (!actual.exists) continue;
+          final datos = actual.data() ?? {};
+          if (AdminSolvencia.datosValidos(
+            uidPago: '${datos['estudianteUid'] ?? ''}',
+            uid: uid,
+            periodoPago: _periodoAdmin(datos['periodo']),
+            periodo: periodo,
+            estado: '${datos['estado'] ?? ''}',
+            verificado: datos['verificado'] == true,
+            fechaPago: _fechaAdmin(datos['fechaPago']),
+            monto: _numeroAdmin(datos['monto']),
+            montoEsperado: monto,
+          )) {
+            valido = true;
+            break;
+          }
+        }
+        solvente = valido;
+        tx.update(userRef, {'solvente': valido});
+        if (!valido && !aviso.exists) {
+          avisoCreado = true;
+          tx.set(avisoRef, {
+            'destinatarioUid': uid,
+            'tipo': 'pago_pendiente',
+            'titulo': 'Pago pendiente',
+            'mensaje':
+                'Tu pago del período $periodo está pendiente. Debes pagarlo para recuperar la solvencia.',
+            'periodo': periodo,
+            'leida': false,
+            'fecha': FieldValue.serverTimestamp(),
+          });
+        }
+        tx.set(
+          _db.collection(transaccionesCollection).doc(),
+          _datosTransaccion(
+            accion: valido ? 'corte_solvente' : 'corte_insolvente',
+            modulo: 'pagos',
+            descripcion: valido
+                ? 'El corte dejó solvente a $uid'
+                : 'El corte marcó insolvente a $uid',
+          ),
+        );
+      });
+      return AuthResponse(
+        isSuccess: true,
+        errorMessage: avisoCreado
+            ? 'aviso_creado'
+            : solvente
+            ? 'solvente'
+            : null,
+      );
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+
+  static Future<AuthResponse> cambiarEstadoPago({
+    required String pagoId,
+    required String estado,
+  }) {
+    return _ejecutarAdmin(() async {
+      const validos = ['pendiente', 'realizado', 'rechazado'];
+      if (!validos.contains(estado)) {
+        throw StateError('El estado del pago no es válido.');
+      }
+      final cambios = <String, dynamic>{
+        'estado': estado,
+        'verificado': estado == 'realizado',
+      };
+      if (estado != 'realizado') cambios['verificadoPor'] = '';
+      await _db.collection(pagosCollection).doc(pagoId).update(cambios);
       await registrarTransaccion(
-        accion: verificado ? 'verificar' : 'rechazar',
+        accion: estado == 'rechazado' ? 'rechazar' : 'marcar_pendiente',
         modulo: 'pagos',
-        descripcion:
-            'Registró el pago $pagoId como ${verificadoPor == 'simulado' ? 'simulado' : verificadoPor}',
+        descripcion: 'Marcó el pago $pagoId como $estado',
       );
     });
   }
@@ -1995,6 +2266,78 @@ class FirebaseServices {
       'eventosAprobados': resultados[10],
       'ingresos': resultados[11],
     };
+  }
+
+  static Future<Map<String, dynamic>> resumenGraficosAdmin() async {
+    final ahora = DateTime.now();
+    final inicio = DateTime(ahora.year, ahora.month - 5, 1);
+    final deportes = await _db.collection(deportesCollection).get();
+    final populares = deportes.docs
+        .map(
+          (doc) => {
+            'nombre': '${doc.data()['nombre'] ?? ''}',
+            'inscritos': _enteroAdmin(doc.data()['inscritos']),
+          },
+        )
+        .toList()
+      ..sort(
+        (a, b) => (b['inscritos'] as int).compareTo(a['inscritos'] as int),
+      );
+    final meses = <String, int>{};
+    for (var i = 0; i < 6; i++) {
+      final fecha = DateTime(inicio.year, inicio.month + i);
+      final clave =
+          '${fecha.year}-${fecha.month.toString().padLeft(2, '0')}';
+      meses[clave] = 0;
+    }
+    final inscripciones = await _db.collection(inscripcionesCollection).get();
+    for (final doc in inscripciones.docs) {
+      final fecha = _fechaAdmin(doc.data()['fecha']);
+      if (fecha == null || fecha.isBefore(inicio)) continue;
+      final clave =
+          '${fecha.year}-${fecha.month.toString().padLeft(2, '0')}';
+      if (meses.containsKey(clave)) meses[clave] = meses[clave]! + 1;
+    }
+    final resenas = await _db.collection(resenasCollection).get();
+    var suma = 0;
+    var cantidad = 0;
+    for (final doc in resenas.docs) {
+      if (doc.data()['visible'] == false) continue;
+      suma += _enteroAdmin(doc.data()['estrellas']);
+      cantidad++;
+    }
+    return {
+      'deportesPopulares': populares.take(5).toList(),
+      'inscripcionesPorMes': [
+        for (final entrada in meses.entries)
+          {'mes': entrada.key, 'total': entrada.value},
+      ],
+      'resenasCantidad': cantidad,
+      'resenasPromedio': cantidad == 0
+          ? 0
+          : (suma / cantidad * 10).round() / 10,
+    };
+  }
+
+  static double _numeroAdmin(dynamic valor) {
+    if (valor is num) return valor.toDouble();
+    return double.tryParse('$valor') ?? 0;
+  }
+
+  static String? _periodoAdmin(dynamic valor) {
+    if (valor is! String) return null;
+    final texto = valor.trim();
+    return texto.isEmpty ? null : texto;
+  }
+
+  static DateTime? _fechaAdmin(dynamic valor) {
+    if (valor is DateTime) return valor;
+    if (valor is String) return DateTime.tryParse(valor);
+    try {
+      final convertida = (valor as dynamic).toDate();
+      if (convertida is DateTime) return convertida;
+    } catch (_) {}
+    return null;
   }
 
   static Future<num> _contar(Query<Map<String, dynamic>> consulta) async {

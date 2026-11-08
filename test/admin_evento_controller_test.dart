@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/controllers/admin/admin_evento_controller.dart';
+import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/cancha.dart';
+import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/evento.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/admin/admin_evento_repository.dart';
@@ -115,11 +117,127 @@ void main() {
     expect(resultado, isNull);
     expect(repo.creados, 1);
   });
+
+  test('ignora el choque con la práctica de su propia disciplina', () async {
+    final miercoles = conWeekday(DateTime.wednesday);
+    repo.reservas = [
+      ReservaHorario(
+        id: 'r1',
+        canchaId: 'c1',
+        canchaNombre: 'Cancha 1',
+        dia: DateTime.wednesday,
+        horaInicio: 960,
+        horaFin: 1080,
+        tipo: TipoReserva.deporte,
+        refId: 'futbol',
+        refNombre: 'Fútbol',
+        activa: true,
+      ),
+    ];
+    controller.observarCancha('c1');
+    await Future<void>.delayed(Duration.zero);
+
+    final resultado = await controller.crearEvento(
+      titulo: 'Clásico',
+      tipo: TipoEvento.partido,
+      canchaId: 'c1',
+      fecha: iso(miercoles),
+      horaInicio: 960,
+      horaFin: 1020,
+      descripcion: 'Partido',
+      deporteId: 'futbol',
+      deporteNombre: 'Fútbol',
+    );
+
+    expect(resultado, isNull);
+    expect(repo.ultimoDatos['deporteId'], 'futbol');
+    expect(repo.ultimoDatos['reemplazaPractica'], isTrue);
+    expect(
+      mensajeNotificacionEvento(
+        titulo: 'Clásico',
+        fecha: iso(miercoles),
+        horaInicio: 960,
+        horaFin: 1020,
+        canchaNombre: 'Cancha 1',
+        reemplazaPractica: true,
+      ),
+      contains('no hay práctica'),
+    );
+  });
+
+  test('otra disciplina sigue bloqueada y aprobar notifica inscritos', () async {
+    final miercoles = conWeekday(DateTime.wednesday);
+    repo.reservas = [
+      ReservaHorario(
+        id: 'r1',
+        canchaId: 'c1',
+        canchaNombre: 'Cancha 1',
+        dia: DateTime.wednesday,
+        horaInicio: 960,
+        horaFin: 1080,
+        tipo: TipoReserva.deporte,
+        refId: 'futbol',
+        refNombre: 'Fútbol',
+        activa: true,
+      ),
+    ];
+    controller.observarCancha('c1');
+    await Future<void>.delayed(Duration.zero);
+
+    final bloqueado = await controller.crearEvento(
+      titulo: 'Torneo',
+      tipo: TipoEvento.evento,
+      canchaId: 'c1',
+      fecha: iso(miercoles),
+      horaInicio: 960,
+      horaFin: 1020,
+      descripcion: 'Otro',
+      deporteId: 'tenis',
+      deporteNombre: 'Tenis',
+    );
+    expect(bloqueado, isNotNull);
+    expect(repo.creados, 0);
+
+    controller.filtrar(estado: EstadoEvento.pendiente);
+    expect(controller.filtroEstado, EstadoEvento.pendiente);
+    final evento = Evento(
+      id: 'e1',
+      titulo: 'Torneo',
+      tipo: TipoEvento.evento,
+      canchaId: 'c1',
+      canchaNombre: 'Cancha 1',
+      fecha: iso(miercoles),
+      horaInicio: 960,
+      horaFin: 1020,
+      descripcion: 'Otro',
+      estado: EstadoEvento.pendiente,
+      creadoPorUid: 'admin',
+      deporteId: 'tenis',
+    );
+    expect(
+      await controller.cambiarEstado(evento, EstadoEvento.aprobado),
+      isNull,
+    );
+    expect(repo.ultimoEstado, 'aprobado');
+    expect(repo.notificaciones, 1);
+    expect(
+      await controller.cambiarEstado(evento, EstadoEvento.rechazado),
+      isNull,
+    );
+    expect(repo.ultimoEstado, 'rechazado');
+    expect(repo.notificaciones, 1);
+  });
 }
 
 class _FalsoEventos implements AdminEventoRepository {
   List<ReservaHorario> reservas = [];
   int creados = 0;
+  int notificaciones = 0;
+  String? ultimoEstado;
+  Map<String, dynamic> ultimoDatos = {};
+
+  @override
+  Stream<List<Deporte>> deportes() => Stream.value(const []);
 
   @override
   Stream<List<Evento>> eventos() => Stream.value(const []);
@@ -141,6 +259,7 @@ class _FalsoEventos implements AdminEventoRepository {
     required int horaFin,
   }) async {
     creados++;
+    ultimoDatos = datos;
     return null;
   }
 
@@ -158,5 +277,22 @@ class _FalsoEventos implements AdminEventoRepository {
   Future<String?> cambiarEstadoEvento({
     required String id,
     required String estado,
-  }) async => null;
+  }) async {
+    ultimoEstado = estado;
+    return null;
+  }
+
+  @override
+  Future<String?> notificarInscritos({
+    required String deporteId,
+    required String titulo,
+    required String fecha,
+    required int horaInicio,
+    required int horaFin,
+    required String canchaNombre,
+    required bool reemplazaPractica,
+  }) async {
+    notificaciones++;
+    return null;
+  }
 }

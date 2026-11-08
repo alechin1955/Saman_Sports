@@ -64,6 +64,57 @@ bool reservasChocan(ReservaHorario a, ReservaHorario b) {
   return DateTime.tryParse(puntual.fecha!)?.weekday == semanal.dia;
 }
 
+class ResultadoChoqueEvento {
+  const ResultadoChoqueEvento({this.choque, this.ignoroPractica = false});
+
+  final ReservaHorario? choque;
+  final bool ignoroPractica;
+}
+
+bool ignoraChoqueDePractica(ReservaHorario reserva, String? deporteId) {
+  if (deporteId == null || deporteId.isEmpty) return false;
+  return reserva.tipo == TipoReserva.deporte && reserva.refId == deporteId;
+}
+
+ResultadoChoqueEvento evaluarChoqueEvento({
+  required List<ReservaHorario> nuevas,
+  required List<ReservaHorario> existentes,
+  String? ignorarRefId,
+  String? deporteId,
+}) {
+  var ignoroPractica = false;
+  final restantes = <ReservaHorario>[];
+  for (final existente in existentes) {
+    if (ignorarRefId != null && existente.refId == ignorarRefId) continue;
+    if (ignoraChoqueDePractica(existente, deporteId)) {
+      for (final nueva in nuevas) {
+        if (reservasChocan(nueva, existente)) ignoroPractica = true;
+      }
+      continue;
+    }
+    restantes.add(existente);
+  }
+  return ResultadoChoqueEvento(
+    choque: buscarChoque(nuevas: nuevas, existentes: restantes),
+    ignoroPractica: ignoroPractica,
+  );
+}
+
+String mensajeNotificacionEvento({
+  required String titulo,
+  required String fecha,
+  required int horaInicio,
+  required int horaFin,
+  required String canchaNombre,
+  required bool reemplazaPractica,
+}) {
+  final hora = '${minutosATexto(horaInicio)}–${minutosATexto(horaFin)}';
+  if (reemplazaPractica) {
+    return 'Ese día no hay práctica. Hay evento a las $hora en $canchaNombre.';
+  }
+  return 'Hay un evento: $titulo el $fecha de $hora en $canchaNombre.';
+}
+
 ReservaHorario? buscarChoque({
   required List<ReservaHorario> nuevas,
   required List<ReservaHorario> existentes,

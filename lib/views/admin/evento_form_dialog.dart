@@ -23,6 +23,7 @@ class _EventoFormDialogState extends State<EventoFormDialog> {
   late final TextEditingController _descripcion;
   late TipoEvento _tipo;
   String? _canchaId;
+  String? _deporteId;
   String? _fecha;
   List<FranjaHorario> _franjas = [];
 
@@ -34,6 +35,7 @@ class _EventoFormDialogState extends State<EventoFormDialog> {
     _descripcion = TextEditingController(text: evento?.descripcion ?? '');
     _tipo = evento?.tipo ?? TipoEvento.evento;
     _canchaId = evento?.canchaId;
+    _deporteId = evento?.deporteId;
     _fecha = evento?.fecha;
     if (evento != null) _franjas = [evento.franja];
     if (_canchaId != null) widget.eventos.observarCancha(_canchaId);
@@ -58,6 +60,7 @@ class _EventoFormDialogState extends State<EventoFormDialog> {
           horaInicio: _franjas.first.horaInicio,
           horaFin: _franjas.first.horaFin,
           ignorarEventoId: widget.evento?.id,
+          deporteId: _deporteId,
         ) ==
         null;
   }
@@ -73,6 +76,8 @@ class _EventoFormDialogState extends State<EventoFormDialog> {
             horaInicio: franja.horaInicio,
             horaFin: franja.horaFin,
             descripcion: _descripcion.text,
+            deporteId: _deporteId,
+            deporteNombre: _nombreDeporte(),
           )
         : await widget.eventos.actualizarEvento(
             evento: widget.evento!,
@@ -85,6 +90,13 @@ class _EventoFormDialogState extends State<EventoFormDialog> {
           );
     if (!mounted || error != null) return;
     Navigator.pop(context);
+  }
+
+  String? _nombreDeporte() {
+    for (final deporte in widget.eventos.deportesActivos) {
+      if (deporte.id == _deporteId) return deporte.nombre;
+    }
+    return widget.evento?.deporteNombre;
   }
 
   @override
@@ -103,6 +115,25 @@ class _EventoFormDialogState extends State<EventoFormDialog> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CampoTexto(label: AppStrings.nombre, controller: _titulo),
+                  DropdownButtonFormField<String?>(
+                    initialValue: _deporteId,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: AppStrings.adminDisciplina,
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text(AppStrings.adminSinAsignar),
+                      ),
+                      for (final deporte in widget.eventos.deportesActivos)
+                        DropdownMenuItem(
+                          value: deporte.id,
+                          child: Text(deporte.nombre),
+                        ),
+                    ],
+                    onChanged: (valor) => setState(() => _deporteId = valor),
+                  ),
                   DropdownButtonFormField<TipoEvento>(
                     initialValue: _tipo,
                     decoration: InputDecoration(
@@ -142,6 +173,11 @@ class _EventoFormDialogState extends State<EventoFormDialog> {
                     onFranjasChanged: (franjas) =>
                         setState(() => _franjas = franjas),
                   ),
+                  if (_franjas.isEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(AppStrings.adminAyudaHorario),
+                    ),
                   if (widget.eventos.error != null) Text(widget.eventos.error!),
                 ],
               );

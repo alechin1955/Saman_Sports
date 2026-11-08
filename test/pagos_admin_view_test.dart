@@ -7,6 +7,7 @@ import 'package:saman_sports/models/configuracion_pagos.dart';
 import 'package:saman_sports/models/estudiante.dart';
 import 'package:saman_sports/models/pago.dart';
 import 'package:saman_sports/repositories/admin/admin_pago_repository.dart';
+import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 import 'package:saman_sports/views/admin/pagos_admin_view.dart';
 
 void main() {
@@ -110,5 +111,20 @@ class _Pagos implements AdminPagoRepository {
     required DateTime fechaPago,
     required bool verificado,
     required String verificadoPor,
+    String? periodo,
+  }) async => null;
+
+  @override
+  Future<AdminCorteEstudiante> aplicarCorteEstudiante({
+    required String uid,
+    required String periodo,
+    required DateTime fechaCorte,
+    required double monto,
+  }) async => const AdminCorteEstudiante();
+
+  @override
+  Future<String?> cambiarEstadoPago({
+    required String pagoId,
+    required String estado,
   }) async => null;
 }

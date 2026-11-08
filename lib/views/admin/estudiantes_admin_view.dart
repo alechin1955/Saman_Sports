@@ -51,7 +51,7 @@ class _EstudiantesAdminViewState extends State<EstudiantesAdminView> {
                 SizedBox(
                   width: 240,
                   child: CampoTexto(
-                    label: AppStrings.buscarDeportesHint,
+                    label: AppStrings.adminBuscarEstudiantes,
                     controller: _busqueda,
                   ),
                 ),
@@ -84,6 +84,8 @@ class _EstudiantesAdminViewState extends State<EstudiantesAdminView> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
+                  dataRowMinHeight: 64,
+                  dataRowMaxHeight: 72,
                   columns: [
                     DataColumn(label: Text(AppStrings.nombre)),
                     DataColumn(label: Text(AppStrings.adminCarnet)),
@@ -201,6 +203,10 @@ class _Tarjeta extends StatelessWidget {
             Text(estudiante.telefono),
             const SizedBox(height: AppSizes.space8),
             _Solvencia(solvente: estudiante.solvente),
+            Text(
+              AppStrings.adminSolvenciaNoEsPuntualidad,
+              style: AppTextStyles.bodySmall,
+            ),
             Text(_activo(estudiante.activo)),
             _Acciones(
               estudiante: estudiante,
@@ -227,8 +233,8 @@ class _Acciones extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: AppSizes.space8,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         TextButton(
           onPressed: onDetalle,

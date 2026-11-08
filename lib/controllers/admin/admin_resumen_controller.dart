@@ -7,6 +7,10 @@ class AdminResumenController extends ChangeNotifier {
 
   final AdminResumenRepository _repository;
   Map<String, num> conteos = {};
+  List<Map<String, dynamic>> deportesPopulares = [];
+  List<Map<String, dynamic>> inscripcionesPorMes = [];
+  double resenasPromedio = 0;
+  int resenasCantidad = 0;
   bool cargando = false;
   String? error;
   bool _cerrado = false;
@@ -22,16 +26,33 @@ class AdminResumenController extends ChangeNotifier {
     _avisar();
     try {
       conteos = await _repository.contar();
+      final graficos = await _repository.graficos();
+      deportesPopulares = _mapas(graficos['deportesPopulares']);
+      inscripcionesPorMes = _mapas(graficos['inscripcionesPorMes']);
+      resenasCantidad = (graficos['resenasCantidad'] as num?)?.toInt() ?? 0;
+      resenasPromedio = (graficos['resenasPromedio'] as num?)?.toDouble() ?? 0;
     } catch (_) {
       if (_cerrado) return;
       error = 'No se pudo cargar el resumen.';
       conteos = {};
+      deportesPopulares = [];
+      inscripcionesPorMes = [];
+      resenasCantidad = 0;
+      resenasPromedio = 0;
     } finally {
       if (!_cerrado) {
         cargando = false;
         _avisar();
       }
     }
+  }
+
+  List<Map<String, dynamic>> _mapas(dynamic valor) {
+    if (valor is! List) return [];
+    return [
+      for (final item in valor)
+        if (item is Map) Map<String, dynamic>.from(item),
+    ];
   }
 
   void _avisar() {
