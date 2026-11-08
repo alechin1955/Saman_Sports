@@ -132,6 +132,10 @@ void main() {
         reloj: () => DateTime(2026, 11, 7),
       );
       addTearDown(controller.dispose);
+      controller.iniciar();
+      await pumpEventQueue();
+      controller.observarCancha('c1');
+      await pumpEventQueue();
 
       final ok = await controller.solicitar(
         nombre: 'Torneo interno',
@@ -232,6 +236,8 @@ void main() {
       addTearDown(controller.dispose);
       addTearDown(repo.cerrar);
       controller.iniciar();
+      await pumpEventQueue();
+      controller.observarCancha('c1');
       await pumpEventQueue();
 
       final ok = await controller.solicitar(
@@ -395,12 +401,10 @@ class _EventosRepo implements EventosEntrenadorRepository {
   _EventosRepo({
     this.canchasDisponibles = const [_cancha],
     this.reservas = const [],
-    this.errorSolicitud,
   });
 
   final List<Cancha> canchasDisponibles;
   final List<ReservaHorario> reservas;
-  final String? errorSolicitud;
   Map<String, dynamic>? solicitud;
 
   @override
@@ -417,7 +421,7 @@ class _EventosRepo implements EventosEntrenadorRepository {
   @override
   Future<String?> solicitar(Map<String, dynamic> datos) async {
     solicitud = datos;
-    return errorSolicitud;
+    return null;
   }
 }
 

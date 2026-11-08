@@ -64,11 +64,14 @@ class _EventosEntrenadorViewState extends State<EventosEntrenadorView> {
       builder: (_) => CrearEventoDialog(
         controller: controller,
         disciplinas: entrenador.disciplinas,
+        canchas: controller.canchas,
       ),
     );
+    final mensaje = controller.mensaje;
+    controller.limpiarMensajes();
     if (creado == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Solicitud de evento enviada.')),
+        SnackBar(content: Text(mensaje ?? 'Solicitud de evento enviada.')),
       );
     }
   }
@@ -90,7 +93,11 @@ class _EventosEntrenadorViewState extends State<EventosEntrenadorView> {
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
-                onPressed: entrenador.cargando || entrenador.disciplinas.isEmpty
+                onPressed:
+                    entrenador.cargando ||
+                        entrenador.disciplinas.isEmpty ||
+                        controller.cargandoCanchas ||
+                        controller.canchas.isEmpty
                     ? null
                     : _crear,
                 icon: const Icon(Icons.add),
@@ -101,6 +108,16 @@ class _EventosEntrenadorViewState extends State<EventosEntrenadorView> {
               const SizedBox(height: AppSizes.space12),
               const Text(
                 'Necesitas una disciplina asignada para solicitar eventos.',
+              ),
+            ],
+            if (controller.errorCanchas != null) ...[
+              const SizedBox(height: AppSizes.space12),
+              MensajeError(texto: controller.errorCanchas!),
+            ] else if (controller.canchas.isEmpty &&
+                !controller.cargandoCanchas) ...[
+              const SizedBox(height: AppSizes.space12),
+              const Text(
+                'No hay canchas activas disponibles para solicitar eventos.',
               ),
             ],
             const SizedBox(height: AppSizes.space24),

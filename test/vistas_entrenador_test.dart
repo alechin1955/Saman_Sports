@@ -125,6 +125,55 @@ void main() {
     expect(find.text('No se pudo solicitar.'), findsNothing);
   });
 
+  testWidgets('el modal avisa el choque y bloquea el envío', (tester) async {
+    final manana = DateTime.now().add(const Duration(days: 1));
+    final fecha =
+        '${manana.year.toString().padLeft(4, '0')}-'
+        '${manana.month.toString().padLeft(2, '0')}-'
+        '${manana.day.toString().padLeft(2, '0')}';
+    final auth = AuthController();
+    final eventos = EventosEntrenadorController(
+      repository: _EventosRepo(
+        reservas: [
+          ReservaHorario(
+            id: 'r1',
+            canchaId: 'c1',
+            canchaNombre: 'Cancha 1',
+            dia: manana.weekday,
+            horaInicio: 840,
+            horaFin: 960,
+            fecha: fecha,
+            tipo: TipoReserva.deporte,
+            refId: 'd2',
+            refNombre: 'Baloncesto',
+            activa: true,
+          ),
+        ],
+      ),
+    );
+    final entrenador = EntrenadorController(repository: _EntrenadorRepo());
+    addTearDown(auth.dispose);
+    addTearDown(eventos.dispose);
+    addTearDown(entrenador.dispose);
+    await _mostrar(
+      tester,
+      EventosEntrenadorView(
+        auth: auth,
+        controller: eventos,
+        entrenador: entrenador,
+      ),
+    );
+
+    await tester.tap(find.text('Solicitar evento'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Baloncesto'), findsOneWidget);
+    final enviar = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Enviar solicitud'),
+    );
+    expect(enviar.onPressed, isNull);
+  });
+
   testWidgets('Perfil muestra experiencia, estudiantes y certificaciones', (
     tester,
   ) async {
@@ -179,9 +228,10 @@ class _EntrenadorRepo implements EntrenadorRepository {
 }
 
 class _EventosRepo implements EventosEntrenadorRepository {
-  _EventosRepo({this.errorSolicitud});
+  _EventosRepo({this.errorSolicitud, this.reservas = const []});
 
   final String? errorSolicitud;
+  final List<ReservaHorario> reservas;
 
   @override
   Stream<List<Cancha>> canchas() => Stream.value(const [cancha]);
@@ -208,7 +258,7 @@ class _EventosRepo implements EventosEntrenadorRepository {
 
   @override
   Stream<List<ReservaHorario>> reservasCancha(String canchaId) =>
-      Stream.value(const []);
+      Stream.value(reservas);
 
   @override
   Future<String?> solicitar(Map<String, dynamic> datos) async => errorSolicitud;

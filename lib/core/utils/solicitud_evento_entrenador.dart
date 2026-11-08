@@ -8,12 +8,14 @@ Map<String, dynamic> construirSolicitudEventoEntrenador({
   required Map<String, dynamic> datos,
   required String entrenadorUid,
   required Map<String, dynamic> deporte,
+  required Map<String, dynamic> cancha,
+  required List<ReservaHorario> reservasCancha,
   required DateTime ahora,
 }) {
   final titulo = '${datos['titulo'] ?? ''}'.trim();
   final deporteId = '${datos['deporteId'] ?? ''}'.trim();
   final fecha = '${datos['fecha'] ?? ''}'.trim();
-  final ubicacion = '${datos['ubicacion'] ?? ''}'.trim();
+  final canchaId = '${datos['canchaId'] ?? ''}'.trim();
   final horaInicio = _entero(datos['horaInicio']);
   final horaFin = _entero(datos['horaFin']);
   final capacidad = _entero(datos['capacidad']);
@@ -21,7 +23,7 @@ Map<String, dynamic> construirSolicitudEventoEntrenador({
 
   if (titulo.isEmpty) throw StateError('El nombre es obligatorio.');
   if (deporteId.isEmpty) throw StateError('Elige una disciplina.');
-  if (ubicacion.isEmpty) throw StateError('La ubicación es obligatoria.');
+  if (canchaId.isEmpty) throw StateError('Elige una cancha.');
   if (capacidad <= 0) {
     throw StateError('La capacidad debe ser mayor que cero.');
   }
@@ -55,15 +57,36 @@ Map<String, dynamic> construirSolicitudEventoEntrenador({
       deporte['activo'] != true) {
     throw StateError('La disciplina no está asignada al entrenador.');
   }
+  final canchaNombre = '${cancha['nombre'] ?? ''}'.trim();
+  if ('${cancha['id'] ?? ''}' != canchaId ||
+      cancha['activa'] != true ||
+      canchaNombre.isEmpty) {
+    throw StateError('La cancha no existe o está inactiva.');
+  }
+  final nueva = ReservaHorario(
+    id: '',
+    canchaId: canchaId,
+    canchaNombre: canchaNombre,
+    dia: normalizada.weekday,
+    horaInicio: horaInicio,
+    horaFin: horaFin,
+    fecha: fecha,
+    tipo: TipoReserva.evento,
+    refId: '',
+    refNombre: titulo,
+    activa: true,
+  );
+  final choque = buscarChoque(nuevas: [nueva], existentes: reservasCancha);
+  if (choque != null) throw StateError(mensajeChoque(choque));
 
   return {
     'titulo': titulo,
     'tipo': 'evento',
     'deporteId': deporteId,
     'deporteNombre': '${deporte['nombre'] ?? ''}',
-    'canchaId': '${deporte['canchaId'] ?? ''}',
-    'canchaNombre': ubicacion,
-    'ubicacion': ubicacion,
+    'canchaId': canchaId,
+    'canchaNombre': canchaNombre,
+    'ubicacion': '${cancha['ubicacion'] ?? ''}',
     'fecha': fecha,
     'horaInicio': horaInicio,
     'horaFin': horaFin,

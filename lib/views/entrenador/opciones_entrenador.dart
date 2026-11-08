@@ -30,11 +30,6 @@ class OpcionesEntrenador {
       ruta: AppRoutes.entrenadorResenas,
     ),
     OpcionPanel(
-      icono: Icons.support_agent,
-      texto: 'Soporte',
-      ruta: AppRoutes.entrenadorSoporte,
-    ),
-    OpcionPanel(
       icono: Icons.person_outline,
       texto: 'Mi perfil',
       ruta: AppRoutes.entrenadorPerfil,

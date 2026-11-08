@@ -256,6 +256,64 @@ class FirebaseServices {
     );
   }
 
+  static Stream<List<Map<String, dynamic>>> _streamConsulta(
+    Query<Map<String, dynamic>> consulta,
+  ) {
+    return consulta
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+              .toList();
+        })
+        .transform(
+          StreamTransformer<
+            List<Map<String, dynamic>>,
+            List<Map<String, dynamic>>
+          >.fromHandlers(
+            handleError: (error, stack, sink) => sink.add(const []),
+          ),
+        );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Diego (panel del entrenador)
+  // ---------------------------------------------------------------------------
+
+  /// Consulta propia del panel entrenador. A diferencia del helper compartido,
+  /// conserva los errores para que sus vistas no confundan un fallo con vacío.
+  static Stream<List<Map<String, dynamic>>> _streamConsultaEntrenador(
+    Query<Map<String, dynamic>> consulta,
+  ) {
+    return consulta.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+          .toList();
+    });
+  }
+
+  /// Catálogo de canchas para solicitar eventos desde el panel entrenador.
+  static Stream<List<Map<String, dynamic>>> streamCanchasEntrenador() {
+    return _streamConsultaEntrenador(
+      _db.collection(canchasCollection).orderBy('nombre'),
+    );
+  }
+
+  /// Ocupación activa de una cancha. Propaga errores para impedir que el modal
+  /// interprete un fallo de lectura como disponibilidad total.
+  static Stream<List<Map<String, dynamic>>> streamReservasCanchaEntrenador(
+    String canchaId,
+  ) {
+    return _streamConsultaEntrenador(
+      _db
+          .collection(reservasCollection)
+          .where('canchaId', isEqualTo: canchaId)
+          .where('activa', isEqualTo: true)
+          .orderBy('dia')
+          .orderBy('horaInicio'),
+    );
+  }
+
   /// Reseñas visibles de las disciplinas indicadas, sin depender del límite de
   /// la portada. Cada consulta usa una sola disciplina y las combina en vivo.
   static Stream<List<Map<String, dynamic>>> streamResenasDisciplinas({
@@ -282,12 +340,11 @@ class FirebaseServices {
     controller = StreamController<List<Map<String, dynamic>>>(
       onListen: () {
         for (final id in ids) {
-          final stream = _streamConsulta(
+          final stream = _streamConsultaEntrenador(
             _db
                 .collection(resenasCollection)
                 .where('deporteId', isEqualTo: id)
                 .where('visible', isEqualTo: true),
-            silenciarErrores: false,
           );
           suscripciones.add(
             stream.listen((lista) {
@@ -303,28 +360,6 @@ class FirebaseServices {
     );
     return controller.stream;
   }
-
-  static Stream<List<Map<String, dynamic>>> _streamConsulta(
-    Query<Map<String, dynamic>> consulta, {
-    bool silenciarErrores = true,
-  }) {
-    final stream = consulta.snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
-          .toList();
-    });
-    if (!silenciarErrores) return stream;
-    return stream.transform(
-      StreamTransformer<
-        List<Map<String, dynamic>>,
-        List<Map<String, dynamic>>
-      >.fromHandlers(handleError: (error, stack, sink) => sink.add(const [])),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Funciones agregadas por Diego (panel del entrenador)
-  // ---------------------------------------------------------------------------
 
   /// Disciplinas activas asignadas al entrenador identificado por su UID.
   static Future<List<Map<String, dynamic>>> getDisciplinasEntrenador({
@@ -483,9 +518,8 @@ class FirebaseServices {
     if (actual == null || actual != uid) {
       return Stream.error(StateError('Sesión de entrenador requerida'));
     }
-    return _streamConsulta(
+    return _streamConsultaEntrenador(
       _db.collection(eventosCollection).where('creadoPorUid', isEqualTo: uid),
-      silenciarErrores: false,
     );
   }
 
@@ -502,16 +536,22 @@ class FirebaseServices {
       }
       final deporteId = '${datos['deporteId'] ?? ''}'.trim();
       if (deporteId.isEmpty) throw StateError('Elige una disciplina.');
+      final canchaId = '${datos['canchaId'] ?? ''}'.trim();
+      if (canchaId.isEmpty) throw StateError('Elige una cancha.');
 
-      final deporte = await _db
-          .collection(deportesCollection)
-          .doc(deporteId)
-          .get();
+      final documentos = await Future.wait([
+        _db.collection(deportesCollection).doc(deporteId).get(),
+        _db.collection(canchasCollection).doc(canchaId).get(),
+      ]);
+      final deporte = documentos[0];
+      final cancha = documentos[1];
       final deporteDatos = deporte.data() ?? const <String, dynamic>{};
       final solicitud = construirSolicitudEventoEntrenador(
         datos: datos,
         entrenadorUid: entrenadorUid,
         deporte: {'id': deporte.id, ...deporteDatos},
+        cancha: {'id': cancha.id, ...?cancha.data()},
+        reservasCancha: await _ocupadas(canchaId),
         ahora: DateTime.now(),
       );
       await _db.collection(eventosCollection).add({
