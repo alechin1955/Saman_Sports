@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/admin/admin_deporte_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_entrenador_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
+import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/models/entrenador_admin.dart';
 import 'package:saman_sports/views/admin/entrenador_form_dialog.dart';
@@ -56,6 +57,11 @@ class EntrenadoresAdminView extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSizes.space16),
+            if (entrenadores.error != null)
+              Text(
+                entrenadores.error!,
+                style: const TextStyle(color: AppColors.error),
+              ),
             if (movil)
               for (final item in entrenadores.entrenadoresFiltrados)
                 ListTile(

@@ -232,30 +232,43 @@ class FirebaseServices {
 
   static Stream<List<Map<String, dynamic>>> streamDeportes() {
     return _streamConsulta(
-      _db
-          .collection(deportesCollection)
-          .where('activo', isEqualTo: true)
-          .orderBy('nombre'),
-    );
+      _db.collection(deportesCollection).where('activo', isEqualTo: true),
+    ).map((lista) => _ordenarPorTexto(lista, 'nombre'));
   }
 
   static Stream<List<Map<String, dynamic>>> streamEntrenadores() {
     return _streamConsulta(
-      _db
-          .collection(entrenadoresCollection)
-          .where('activo', isEqualTo: true)
-          .orderBy('nombre'),
-    );
+      _db.collection(entrenadoresCollection).where('activo', isEqualTo: true),
+    ).map((lista) => _ordenarPorTexto(lista, 'nombre'));
   }
 
   static Stream<List<Map<String, dynamic>>> streamResenas({int limite = 6}) {
     return _streamConsulta(
-      _db
-          .collection(resenasCollection)
-          .where('visible', isEqualTo: true)
-          .orderBy('fecha', descending: true)
-          .limit(limite),
-    );
+      _db.collection(resenasCollection).where('visible', isEqualTo: true),
+    ).map((lista) {
+      final ordenada = [...lista]
+        ..sort((a, b) => _milis(b['fecha']).compareTo(_milis(a['fecha'])));
+      return ordenada.take(limite).toList();
+    });
+  }
+
+  static List<Map<String, dynamic>> _ordenarPorTexto(
+    List<Map<String, dynamic>> lista,
+    String campo,
+  ) {
+    return [...lista]
+      ..sort((a, b) => '${a[campo] ?? ''}'
+          .toLowerCase()
+          .compareTo('${b[campo] ?? ''}'.toLowerCase()));
+  }
+
+  static int _milis(dynamic valor) {
+    if (valor is Timestamp) return valor.millisecondsSinceEpoch;
+    if (valor is DateTime) return valor.millisecondsSinceEpoch;
+    if (valor is String) {
+      return DateTime.tryParse(valor)?.millisecondsSinceEpoch ?? 0;
+    }
+    return 0;
   }
 
   static Stream<List<Map<String, dynamic>>> _streamConsulta(
@@ -798,7 +811,7 @@ class FirebaseServices {
     });
   }
 
-  /// Requiere índice compuesto canchaId + activa + dia + horaInicio.
+  /// Sin orderBy para no exigir índice compuesto; se ordena en Dart.
   static Stream<List<Map<String, dynamic>>> streamReservasCancha(
     String canchaId,
   ) {
@@ -806,10 +819,15 @@ class FirebaseServices {
       _db
           .collection(reservasCollection)
           .where('canchaId', isEqualTo: canchaId)
-          .where('activa', isEqualTo: true)
-          .orderBy('dia')
-          .orderBy('horaInicio'),
-    );
+          .where('activa', isEqualTo: true),
+    ).map((lista) {
+      return [...lista]..sort((a, b) {
+        final dia = _enteroAdmin(a['dia']).compareTo(_enteroAdmin(b['dia']));
+        if (dia != 0) return dia;
+        return _enteroAdmin(a['horaInicio'])
+            .compareTo(_enteroAdmin(b['horaInicio']));
+      });
+    });
   }
 
   static Future<Map<String, dynamic>?> hayChoqueHorario({
@@ -2200,7 +2218,7 @@ class FirebaseServices {
         final usuario = await tx.get(userRef);
         if (!usuario.exists) throw StateError('El estudiante no existe.');
         final datosUsuario = usuario.data() ?? {};
-        final activo = datosUsuario['estado'] == 'activo';
+        final activo = '${datosUsuario['estado'] ?? 'activo'}' != 'inactivo';
         if (!activo) return;
         final aviso = await tx.get(avisoRef);
         var valido = false;
@@ -2571,14 +2589,18 @@ class FirebaseServices {
     }
   }
 
+  /// Suma en Dart: sum('monto') con filtro exige un índice compuesto.
   static Future<num> _sumarIngresos() async {
     try {
       final snapshot = await _db
           .collection(pagosCollection)
           .where('estado', isEqualTo: 'realizado')
-          .aggregate(sum('monto'))
           .get();
-      return snapshot.getSum('monto') ?? 0;
+      var total = 0.0;
+      for (final doc in snapshot.docs) {
+        total += _numeroAdmin(doc.data()['monto']);
+      }
+      return total;
     } catch (_) {
       return 0;
     }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/admin/admin_evento_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
+import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/cancha.dart';
+import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/evento.dart';
 import 'package:saman_sports/views/admin/evento_form_dialog.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
@@ -51,13 +53,18 @@ class EventosAdminView extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSizes.space16),
+            if (eventos.error != null)
+              Text(
+                eventos.error!,
+                style: AppTextStyles.body.copyWith(color: AppColors.error),
+              ),
             if (eventos.eventosFiltrados.isEmpty)
               Text(AppStrings.adminSinSolicitudes, style: AppTextStyles.body)
             else
               for (final evento in eventos.eventosFiltrados)
                 ListTile(
                   title: Text(evento.titulo),
-                  subtitle: Text(_detalle(evento)),
+                  subtitle: Text(_detalle(evento, eventos.deportes)),
                   isThreeLine: true,
                   trailing: Wrap(
                     children: [
@@ -154,16 +161,27 @@ class EventosAdminView extends StatelessWidget {
   }
 }
 
-String _detalle(Evento evento) {
+String _detalle(Evento evento, List<Deporte> deportes) {
   final disciplina = evento.deporteNombre ?? AppStrings.adminSinDisciplina;
   final hora =
       '${minutosATexto(evento.horaInicio)}–${minutosATexto(evento.horaFin)}';
-  final creador = evento.creadoPorUid.isEmpty
-      ? AppStrings.adminSinDato
-      : evento.creadoPorUid;
+  final capacidad = evento.capacidad > 0
+      ? ' · Capacidad: ${evento.capacidad}'
+      : '';
   return '$disciplina · ${evento.fecha} $hora\n'
-      '${evento.canchaNombre} · ${_estado(evento.estado)}\n'
-      '${AppStrings.adminCreadoPor}: $creador';
+      '${evento.canchaNombre} · ${_estado(evento.estado)}$capacidad\n'
+      '${AppStrings.adminCreadoPor}: ${_creador(evento, deportes)}';
+}
+
+String _creador(Evento evento, List<Deporte> deportes) {
+  final uid = evento.creadoPorUid;
+  if (uid.isEmpty) return AppStrings.adminSinDato;
+  for (final deporte in deportes) {
+    if (deporte.entrenadorUid == uid && deporte.entrenadorNombre.isNotEmpty) {
+      return deporte.entrenadorNombre;
+    }
+  }
+  return 'Administración';
 }
 
 String _estado(EstadoEvento estado) {
