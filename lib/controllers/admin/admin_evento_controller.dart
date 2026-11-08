@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/cancha.dart';
+import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/evento.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/admin/admin_evento_repository.dart';
@@ -23,6 +24,7 @@ class AdminEventoController extends ChangeNotifier {
   final AdminEventoRepository _repository;
   final DateTime Function() _reloj;
   List<Evento> eventos = [];
+  List<Deporte> deportes = [];
   List<Cancha> canchas = [];
   List<ReservaHorario> reservasCancha = [];
   EstadoEvento? filtroEstado;
@@ -35,6 +37,7 @@ class AdminEventoController extends ChangeNotifier {
   bool _iniciado = false;
   int _escuchas = 0;
   StreamSubscription<List<Evento>>? _eventosSub;
+  StreamSubscription<List<Deporte>>? _deportesSub;
   StreamSubscription<List<Cancha>>? _canchasSub;
   StreamSubscription<List<ReservaHorario>>? _reservasSub;
 
@@ -63,7 +66,13 @@ class AdminEventoController extends ChangeNotifier {
       canchas = lista;
       _avisar();
     }, onError: (_) => _fallo('No se pudieron cargar las canchas.'));
+    _deportesSub = _repository.deportes().listen((lista) {
+      deportes = lista.where((deporte) => deporte.activo).toList();
+      _avisar();
+    }, onError: (_) => _fallo('No se pudieron cargar las disciplinas.'));
   }
+
+  List<Deporte> get deportesActivos => deportes;
 
   void observarCancha(String? canchaId) {
     _reservasSub?.cancel();
@@ -95,6 +104,7 @@ class AdminEventoController extends ChangeNotifier {
     required int horaInicio,
     required int horaFin,
     String? ignorarEventoId,
+    String? deporteId,
   }) {
     if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(fecha)) return fechaInvalida;
     final parseada = DateTime.tryParse(fecha);
@@ -124,12 +134,46 @@ class AdminEventoController extends ChangeNotifier {
       refNombre: '',
       activa: true,
     );
-    final choque = buscarChoque(
+    final resultado = evaluarChoqueEvento(
       nuevas: [nueva],
       existentes: reservasCancha.where((r) => r.canchaId == canchaId).toList(),
       ignorarRefId: ignorarEventoId,
+      deporteId: deporteId,
     );
-    return choque == null ? null : mensajeChoque(choque);
+    return resultado.choque == null ? null : mensajeChoque(resultado.choque!);
+  }
+
+  bool reemplazaPractica({
+    required String canchaId,
+    required String fecha,
+    required int horaInicio,
+    required int horaFin,
+    String? deporteId,
+    String? ignorarEventoId,
+  }) {
+    if (deporteId == null || deporteId.isEmpty) return false;
+    if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(fecha)) return false;
+    final parseada = DateTime.tryParse(fecha);
+    if (parseada == null) return false;
+    final nueva = ReservaHorario(
+      id: '',
+      canchaId: canchaId,
+      canchaNombre: '',
+      dia: parseada.weekday,
+      horaInicio: horaInicio,
+      horaFin: horaFin,
+      fecha: fecha,
+      tipo: TipoReserva.evento,
+      refId: ignorarEventoId ?? '',
+      refNombre: '',
+      activa: true,
+    );
+    return evaluarChoqueEvento(
+      nuevas: [nueva],
+      existentes: reservasCancha.where((r) => r.canchaId == canchaId).toList(),
+      ignorarRefId: ignorarEventoId,
+      deporteId: deporteId,
+    ).ignoroPractica;
   }
 
   Future<String?> crearEvento({
@@ -140,6 +184,8 @@ class AdminEventoController extends ChangeNotifier {
     required int horaInicio,
     required int horaFin,
     required String descripcion,
+    String? deporteId,
+    String? deporteNombre,
   }) {
     return _guardar(() async {
       if (titulo.trim().isEmpty) return tituloObligatorio;
@@ -149,9 +195,17 @@ class AdminEventoController extends ChangeNotifier {
         fecha: fecha,
         horaInicio: horaInicio,
         horaFin: horaFin,
+        deporteId: deporteId,
       );
       if (choque != null) return choque;
-      return _repository.crearEvento(
+      final reemplaza = reemplazaPractica(
+        canchaId: canchaId,
+        fecha: fecha,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+        deporteId: deporteId,
+      );
+      final error = await _repository.crearEvento(
         canchaId: canchaId,
         fecha: fecha,
         horaInicio: horaInicio,
@@ -160,8 +214,12 @@ class AdminEventoController extends ChangeNotifier {
           'titulo': titulo.trim(),
           'tipo': tipo.valor,
           'descripcion': descripcion.trim(),
+          'deporteId': deporteId,
+          'deporteNombre': deporteNombre,
+          'reemplazaPractica': reemplaza,
         },
       );
+      return error;
     }, eventoCreado);
   }
 
@@ -188,6 +246,7 @@ class AdminEventoController extends ChangeNotifier {
           horaInicio: horaInicio ?? evento.horaInicio,
           horaFin: horaFin ?? evento.horaFin,
           ignorarEventoId: evento.id,
+          deporteId: evento.deporteId,
         );
         if (choque != null) return choque;
       }
@@ -203,11 +262,35 @@ class AdminEventoController extends ChangeNotifier {
   }
 
   Future<String?> cambiarEstado(Evento evento, EstadoEvento estado) {
-    return _guardar(
-      () =>
-          _repository.cambiarEstadoEvento(id: evento.id, estado: estado.valor),
-      'Estado del evento actualizado.',
+    return _guardar(() async {
+      final error = await _repository.cambiarEstadoEvento(
+        id: evento.id,
+        estado: estado.valor,
+      );
+      if (error != null ||
+          estado != EstadoEvento.aprobado ||
+          evento.deporteId == null ||
+          evento.deporteId!.isEmpty) {
+        return error;
+      }
+      return _repository.notificarInscritos(
+        deporteId: evento.deporteId!,
+        titulo: evento.titulo,
+        fecha: evento.fecha,
+        horaInicio: evento.horaInicio,
+        horaFin: evento.horaFin,
+        canchaNombre: _nombreCancha(evento.canchaId),
+        reemplazaPractica: evento.reemplazaPractica,
+      );
+    }, 'Estado del evento actualizado.');
+  }
+
+  String _nombreCancha(String canchaId) {
+    final cancha = canchas.cast<Cancha?>().firstWhere(
+      (item) => item?.id == canchaId,
+      orElse: () => null,
     );
+    return cancha?.nombre ?? '';
   }
 
   Future<String?> _guardar(
@@ -251,6 +334,7 @@ class AdminEventoController extends ChangeNotifier {
   void dispose() {
     _cerrado = true;
     _eventosSub?.cancel();
+    _deportesSub?.cancel();
     _canchasSub?.cancel();
     _reservasSub?.cancel();
     super.dispose();

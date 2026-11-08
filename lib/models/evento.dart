@@ -50,6 +50,7 @@ class Evento {
     this.deporteId,
     this.deporteNombre,
     this.creadoEn,
+    this.reemplazaPractica = false,
   });
 
   final String id;
@@ -66,6 +67,7 @@ class Evento {
   final EstadoEvento estado;
   final String creadoPorUid;
   final DateTime? creadoEn;
+  final bool reemplazaPractica;
 
   FranjaHorario get franja => FranjaHorario(
     dia: DateTime.parse(fecha).weekday,
@@ -87,8 +89,9 @@ class Evento {
       horaFin: _entero(map['horaFin']),
       descripcion: '${map['descripcion'] ?? ''}',
       estado: EstadoEvento.desde(map['estado']?.toString()),
-      creadoPorUid: '${map['creadoPorUid'] ?? ''}',
+      creadoPorUid: '${map['creadoPorUid'] ?? map['creadoPor'] ?? ''}',
       creadoEn: _fecha(map['creadoEn']),
+      reemplazaPractica: map['reemplazaPractica'] == true,
     );
   }
 
@@ -107,6 +110,7 @@ class Evento {
       'estado': estado.valor,
       'creadoPorUid': creadoPorUid,
       'creadoEn': creadoEn,
+      'reemplazaPractica': reemplazaPractica,
     };
   }
 }

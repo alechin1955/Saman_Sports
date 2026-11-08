@@ -460,4 +460,34 @@ class AppStrings {
   static const String adminRolEntrenador = 'Entrenador';
   static const String adminRolAdministrador = 'Administrador';
   static const String adminRealizado = 'Realizado';
+  static const String adminBuscarEstudiantes =
+      'Buscar por nombre, carnet o correo';
+  static const String adminMarcarSolvente = 'Marcar solvente';
+  static const String adminMarcarNoSolvente = 'Marcar no solvente';
+  static const String adminConfirmarSolvente =
+      '¿Marcar a este estudiante como solvente?';
+  static const String adminConfirmarNoSolvente =
+      '¿Marcar a este estudiante como no solvente?';
+  static const String adminAyudaHorario =
+      'Agrega al menos un horario con el botón Agregar horario';
+  static const String adminAsignaCancha = 'Asigna una cancha antes de aprobar';
+  static const String adminCreadoPor = 'Creado por';
+  static const String adminSinDisciplina = 'Sin disciplina';
+  static const String adminMarcarPendiente = 'Marcar pendiente';
+  static const String adminConfirmarRechazarPago = '¿Rechazar este pago?';
+  static const String adminConfirmarPendientePago =
+      '¿Marcar este pago como pendiente?';
+  static const String adminEstadoPagos = 'Estado de pagos';
+  static const String adminTotal = 'Total';
+  static const String adminVerificados = 'Verificados';
+  static const String adminMontoRecaudado = 'Monto recaudado';
+  static const String adminDeportesPopulares = 'Deportes más populares';
+  static const String adminInscripcionesPorMes = 'Inscripciones por mes';
+  static const String adminResumenResenas = 'Resumen de reseñas';
+  static const String adminSinGrafico = 'Aún no hay datos para el gráfico.';
+  static const String adminATiempo = 'A tiempo';
+  static const String adminTardio = 'Tardío';
+  static const String adminPagoPendienteEtiqueta = 'Pendiente';
+  static const String adminSolvenciaNoEsPuntualidad =
+      'Solvente no distingue si el pago fue a tiempo o tardío. Eso se ve en Pagos.';
 }
