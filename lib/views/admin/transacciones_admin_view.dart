@@ -46,10 +46,11 @@ class TransaccionesAdminView extends StatelessWidget {
                   ),
                 ),
                 SizedBox(
-                  width: 180,
+                  width: 220,
                   child: DropdownButtonFormField<String?>(
                     key: ValueKey('modulo-${transacciones.modulo}'),
                     initialValue: transacciones.modulo,
+                    isExpanded: true,
                     decoration: InputDecoration(
                       labelText: AppStrings.adminModulo,
                     ),
@@ -70,10 +71,11 @@ class TransaccionesAdminView extends StatelessWidget {
                   ),
                 ),
                 SizedBox(
-                  width: 180,
+                  width: 220,
                   child: DropdownButtonFormField<String?>(
                     key: ValueKey('rol-${transacciones.rol}'),
                     initialValue: transacciones.rol,
+                    isExpanded: true,
                     decoration: InputDecoration(labelText: AppStrings.adminRol),
                     items: [
                       DropdownMenuItem(
