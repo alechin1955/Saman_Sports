@@ -47,6 +47,7 @@ class Evento {
     required this.descripcion,
     required this.estado,
     required this.creadoPorUid,
+    this.capacidad = 0,
     this.deporteId,
     this.deporteNombre,
     this.creadoEn,
@@ -66,6 +67,7 @@ class Evento {
   final String descripcion;
   final EstadoEvento estado;
   final String creadoPorUid;
+  final int capacidad;
   final DateTime? creadoEn;
   final bool reemplazaPractica;
 
@@ -90,6 +92,7 @@ class Evento {
       descripcion: '${map['descripcion'] ?? ''}',
       estado: EstadoEvento.desde(map['estado']?.toString()),
       creadoPorUid: '${map['creadoPorUid'] ?? map['creadoPor'] ?? ''}',
+      capacidad: _entero(map['capacidad']),
       creadoEn: _fecha(map['creadoEn']),
       reemplazaPractica: map['reemplazaPractica'] == true,
     );
@@ -109,6 +112,7 @@ class Evento {
       'descripcion': descripcion,
       'estado': estado.valor,
       'creadoPorUid': creadoPorUid,
+      'capacidad': capacidad,
       'creadoEn': creadoEn,
       'reemplazaPractica': reemplazaPractica,
     };

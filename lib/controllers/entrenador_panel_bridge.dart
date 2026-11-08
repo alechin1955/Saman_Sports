@@ -32,7 +32,8 @@ class EntrenadorPanelBridge extends ChangeNotifier {
 
   bool get bloqueaSalida => asistencia.cambios || asistencia.guardando;
 
-  Future<void> cargar() => entrenador.cargar();
+  Future<void> cargar({String? seleccionInicialId}) =>
+      entrenador.cargar(seleccionInicialId: seleccionInicialId);
 
   void descartarBorrador() => asistencia.descartarBorrador();
 

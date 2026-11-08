@@ -9,7 +9,7 @@ import 'package:saman_sports/models/asistencia.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/repositories/asistencia_repository.dart';
 import 'package:saman_sports/repositories/entrenador_repository.dart';
-import 'package:saman_sports/views/entrenador/dashboard_entrenador_view.dart';
+import 'package:saman_sports/views/entrenador/asistencia_entrenador_view.dart';
 
 const alumno = AlumnoInscrito(
   inscripcionId: 'i1',
@@ -35,6 +35,43 @@ class _Nomina implements EntrenadorRepository {
   ];
   @override
   Future<List<AlumnoInscrito>> inscritos(String id) async => [alumno];
+}
+
+class _DosNominas implements EntrenadorRepository {
+  @override
+  Future<List<Deporte>> disciplinas() async => const [
+    Deporte(
+      id: 'd1',
+      nombre: 'Tenis',
+      descripcion: '',
+      icono: 'tenis',
+      horario: 'Lun 14:00',
+      cupos: 20,
+      inscritos: 1,
+      entrenadorNombre: 'Diego',
+    ),
+    Deporte(
+      id: 'd2',
+      nombre: 'Natación',
+      descripcion: '',
+      icono: 'natacion',
+      horario: 'Mar 16:00',
+      cupos: 20,
+      inscritos: 1,
+      entrenadorNombre: 'Diego',
+    ),
+  ];
+
+  @override
+  Future<List<AlumnoInscrito>> inscritos(String id) async => [
+    AlumnoInscrito(
+      inscripcionId: id == 'd1' ? 'i1' : 'i2',
+      uid: id == 'd1' ? 'u1' : 'u2',
+      nombre: id == 'd1' ? 'Ana Pérez' : 'Luis Gómez',
+      carnet: id == 'd1' ? '20261001' : '20261002',
+      correo: '',
+    ),
+  ];
 }
 
 class _Asistencia implements AsistenciaRepository {
@@ -72,10 +109,10 @@ void main() {
       addTearDown(asistencia.dispose);
       await tester.pumpWidget(
         MaterialApp(
-          initialRoute: '/entrenador',
+          initialRoute: '/entrenador/asistencia',
           routes: {
             '/': (_) => const Scaffold(body: Text('Inicio público')),
-            '/entrenador': (_) => DashboardEntrenadorView(
+            '/entrenador/asistencia': (_) => AsistenciaEntrenadorView(
               auth: auth,
               controller: nomina,
               asistencia: asistencia,
@@ -122,7 +159,7 @@ void main() {
     );
     navigator.currentState!.push(
       MaterialPageRoute<void>(
-        builder: (_) => DashboardEntrenadorView(
+        builder: (_) => AsistenciaEntrenadorView(
           auth: auth,
           controller: nomina,
           asistencia: asistencia,
@@ -138,7 +175,7 @@ void main() {
     await tester.tap(find.text('Continuar editando'));
     await tester.pumpAndSettle();
     expect(asistencia.cambios, isTrue);
-    expect(find.text('Dashboard del entrenador'), findsOneWidget);
+    expect(find.text('Asistencia'), findsOneWidget);
     navigator.currentState!.maybePop();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Descartar y salir'));
@@ -148,4 +185,100 @@ void main() {
     expect(auth.cerro, isFalse);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Volver a disciplinas también protege el borrador', (
+    tester,
+  ) async {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    await tester.binding.setSurfaceSize(const Size(1440, 1100));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final auth = _Auth();
+    final nomina = EntrenadorController(repository: _Nomina());
+    final asistencia = AsistenciaController(repository: _Asistencia());
+    addTearDown(auth.dispose);
+    addTearDown(nomina.dispose);
+    addTearDown(asistencia.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        initialRoute: '/entrenador/asistencia',
+        routes: {
+          '/entrenador/asistencia': (_) => AsistenciaEntrenadorView(
+            auth: auth,
+            controller: nomina,
+            asistencia: asistencia,
+          ),
+          '/entrenador/disciplinas': (_) =>
+              const Scaffold(body: Text('Disciplinas destino')),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+    asistencia.marcar('i1', EstadoAsistencia.presente);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Volver a disciplinas'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tienes asistencia sin guardar'), findsOneWidget);
+    await tester.tap(find.text('Continuar editando'));
+    await tester.pumpAndSettle();
+    expect(find.text('Asistencia'), findsAtLeastNWidgets(1));
+
+    await tester.tap(find.text('Volver a disciplinas'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Descartar y salir'));
+    await tester.pumpAndSettle();
+    expect(find.text('Disciplinas destino'), findsOneWidget);
+    expect(asistencia.cambios, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'cancelar cambio de disciplina restaura selector y nómina originales',
+    (tester) async {
+      GoogleFonts.config.allowRuntimeFetching = false;
+      await tester.binding.setSurfaceSize(const Size(1440, 1100));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final auth = _Auth();
+      final nomina = EntrenadorController(repository: _DosNominas());
+      final asistencia = AsistenciaController(repository: _Asistencia());
+      addTearDown(auth.dispose);
+      addTearDown(nomina.dispose);
+      addTearDown(asistencia.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AsistenciaEntrenadorView(
+            auth: auth,
+            controller: nomina,
+            asistencia: asistencia,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      asistencia.marcar('i1', EstadoAsistencia.presente);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Natación').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Tienes asistencia sin guardar'), findsOneWidget);
+      await tester.tap(find.text('Continuar editando'));
+      await tester.pumpAndSettle();
+
+      final selector = tester.widget<DropdownButtonFormField<String>>(
+        find.byType(DropdownButtonFormField<String>),
+      );
+      final estadoSelector = tester.state<FormFieldState<String>>(
+        find.byType(DropdownButtonFormField<String>),
+      );
+      expect(nomina.seleccionId, 'd1');
+      expect(selector.initialValue, 'd1');
+      expect(estadoSelector.value, 'd1');
+      expect(find.text('Ana Pérez'), findsOneWidget);
+      expect(find.text('Luis Gómez'), findsNothing);
+      expect(asistencia.deporteId, 'd1');
+      expect(asistencia.estados['i1'], EstadoAsistencia.presente);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

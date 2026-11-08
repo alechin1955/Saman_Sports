@@ -6,6 +6,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
+import 'package:saman_sports/core/utils/solicitud_evento_entrenador.dart';
+import 'package:saman_sports/core/utils/ticket_soporte_entrenador.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 
@@ -280,6 +282,85 @@ class FirebaseServices {
   // Funciones agregadas por Diego (panel del entrenador)
   // ---------------------------------------------------------------------------
 
+  /// Consulta propia del panel entrenador. A diferencia del helper compartido,
+  /// conserva los errores para que sus vistas no confundan un fallo con vacío.
+  static Stream<List<Map<String, dynamic>>> _streamConsultaEntrenador(
+    Query<Map<String, dynamic>> consulta,
+  ) {
+    return consulta.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+          .toList();
+    });
+  }
+
+  /// Catálogo de canchas para solicitar eventos desde el panel entrenador.
+  static Stream<List<Map<String, dynamic>>> streamCanchasEntrenador() {
+    return _streamConsultaEntrenador(
+      _db.collection(canchasCollection).orderBy('nombre'),
+    );
+  }
+
+  /// Ocupación activa de una cancha. Propaga errores para impedir que el modal
+  /// interprete un fallo de lectura como disponibilidad total.
+  static Stream<List<Map<String, dynamic>>> streamReservasCanchaEntrenador(
+    String canchaId,
+  ) {
+    return _streamConsultaEntrenador(
+      _db
+          .collection(reservasCollection)
+          .where('canchaId', isEqualTo: canchaId)
+          .where('activa', isEqualTo: true),
+    );
+  }
+
+  /// Reseñas visibles de las disciplinas indicadas, sin depender del límite de
+  /// la portada. Cada consulta usa una sola disciplina y las combina en vivo.
+  static Stream<List<Map<String, dynamic>>> streamResenasDisciplinas({
+    required List<String> deporteIds,
+  }) {
+    final ids = deporteIds.where((id) => id.trim().isNotEmpty).toSet().toList();
+    if (ids.isEmpty) return Stream.value(const []);
+
+    late StreamController<List<Map<String, dynamic>>> controller;
+    final ultimas = <String, List<Map<String, dynamic>>>{};
+    final suscripciones = <StreamSubscription<List<Map<String, dynamic>>>>[];
+
+    void emitir() {
+      if (ultimas.length != ids.length || controller.isClosed) return;
+      final unicas = <String, Map<String, dynamic>>{};
+      for (final lista in ultimas.values) {
+        for (final resena in lista) {
+          unicas['${resena['id'] ?? ''}'] = resena;
+        }
+      }
+      controller.add(unicas.values.toList(growable: false));
+    }
+
+    controller = StreamController<List<Map<String, dynamic>>>(
+      onListen: () {
+        for (final id in ids) {
+          final stream = _streamConsultaEntrenador(
+            _db
+                .collection(resenasCollection)
+                .where('deporteId', isEqualTo: id)
+                .where('visible', isEqualTo: true),
+          );
+          suscripciones.add(
+            stream.listen((lista) {
+              ultimas[id] = lista;
+              emitir();
+            }, onError: controller.addError),
+          );
+        }
+      },
+      onCancel: () async {
+        await Future.wait(suscripciones.map((sub) => sub.cancel()));
+      },
+    );
+    return controller.stream;
+  }
+
   /// Disciplinas activas asignadas al entrenador identificado por su UID.
   static Future<List<Map<String, dynamic>>> getDisciplinasEntrenador({
     required String entrenadorUid,
@@ -408,6 +489,147 @@ class FirebaseServices {
     return snapshot.docs
         .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
         .toList();
+  }
+
+  /// Perfil del entrenador autenticado. Une su ficha pública con los datos de
+  /// cuenta que solo necesita ver el propio usuario (correo y teléfono).
+  static Future<Map<String, dynamic>?> getPerfilEntrenador({
+    required String uid,
+  }) async {
+    final actual = _auth.currentUser?.uid;
+    if (actual == null || actual != uid) {
+      throw StateError('Sesión de entrenador requerida');
+    }
+    final documentos = await Future.wait([
+      _db.collection(entrenadoresCollection).doc(uid).get(),
+      _db.collection(usuariosCollection).doc(uid).get(),
+    ]);
+    final publico = documentos[0].data();
+    if (publico == null) return null;
+    return <String, dynamic>{...?documentos[1].data(), ...publico};
+  }
+
+  /// Solicitudes creadas por un entrenador. El filtro por UID evita exponer
+  /// solicitudes de otros entrenadores y el orden se aplica en el controlador.
+  static Stream<List<Map<String, dynamic>>> streamEventosEntrenador({
+    required String uid,
+  }) {
+    final actual = _auth.currentUser?.uid;
+    if (actual == null || actual != uid) {
+      return Stream.error(StateError('Sesión de entrenador requerida'));
+    }
+    return _streamConsultaEntrenador(
+      _db.collection(eventosCollection).where('creadoPorUid', isEqualTo: uid),
+    );
+  }
+
+  /// Registra una solicitud pendiente; aprobarla y reservar la cancha sigue
+  /// siendo responsabilidad exclusiva del flujo de administración.
+  static Future<AuthResponse> solicitarEventoEntrenador({
+    required String entrenadorUid,
+    required Map<String, dynamic> datos,
+  }) async {
+    try {
+      final actual = _auth.currentUser?.uid;
+      if (actual == null || actual != entrenadorUid) {
+        throw StateError('Sesión de entrenador requerida');
+      }
+      final deporteId = '${datos['deporteId'] ?? ''}'.trim();
+      if (deporteId.isEmpty) throw StateError('Elige una disciplina.');
+      final canchaId = '${datos['canchaId'] ?? ''}'.trim();
+      if (canchaId.isEmpty) throw StateError('Elige una cancha.');
+
+      final documentos = await Future.wait([
+        _db.collection(deportesCollection).doc(deporteId).get(),
+        _db.collection(canchasCollection).doc(canchaId).get(),
+      ]);
+      final deporte = documentos[0];
+      final cancha = documentos[1];
+      final deporteDatos = deporte.data() ?? const <String, dynamic>{};
+      final solicitud = construirSolicitudEventoEntrenador(
+        datos: datos,
+        entrenadorUid: entrenadorUid,
+        deporte: {'id': deporte.id, ...deporteDatos},
+        cancha: {'id': cancha.id, ...?cancha.data()},
+        reservasCancha: await _ocupadas(canchaId),
+        ahora: DateTime.now(),
+      );
+      await _db.collection(eventosCollection).add({
+        ...solicitud,
+        'creadoEn': FieldValue.serverTimestamp(),
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo solicitar el evento. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Tickets creados por el entrenador autenticado. El filtro por autor es
+  /// parte del contrato que también deben exigir las reglas de Firestore.
+  static Stream<List<Map<String, dynamic>>> streamTicketsEntrenador({
+    required String entrenadorUid,
+  }) {
+    final actual = _auth.currentUser?.uid;
+    if (actual == null || actual != entrenadorUid) {
+      return Stream.error(StateError('Sesión de entrenador requerida'));
+    }
+    return _streamConsultaEntrenador(
+      _db
+          .collection(ticketsCollection)
+          .where('autorUid', isEqualTo: entrenadorUid),
+    );
+  }
+
+  /// Crea un ticket abierto con la identidad tomada de la sesión y del perfil,
+  /// nunca de campos enviados por la interfaz.
+  static Future<AuthResponse> crearTicketEntrenador({
+    required String entrenadorUid,
+    required String categoria,
+    required String asunto,
+    required String descripcion,
+  }) async {
+    try {
+      final actual = _auth.currentUser?.uid;
+      if (actual == null || actual != entrenadorUid) {
+        throw StateError('Sesión de entrenador requerida');
+      }
+      final perfil = await getUserData(uid: entrenadorUid);
+      await _db
+          .collection(ticketsCollection)
+          .add(
+            construirTicketSoporteEntrenador(
+              entrenadorUid: entrenadorUid,
+              perfil: perfil,
+              categoria: categoria,
+              asunto: asunto,
+              descripcion: descripcion,
+              fechaServidor: FieldValue.serverTimestamp(),
+            ),
+          );
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo enviar la solicitud. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
   }
 
   static DocumentReference<Map<String, dynamic>> _sesionAsistencia(
