@@ -7,10 +7,12 @@ import 'package:saman_sports/controllers/eventos_entrenador_controller.dart';
 import 'package:saman_sports/controllers/perfil_entrenador_controller.dart';
 import 'package:saman_sports/controllers/resenas_entrenador_controller.dart';
 import 'package:saman_sports/models/alumno_inscrito.dart';
+import 'package:saman_sports/models/cancha.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/evento.dart';
 import 'package:saman_sports/models/perfil_entrenador.dart';
 import 'package:saman_sports/models/resena.dart';
+import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/entrenador_repository.dart';
 import 'package:saman_sports/repositories/eventos_entrenador_repository.dart';
 import 'package:saman_sports/repositories/perfil_entrenador_repository.dart';
@@ -29,7 +31,17 @@ const deporte = Deporte(
   cupos: 20,
   inscritos: 8,
   entrenadorNombre: 'Juan Pérez',
+  canchaId: 'c1',
   canchaNombre: 'Cancha 1',
+);
+
+const cancha = Cancha(
+  id: 'c1',
+  nombre: 'Cancha 1',
+  ubicacion: 'Edificio deportivo',
+  descripcion: '',
+  activa: true,
+  version: 1,
 );
 
 void main() {
@@ -72,8 +84,45 @@ void main() {
     await tester.tap(find.text('Solicitar evento'));
     await tester.pumpAndSettle();
     expect(find.text('Nombre del evento'), findsOneWidget);
+    expect(find.text('Cancha'), findsOneWidget);
+    expect(find.text('Ubicación'), findsNothing);
     expect(find.text('Capacidad'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('cerrar y reabrir el modal limpia el error anterior', (
+    tester,
+  ) async {
+    final auth = AuthController();
+    final eventos = EventosEntrenadorController(
+      repository: _EventosRepo(errorSolicitud: 'No se pudo solicitar.'),
+    );
+    final entrenador = EntrenadorController(repository: _EntrenadorRepo());
+    addTearDown(auth.dispose);
+    addTearDown(eventos.dispose);
+    addTearDown(entrenador.dispose);
+    await _mostrar(
+      tester,
+      EventosEntrenadorView(
+        auth: auth,
+        controller: eventos,
+        entrenador: entrenador,
+      ),
+    );
+
+    await tester.tap(find.text('Solicitar evento'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_campo('Nombre del evento'), 'Torneo interno');
+    await tester.enterText(_campo('Capacidad'), '20');
+    await tester.tap(find.text('Enviar solicitud'));
+    await tester.pumpAndSettle();
+    expect(find.text('No se pudo solicitar.'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Solicitar evento'));
+    await tester.pumpAndSettle();
+    expect(find.text('No se pudo solicitar.'), findsNothing);
   });
 
   testWidgets('Perfil muestra experiencia, estudiantes y certificaciones', (
@@ -130,6 +179,13 @@ class _EntrenadorRepo implements EntrenadorRepository {
 }
 
 class _EventosRepo implements EventosEntrenadorRepository {
+  _EventosRepo({this.errorSolicitud});
+
+  final String? errorSolicitud;
+
+  @override
+  Stream<List<Cancha>> canchas() => Stream.value(const [cancha]);
+
   @override
   Stream<List<Evento>> eventos() => Stream.value([
     const Evento(
@@ -151,8 +207,16 @@ class _EventosRepo implements EventosEntrenadorRepository {
   ]);
 
   @override
-  Future<String?> solicitar(Map<String, dynamic> datos) async => null;
+  Stream<List<ReservaHorario>> reservasCancha(String canchaId) =>
+      Stream.value(const []);
+
+  @override
+  Future<String?> solicitar(Map<String, dynamic> datos) async => errorSolicitud;
 }
+
+Finder _campo(String etiqueta) => find.byWidgetPredicate(
+  (widget) => widget is TextField && widget.decoration?.labelText == etiqueta,
+);
 
 class _PerfilRepo implements PerfilEntrenadorRepository {
   @override

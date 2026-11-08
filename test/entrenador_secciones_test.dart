@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/controllers/eventos_entrenador_controller.dart';
 import 'package:saman_sports/controllers/inicio_entrenador_controller.dart';
@@ -6,6 +8,7 @@ import 'package:saman_sports/controllers/resenas_entrenador_controller.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/models/alumno_inscrito.dart';
 import 'package:saman_sports/models/asistencia.dart';
+import 'package:saman_sports/models/cancha.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/evento.dart';
 import 'package:saman_sports/models/perfil_entrenador.dart';
@@ -27,7 +30,17 @@ const _tenis = Deporte(
   cupos: 20,
   inscritos: 8,
   entrenadorNombre: 'Juan Pérez',
+  canchaId: 'c1',
   canchaNombre: 'Cancha 1',
+);
+
+const _cancha = Cancha(
+  id: 'c1',
+  nombre: 'Cancha 1',
+  ubicacion: 'Edificio deportivo',
+  descripcion: '',
+  activa: true,
+  version: 1,
 );
 
 const _perfil = PerfilEntrenador(
@@ -52,7 +65,6 @@ void main() {
       AppRoutes.entrenadorAsistencia,
       AppRoutes.entrenadorEventos,
       AppRoutes.entrenadorResenas,
-      AppRoutes.entrenadorSoporte,
       AppRoutes.entrenadorPerfil,
     ]);
   });
@@ -127,17 +139,118 @@ void main() {
         fecha: DateTime(2026, 11, 10),
         horaInicio: 840,
         horaFin: 960,
-        ubicacion: 'Cancha 1',
+        cancha: _cancha,
         capacidad: 24,
         descripcion: 'Encuentro de cierre de semestre.',
       );
 
       expect(ok, isTrue);
       expect(repo.solicitud?['deporteId'], 'tenis');
+      expect(repo.solicitud?['canchaId'], 'c1');
       expect(repo.solicitud?['horaInicio'], 840);
       expect(repo.solicitud?['capacidad'], 24);
       expect(repo.solicitud, isNot(contains('estado')));
       expect(repo.solicitud, isNot(contains('creadoPorUid')));
+    },
+  );
+
+  test(
+    'Eventos solo ofrece canchas activas y detecta el choque antes de enviar',
+    () async {
+      final repo = _EventosRepo(
+        canchasDisponibles: const [
+          _cancha,
+          Cancha(
+            id: 'c2',
+            nombre: 'Cancha cerrada',
+            ubicacion: '',
+            descripcion: '',
+            activa: false,
+            version: 1,
+          ),
+        ],
+        reservas: const [
+          ReservaHorario(
+            id: 'r1',
+            canchaId: 'c1',
+            canchaNombre: 'Cancha 1',
+            dia: 2,
+            horaInicio: 840,
+            horaFin: 960,
+            tipo: TipoReserva.deporte,
+            refId: 'd1',
+            refNombre: 'Baloncesto',
+            activa: true,
+          ),
+        ],
+      );
+      final controller = EventosEntrenadorController(
+        repository: repo,
+        reloj: () => DateTime(2026, 11, 7),
+      );
+      addTearDown(controller.dispose);
+
+      controller.iniciar();
+      await pumpEventQueue();
+      controller.observarCancha('c1');
+      await pumpEventQueue();
+
+      expect(controller.canchas, [_cancha]);
+      expect(
+        controller.choqueHorario(
+          cancha: _cancha,
+          fecha: DateTime(2026, 11, 10),
+          horaInicio: 840,
+          horaFin: 960,
+        ),
+        contains('Baloncesto'),
+      );
+      final ok = await controller.solicitar(
+        nombre: 'Torneo interno',
+        disciplina: _tenis,
+        cancha: _cancha,
+        fecha: DateTime(2026, 11, 10),
+        horaInicio: 840,
+        horaFin: 960,
+        capacidad: 24,
+        descripcion: '',
+      );
+      expect(ok, isFalse);
+      expect(repo.solicitud, isNull);
+    },
+  );
+
+  test(
+    'al superar el timeout informa procesamiento y conserva la lista en vivo',
+    () async {
+      final repo = _EventosLentoRepo();
+      final controller = EventosEntrenadorController(
+        repository: repo,
+        reloj: () => DateTime(2026, 11, 7),
+        timeoutSolicitud: const Duration(milliseconds: 5),
+      );
+      addTearDown(controller.dispose);
+      addTearDown(repo.cerrar);
+      controller.iniciar();
+      await pumpEventQueue();
+
+      final ok = await controller.solicitar(
+        nombre: 'Torneo interno',
+        disciplina: _tenis,
+        cancha: _cancha,
+        fecha: DateTime(2026, 11, 10),
+        horaInicio: 1020,
+        horaFin: 1080,
+        capacidad: 24,
+        descripcion: '',
+      );
+
+      expect(ok, isTrue);
+      expect(controller.error, isNull);
+      expect(controller.mensaje, contains('procesando'));
+      repo.publicar(_evento);
+      await pumpEventQueue();
+      expect(controller.eventos, [_evento]);
     },
   );
 
@@ -279,42 +392,88 @@ class _HistorialFalla implements HistorialAsistenciaRepository {
 }
 
 class _EventosRepo implements EventosEntrenadorRepository {
+  _EventosRepo({
+    this.canchasDisponibles = const [_cancha],
+    this.reservas = const [],
+    this.errorSolicitud,
+  });
+
+  final List<Cancha> canchasDisponibles;
+  final List<ReservaHorario> reservas;
+  final String? errorSolicitud;
   Map<String, dynamic>? solicitud;
 
   @override
-  Stream<List<Evento>> eventos() => Stream.value([
-    Evento(
-      id: 'e1',
-      titulo: 'Torneo interno',
-      tipo: TipoEvento.evento,
-      deporteId: 'tenis',
-      deporteNombre: 'Tenis',
-      canchaId: '',
-      canchaNombre: 'Cancha 1',
-      fecha: '2026-11-10',
-      horaInicio: 840,
-      horaFin: 960,
-      descripcion: '',
-      estado: EstadoEvento.pendiente,
-      creadoPorUid: 'entrenador-1',
-      capacidad: 24,
-    ),
-  ]);
+  Stream<List<Cancha>> canchas() => Stream.value(canchasDisponibles);
+
+  @override
+  Stream<List<Evento>> eventos() => Stream.value([_evento]);
+
+  @override
+  Stream<List<ReservaHorario>> reservasCancha(String canchaId) => Stream.value(
+    reservas.where((reserva) => reserva.canchaId == canchaId).toList(),
+  );
 
   @override
   Future<String?> solicitar(Map<String, dynamic> datos) async {
     solicitud = datos;
-    return null;
+    return errorSolicitud;
   }
 }
 
 class _EventosErrorRepo implements EventosEntrenadorRepository {
   @override
+  Stream<List<Cancha>> canchas() => Stream.value(const [_cancha]);
+
+  @override
   Stream<List<Evento>> eventos() => Stream.error(StateError('sin permisos'));
+
+  @override
+  Stream<List<ReservaHorario>> reservasCancha(String canchaId) =>
+      const Stream.empty();
 
   @override
   Future<String?> solicitar(Map<String, dynamic> datos) async => null;
 }
+
+class _EventosLentoRepo implements EventosEntrenadorRepository {
+  final _eventos = StreamController<List<Evento>>();
+  final _pendiente = Completer<String?>();
+
+  @override
+  Stream<List<Cancha>> canchas() => Stream.value(const [_cancha]);
+
+  @override
+  Stream<List<Evento>> eventos() => _eventos.stream;
+
+  @override
+  Stream<List<ReservaHorario>> reservasCancha(String canchaId) =>
+      Stream.value(const []);
+
+  @override
+  Future<String?> solicitar(Map<String, dynamic> datos) => _pendiente.future;
+
+  void publicar(Evento evento) => _eventos.add([evento]);
+
+  Future<void> cerrar() => _eventos.close();
+}
+
+const _evento = Evento(
+  id: 'e1',
+  titulo: 'Torneo interno',
+  tipo: TipoEvento.evento,
+  deporteId: 'tenis',
+  deporteNombre: 'Tenis',
+  canchaId: 'c1',
+  canchaNombre: 'Cancha 1',
+  fecha: '2026-11-10',
+  horaInicio: 840,
+  horaFin: 960,
+  descripcion: '',
+  estado: EstadoEvento.pendiente,
+  creadoPorUid: 'entrenador-1',
+  capacidad: 24,
+);
 
 class _ResenasRepo implements ResenasEntrenadorRepository {
   List<String>? deporteIds;
