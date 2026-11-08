@@ -572,6 +572,96 @@ class FirebaseServices {
     }
   }
 
+  /// Tickets creados por el entrenador autenticado. El filtro por autor es
+  /// parte del contrato que también deben exigir las reglas de Firestore.
+  static Stream<List<Map<String, dynamic>>> streamTicketsEntrenador({
+    required String entrenadorUid,
+  }) {
+    final actual = _auth.currentUser?.uid;
+    if (actual == null || actual != entrenadorUid) {
+      return Stream.error(StateError('Sesión de entrenador requerida'));
+    }
+    return _streamConsultaEntrenador(
+      _db
+          .collection(ticketsCollection)
+          .where('autorUid', isEqualTo: entrenadorUid),
+    );
+  }
+
+  /// Crea un ticket abierto con la identidad tomada de la sesión y del perfil,
+  /// nunca de campos enviados por la interfaz.
+  static Future<AuthResponse> crearTicketEntrenador({
+    required String entrenadorUid,
+    required String categoria,
+    required String asunto,
+    required String descripcion,
+  }) async {
+    try {
+      final actual = _auth.currentUser?.uid;
+      if (actual == null || actual != entrenadorUid) {
+        throw StateError('Sesión de entrenador requerida');
+      }
+      const categorias = {
+        'cuenta',
+        'disciplinas',
+        'asistencia',
+        'eventos',
+        'otro',
+      };
+      final categoriaLimpia = categoria.trim();
+      final asuntoLimpio = asunto.trim();
+      final descripcionLimpia = descripcion.trim();
+      if (!categorias.contains(categoriaLimpia)) {
+        throw StateError('La categoría no es válida.');
+      }
+      if (asuntoLimpio.length < 5 || asuntoLimpio.length > 80) {
+        throw StateError('El asunto debe tener entre 5 y 80 caracteres.');
+      }
+      if (descripcionLimpia.length < 10 || descripcionLimpia.length > 500) {
+        throw StateError(
+          'La descripción debe tener entre 10 y 500 caracteres.',
+        );
+      }
+
+      final perfil = await getUserData(uid: entrenadorUid);
+      if (perfil?['rol'] != 'entrenador') {
+        throw StateError('Sesión de entrenador requerida');
+      }
+      final nombre = [
+        perfil?['nombre'],
+        perfil?['apellido'],
+      ].whereType<String>().where((parte) => parte.trim().isNotEmpty).join(' ');
+
+      await _db.collection(ticketsCollection).add({
+        'asunto': asuntoLimpio,
+        'categoria': categoriaLimpia,
+        'descripcion': descripcionLimpia,
+        'autorUid': entrenadorUid,
+        'autorNombre': nombre.isEmpty
+            ? (_auth.currentUser?.email ?? 'Entrenador')
+            : nombre,
+        'autorRol': 'entrenador',
+        'estado': 'abierto',
+        'respuesta': '',
+        'fecha': FieldValue.serverTimestamp(),
+        'resueltoEn': null,
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo enviar la solicitud. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
   static DocumentReference<Map<String, dynamic>> _sesionAsistencia(
     String deporteId,
     DateTime fecha,

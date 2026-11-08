@@ -51,11 +51,11 @@ void main() {
     expect(repository.asunto, isNull);
   });
 
-  testWidgets('muestra formulario, estado y respuesta en móvil', (tester) async {
+  testWidgets('muestra formulario, estado y respuesta en móvil', (
+    tester,
+  ) async {
     final auth = AuthController();
-    final controller = SoporteEntrenadorController(
-      repository: _SoporteRepo(),
-    );
+    final controller = SoporteEntrenadorController(repository: _SoporteRepo());
     addTearDown(auth.dispose);
     addTearDown(controller.dispose);
     await tester.binding.setSurfaceSize(const Size(390, 900));
@@ -73,7 +73,10 @@ void main() {
     expect(find.text('Problema con asistencia'), findsOneWidget);
     expect(find.text('Resuelto'), findsOneWidget);
     expect(find.text('Respuesta de coordinación'), findsOneWidget);
-    expect(find.text('Actualiza la página y vuelve a intentarlo.'), findsOneWidget);
+    expect(
+      find.text('Actualiza la página y vuelve a intentarlo.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }

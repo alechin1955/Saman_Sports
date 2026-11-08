@@ -220,17 +220,16 @@ La línea del autor es un recordatorio: no dejar que el admin reescriba `comenta
 
 ### tickets
 
-El estudiante crea y lee los suyos (`autorUid == uid`). El administrador lee todos y solo actualiza `respuesta`, `estado` y `resueltoEn`.
-
-La pantalla del estudiante para crear tickets **aún no existe**. La regla puede desplegarse igual; la colección se quedará vacía hasta esa pantalla.
+Cada estudiante o entrenador crea y lee solo los suyos (`autorUid == uid`). El administrador lee todos y solo actualiza `respuesta`, `estado` y `resueltoEn`.
 
 ```
 match /tickets/{id} {
   allow read: if isAdmin()
     || (firmado() && resource.data.autorUid == uid());
 
-  allow create: if isEstudiante()
+  allow create: if (isEstudiante() || isEntrenador())
     && request.resource.data.autorUid == uid()
+    && request.resource.data.autorRol == rol()
     && request.resource.data.estado == 'abierto'
     && request.resource.data.respuesta == '';
 

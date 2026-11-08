@@ -1,6 +1,6 @@
 # Módulo del entrenador
 
-La ruta `/entrenador` y la restauración de sesión comparten el panel adaptable del estudiante y conservan la validación del rol entrenador. El menú separa Inicio, Disciplinas, Asistencia, Eventos, Reseñas y Mi perfil; todas las rutas pasan por `GuardiaRol`.
+La ruta `/entrenador` y la restauración de sesión comparten el panel adaptable del estudiante y conservan la validación del rol entrenador. El menú separa Inicio, Disciplinas, Asistencia, Eventos, Reseñas, Soporte y Mi perfil; todas las rutas pasan por `GuardiaRol`.
 
 ## Vistas del panel
 
@@ -9,9 +9,8 @@ La ruta `/entrenador` y la restauración de sesión comparten el panel adaptable
 - **Asistencia** conserva la selección de disciplina y fecha, protege los borradores y exporta el historial en CSV compatible con Excel.
 - **Eventos** permite elegir una cancha activa, revisar su ocupación antes de solicitar y consultar el estado posterior. El entrenador no aprueba eventos: cada solicitud nace en estado `pendiente` y el administrador conserva el cambio a aprobado o rechazado.
 - **Reseñas** es de solo lectura y consulta en vivo las reseñas visibles de cada disciplina asignada, sin depender del límite de reseñas de la portada.
+- **Soporte** crea tickets para la coordinación y muestra en vivo únicamente los del entrenador autenticado, incluido su estado y la respuesta administrativa.
 - **Mi perfil** combina `entrenadores/{uid}` con los datos de la cuenta propia para mostrar experiencia, estudiantes, biografía, certificaciones y contacto.
-
-Soporte se retiró temporalmente del menú del entrenador hasta que exista un flujo de tickets completo. La ruta interna se conserva para no romper enlaces antiguos, pero no forma parte de la navegación visible.
 
 ## Patrones estructurales aplicados
 
@@ -60,6 +59,12 @@ Guardar usa una transacción para comprobar que la disciplina continúa asignada
 
 Las reglas desplegadas deben comprobar el rol, la asignación `entrenadorUid`, las inscripciones permitidas y los campos escritos dentro de la subcolección de asistencias. No se ha validado ni desplegado ese control en un proyecto Firebase real. Dos dispositivos que editen la misma sesión pueden sobrescribir el último registro; se recomienda coordinar la edición de cada sesión. Se limita el registro a 450 inscritos por sesión.
 
+## Soporte
+
+Los tickets se guardan en `tickets/{id}` con asunto, categoría, descripción, identidad autoritativa del entrenador, estado `abierto`, respuesta vacía y fecha del servidor. La interfaz nunca envía ni decide el UID, el nombre, el rol, el estado o la respuesta. `streamTicketsEntrenador` filtra por el UID autenticado y el controlador ordena los resultados por fecha para evitar un índice compuesto adicional.
+
+Las reglas desplegadas deben permitir que un entrenador cree y lea únicamente sus propios tickets, que no pueda modificarlos ni borrarlos y que solo el administrador cambie `respuesta`, `estado` y `resueltoEn`. Este repositorio documenta la regla esperada, pero no despliega reglas remotas; debe verificarse en el proyecto Firebase de pruebas.
+
 ## Solicitudes de eventos
 
 `FirebaseServices.solicitarEventoEntrenador` valida que el UID corresponda a la sesión, que la disciplina esté activa y asignada, que la cancha elegida exista y esté activa, y que fecha, horario y capacidad sean válidos. Tanto el modal como la fachada comparan la franja con las reservas activas de la cancha. La fachada toma el nombre y la ubicación de la cancha desde Firestore, descarta cualquier `estado`, `creadoPorUid` o nombre de cancha recibido desde la interfaz y escribe sus valores autoritativos (`pendiente` y el UID autenticado). `streamEventosEntrenador` filtra las solicitudes por el mismo UID.
@@ -78,7 +83,7 @@ La exportación consulta datos guardados; se bloquea mientras hay un borrador si
 
 Comprobación local del 8 de noviembre de 2026 con Flutter 3.47.9 y Dart 3.13.7:
 
-- Suite completa: 179 pruebas aprobadas, incluidas las nuevas vistas, controladores, políticas y el Bridge.
+- Suite completa: 183 pruebas aprobadas, incluidas las nuevas vistas, controladores, políticas y el Bridge.
 - Compilación web de producción: correcta, incluido el análisis previo de compatibilidad Wasm.
 - Pruebas de widgets adaptables a 320, 390, 768 y 1440 px, incluido el diálogo móvil de solicitud de eventos.
 - Análisis de los archivos modificados: sin incidencias. El análisis global mantiene el aviso previo sobre el nombre `FirebaseServices.dart`.
