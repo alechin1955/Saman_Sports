@@ -65,6 +65,7 @@ void main() {
       AppRoutes.entrenadorAsistencia,
       AppRoutes.entrenadorEventos,
       AppRoutes.entrenadorResenas,
+      AppRoutes.entrenadorSoporte,
       AppRoutes.entrenadorPerfil,
     ]);
   });
