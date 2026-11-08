@@ -308,9 +308,7 @@ class FirebaseServices {
       _db
           .collection(reservasCollection)
           .where('canchaId', isEqualTo: canchaId)
-          .where('activa', isEqualTo: true)
-          .orderBy('dia')
-          .orderBy('horaInicio'),
+          .where('activa', isEqualTo: true),
     );
   }
 

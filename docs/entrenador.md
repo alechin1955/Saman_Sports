@@ -66,7 +66,7 @@ Las reglas desplegadas deben comprobar el rol, la asignación `entrenadorUid`, l
 
 Si la escritura tarda más de 15 segundos, la interfaz informa que la solicitud sigue procesándose y mantiene activo el listado en vivo para confirmar su aparición; no presenta el timeout como un fallo definitivo.
 
-Las reglas de Firestore desplegadas deben permitir al entrenador crear únicamente solicitudes pendientes con su propio UID. La implementación del cliente no sustituye esa regla; la aprobación y la reserva definitiva de cancha continúan en el módulo administrador.
+Las reglas de Firestore desplegadas deben permitir al entrenador leer las reservas activas necesarias para comprobar la disponibilidad y crear únicamente solicitudes pendientes con su propio UID. La implementación del cliente no sustituye esas reglas; la aprobación y la reserva definitiva de cancha continúan en el módulo administrador. Este repositorio no contiene las reglas desplegadas, por lo que ese permiso debe verificarse en un proyecto Firebase de pruebas antes de integrar.
 
 ## Exportación del listado
 
