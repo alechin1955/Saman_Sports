@@ -8,6 +8,7 @@ import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/core/utils/solicitud_evento_entrenador.dart';
 import 'package:saman_sports/core/utils/ticket_soporte_entrenador.dart';
+import 'package:saman_sports/core/utils/ticket_soporte_estudiante.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 
@@ -972,6 +973,63 @@ class FirebaseServices {
           .collection(notificacionesCollection)
           .where('destinatarioUid', isEqualTo: uid),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: soporte)
+  // ---------------------------------------------------------------------------
+
+  /// Tickets que creó el estudiante, en vivo, con la respuesta del admin.
+  static Stream<List<Map<String, dynamic>>> streamMisTickets({
+    required String uid,
+  }) {
+    return _streamConsulta(
+      _db.collection(ticketsCollection).where('autorUid', isEqualTo: uid),
+    );
+  }
+
+  /// Crea un ticket abierto del estudiante con la sesión actual. El nombre
+  /// y el rol salen de su perfil, no de lo que escribe en el formulario.
+  static Future<AuthResponse> crearTicketEstudiante({
+    required String categoria,
+    required String asunto,
+    required String descripcion,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      final perfil = await getUserData(uid: uid);
+      await _db
+          .collection(ticketsCollection)
+          .add(
+            construirTicketEstudiante(
+              estudianteUid: uid,
+              perfil: perfil,
+              categoria: categoria,
+              asunto: asunto,
+              descripcion: descripcion,
+              fechaServidor: FieldValue.serverTimestamp(),
+            ),
+          );
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
   }
 
   // ===== ADMINISTRADOR (Andrés): canchas, reservas y deportes =====

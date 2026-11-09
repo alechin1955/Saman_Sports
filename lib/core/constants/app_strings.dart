@@ -335,6 +335,33 @@ class AppStrings {
   static const String sinRecordatorios = 'No tienes recordatorios';
   static const String sinRecordatoriosTexto =
       'Aquí verás los avisos de pagos pendientes y de eventos de tus disciplinas.';
+
+  // Soporte del estudiante
+  static const String soporteNuevoTicket = 'Nuevo ticket';
+  static const String soporteCategoria = 'Categoría';
+  static const String soporteAsunto = 'Asunto';
+  static const String soporteDescripcionCampo = 'Describe tu problema';
+  static const String soporteEnviar = 'Enviar ticket';
+  static const String soporteEnviando = 'Enviando…';
+  static const String soporteEnviado =
+      'Ticket enviado. El administrador te responderá aquí.';
+  static const String soporteMisTickets = 'Mis tickets';
+  static const String soporteAbierto = 'Abierto';
+  static const String soporteResuelto = 'Resuelto';
+  static const String soporteRespuesta = 'Respuesta del administrador';
+  static const String soporteSinRespuesta = 'Aún sin respuesta';
+  static const String soporteSinTickets = 'No has enviado tickets';
+  static const String soporteSinTicketsTexto =
+      'Si tienes un problema con tu cuenta, tus inscripciones o tus pagos, escríbenos.';
+  static const String soporteEligeCategoria = 'Elige una categoría.';
+  static const String soporteAsuntoCorto =
+      'El asunto debe tener al menos 5 caracteres.';
+  static const String soporteAsuntoLargo =
+      'El asunto puede tener máximo 80 caracteres.';
+  static const String soporteDescripcionCorta =
+      'Describe el problema con al menos 10 caracteres.';
+  static const String soporteDescripcionLarga =
+      'La descripción puede tener máximo 500 caracteres.';
   static const String horario = 'Horario';
   static const String entrenador = 'Entrenador';
   static const String cuposDisponibles = 'Cupos disponibles';
