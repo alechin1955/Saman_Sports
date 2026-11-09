@@ -1,10 +1,12 @@
 import 'dart:async';
-
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/FirebaseServices.dart';
+import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/inscripciones_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/models/deporte.dart';
+import 'package:saman_sports/views/estudiante/mis_disciplinas_view.dart';
 
 Map<String, dynamic> inscripcion(
   String id,
@@ -137,6 +139,77 @@ void main() {
       expect(await c.inscribirse(futbol), AppStrings.inscripcionCuentaInactiva);
       expect(c.procesando, isFalse);
       c.dispose();
+    });
+  });
+
+  group('MisDisciplinasView', () {
+    Widget pantalla(InscripcionesController c) => MaterialApp(
+      home: MisDisciplinasView(auth: AuthController(), controller: c),
+    );
+
+    InscripcionesController conDatos(List<String> canceladas) {
+      return InscripcionesController(
+        uidActual: () => 'u1',
+        origen: (_) => Stream.value([
+          inscripcion('a', 'd1', 'pendiente', dia: 3),
+          inscripcion('b', 'd2', 'confirmada', dia: 2),
+          inscripcion('c', 'd3', 'cancelada'),
+        ]),
+        cancelar: (id) async {
+          canceladas.add(id);
+          return AuthResponse(isSuccess: true);
+        },
+      );
+    }
+
+    const tamanos = [Size(390, 844), Size(768, 1024), Size(1440, 900)];
+    for (final tamano in tamanos) {
+      testWidgets('lista las inscripciones activas en '
+          '${tamano.width.toInt()} px', (tester) async {
+        await tester.binding.setSurfaceSize(tamano);
+        await tester.pumpWidget(pantalla(conDatos([])));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Deporte d1'), findsOneWidget);
+        expect(find.text('Deporte d2'), findsOneWidget);
+        expect(find.text('Deporte d3'), findsNothing);
+        expect(find.text(AppStrings.estadoPendiente), findsOneWidget);
+        expect(find.text(AppStrings.estadoConfirmada), findsOneWidget);
+        expect(find.text(AppStrings.irAPagos), findsOneWidget);
+        await tester.binding.setSurfaceSize(null);
+      });
+    }
+
+    testWidgets('cancelar pide confirmación y libera el cupo', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      final canceladas = <String>[];
+      await tester.pumpWidget(pantalla(conDatos(canceladas)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(AppStrings.cancelarInscripcion).first);
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.cancelarInscripcionPregunta), findsOneWidget);
+
+      await tester.tap(find.text(AppStrings.siCancelar));
+      await tester.pumpAndSettle();
+      expect(canceladas, ['a']);
+      expect(find.text(AppStrings.inscripcionCancelada), findsOneWidget);
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    testWidgets('si elige volver no cancela nada', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      final canceladas = <String>[];
+      await tester.pumpWidget(pantalla(conDatos(canceladas)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(AppStrings.cancelarInscripcion).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.volver));
+      await tester.pumpAndSettle();
+      expect(canceladas, isEmpty);
+      await tester.binding.setSurfaceSize(null);
     });
   });
 }

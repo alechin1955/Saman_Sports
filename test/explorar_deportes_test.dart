@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
+import 'package:saman_sports/controllers/inscripciones_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/views/estudiante/explorar_deportes_view.dart';
@@ -26,6 +28,18 @@ ExplorarDeportesController controladorConDeportes() {
   );
 }
 
+/// Inscripciones de prueba: el estudiante 'u1' aún no tiene ninguna.
+InscripcionesController inscripcionesDePrueba({List<String>? inscritos}) {
+  return InscripcionesController(
+    uidActual: () => 'u1',
+    origen: (_) => Stream.value(const []),
+    inscribir: (id) async {
+      inscritos?.add(id);
+      return AuthResponse(isSuccess: true);
+    },
+    cancelar: (_) async => AuthResponse(isSuccess: true),
+  );
+}
 void main() {
   group('ExplorarDeportesController', () {
     Future<ExplorarDeportesController> iniciado() async {
@@ -124,11 +138,15 @@ void main() {
   });
 
   group('ExplorarDeportesView', () {
-    Widget pantalla(ExplorarDeportesController controller) {
+    Widget pantalla(
+      ExplorarDeportesController controller, {
+      InscripcionesController? inscripciones,
+    }) {
       return MaterialApp(
         home: ExplorarDeportesView(
           auth: AuthController(),
           controller: controller,
+          inscripciones: inscripciones ?? inscripcionesDePrueba(),
         ),
       );
     }
@@ -204,7 +222,9 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
 
-    testWidgets('ver detalles abre la información del deporte', (tester) async {
+    testWidgets('ver detalles muestra la información y permite cerrar', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1440, 900));
       await tester.pumpWidget(pantalla(controladorConDeportes()));
       await tester.pumpAndSettle();
@@ -215,10 +235,54 @@ void main() {
       await tester.tap(detalles);
       await tester.pumpAndSettle();
 
-      expect(find.text(AppStrings.inscripcionProximamente), findsOneWidget);
+      expect(find.text(AppStrings.inscripcionPendienteNota), findsOneWidget);
+      expect(find.text(AppStrings.inscribirme), findsOneWidget);
       await tester.tap(find.text(AppStrings.cerrar));
       await tester.pumpAndSettle();
-      expect(find.text(AppStrings.inscripcionProximamente), findsNothing);
+      expect(find.text(AppStrings.inscripcionPendienteNota), findsNothing);
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    testWidgets('inscribirme llama a la fachada y avisa que quedó pendiente', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      final inscritos = <String>[];
+      await tester.pumpWidget(
+        pantalla(
+          controladorConDeportes(),
+          inscripciones: inscripcionesDePrueba(inscritos: inscritos),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final detalles = find.text(AppStrings.verDetalles).first;
+      await tester.ensureVisible(detalles);
+      await tester.tap(detalles);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.inscribirme));
+      await tester.pumpAndSettle();
+
+      expect(inscritos, ['d1']);
+      expect(find.text(AppStrings.inscripcionRegistrada), findsOneWidget);
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    testWidgets('un deporte sin cupos no deja inscribirse', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      await tester.pumpWidget(pantalla(controladorConDeportes()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'natacion');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.verDetalles));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.sinCuposDisponibles), findsOneWidget);
+      final boton = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, AppStrings.inscribirme),
+      );
+      expect(boton.onPressed, isNull);
       await tester.binding.setSurfaceSize(null);
     });
   });

@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:saman_sports/controllers/inscripciones_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/deporte.dart';
 
-/// Muestra la información completa de un deporte del catálogo.
-/// La inscripción se habilita en el Hito 3.
-Future<void> mostrarDetalleDeporte(BuildContext context, Deporte deporte) {
+/// Muestra la información completa de un deporte del catálogo y permite
+/// inscribirse (RF-04). El botón cambia solo si ya está inscrito o si se
+/// acaban los cupos, porque escucha a InscripcionesController.
+Future<void> mostrarDetalleDeporte(
+  BuildContext context,
+  Deporte deporte, {
+  required InscripcionesController inscripciones,
+}) {
+  final mensajes = ScaffoldMessenger.of(context);
   return showDialog<void>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       backgroundColor: AppColors.surface,
       surfaceTintColor: AppColors.surface,
       shape: RoundedRectangleBorder(
@@ -47,16 +54,14 @@ Future<void> mostrarDetalleDeporte(BuildContext context, Deporte deporte) {
                 valor: '${deporte.disponibles} / ${deporte.cupos}',
               ),
               const SizedBox(height: AppSizes.space8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSizes.space12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppSizes.radius),
-                ),
-                child: Text(
-                  AppStrings.inscripcionProximamente,
-                  style: AppTextStyles.bodySmall,
+              ListenableBuilder(
+                listenable: inscripciones,
+                builder: (context, _) => _Aviso(
+                  texto: inscripciones.activaEn(deporte.id) != null
+                      ? AppStrings.yaInscrito
+                      : deporte.disponibles <= 0
+                      ? AppStrings.sinCuposDisponibles
+                      : AppStrings.inscripcionPendienteNota,
                 ),
               ),
             ],
@@ -65,12 +70,60 @@ Future<void> mostrarDetalleDeporte(BuildContext context, Deporte deporte) {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(dialogContext),
           child: const Text(AppStrings.cerrar),
+        ),
+        ListenableBuilder(
+          listenable: inscripciones,
+          builder: (context, _) {
+            final habilitado =
+                inscripciones.puedeInscribirse(deporte) &&
+                !inscripciones.procesando;
+            return ElevatedButton(
+              onPressed: !habilitado
+                  ? null
+                  : () async {
+                      final error = await inscripciones.inscribirse(deporte);
+                      if (!dialogContext.mounted) return;
+                      if (error == null) Navigator.pop(dialogContext);
+                      mensajes.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            error ?? AppStrings.inscripcionRegistrada,
+                          ),
+                        ),
+                      );
+                    },
+              child: Text(
+                inscripciones.procesando
+                    ? AppStrings.inscribiendo
+                    : AppStrings.inscribirme,
+              ),
+            );
+          },
         ),
       ],
     ),
   );
+}
+
+class _Aviso extends StatelessWidget {
+  const _Aviso({required this.texto});
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.space12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSizes.radius),
+      ),
+      child: Text(texto, style: AppTextStyles.bodySmall),
+    );
+  }
 }
 
 class _Fila extends StatelessWidget {

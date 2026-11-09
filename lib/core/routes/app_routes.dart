@@ -15,6 +15,7 @@ import 'package:saman_sports/views/auth/register_view.dart';
 import 'package:saman_sports/controllers/resultado_login.dart';
 import 'package:saman_sports/views/auth/guardia_rol.dart';
 import 'package:saman_sports/controllers/admin/admin_controladores.dart';
+import 'package:saman_sports/controllers/estudiante_controladores.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/proximamente_estudiante_view.dart';
@@ -55,7 +56,9 @@ class AppRoutes {
     ExplorarDeportesController explorar,
     ComunidadController comunidad, [
     AdminControladores? admin,
+    EstudianteControladores? panelEstudiante,
   ]) {
+    final panel = panelEstudiante ?? EstudianteControladores();
     return {
       login: (_) => LoginView(controller: auth),
       registro: (_) => RegisterView(controller: auth),
@@ -72,10 +75,16 @@ class AppRoutes {
       ),
       estudianteExplorar: (_) => _soloEstudiante(
         auth,
-        ExplorarDeportesView(auth: auth, controller: explorar),
+        ExplorarDeportesView(
+          auth: auth,
+          controller: explorar,
+          inscripciones: panel.inscripciones,
+        ),
       ),
-      estudianteDisciplinas: (_) =>
-          _soloEstudiante(auth, MisDisciplinasView(auth: auth)),
+      estudianteDisciplinas: (_) => _soloEstudiante(
+        auth,
+        MisDisciplinasView(auth: auth, controller: panel.inscripciones),
+      ),
       estudiantePagos: (_) => _soloEstudiante(
         auth,
         EstatusPagosView(auth: auth, controller: estudiante),

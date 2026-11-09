@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
+import 'package:saman_sports/controllers/inscripciones_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
@@ -23,10 +24,12 @@ class ExplorarDeportesView extends StatefulWidget {
     super.key,
     required this.auth,
     required this.controller,
+    required this.inscripciones,
   });
 
   final AuthController auth;
   final ExplorarDeportesController controller;
+  final InscripcionesController inscripciones;
 
   @override
   State<ExplorarDeportesView> createState() => _ExplorarDeportesViewState();
@@ -37,7 +40,9 @@ class _ExplorarDeportesViewState extends State<ExplorarDeportesView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.controller.iniciar();
+      if (!mounted) return;
+      widget.controller.iniciar();
+      widget.inscripciones.iniciar();
     });
   }
 
@@ -57,7 +62,10 @@ class _ExplorarDeportesViewState extends State<ExplorarDeportesView> {
           children: [
             FiltrosDeportes(controller: widget.controller),
             const SizedBox(height: AppSizes.space24),
-            _Resultados(controller: widget.controller),
+            _Resultados(
+              controller: widget.controller,
+              inscripciones: widget.inscripciones,
+            ),
           ],
         ),
       ),
@@ -66,9 +74,10 @@ class _ExplorarDeportesViewState extends State<ExplorarDeportesView> {
 }
 
 class _Resultados extends StatelessWidget {
-  const _Resultados({required this.controller});
+  const _Resultados({required this.controller, required this.inscripciones});
 
   final ExplorarDeportesController controller;
+  final InscripcionesController inscripciones;
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +97,7 @@ class _Resultados extends StatelessWidget {
     if (c.cargando) {
       return const EtiquetaEjemplo(cargando: true);
     }
+
     if (c.sinPublicar) {
       return const EstadoVacio(
         icono: Icons.sports_outlined,
@@ -95,6 +105,7 @@ class _Resultados extends StatelessWidget {
         texto: AppStrings.sinDisciplinasPublicadasTexto,
       );
     }
+
     final lista = c.deportesFiltrados;
     if (lista.isEmpty) {
       return EstadoVacio(
@@ -136,7 +147,11 @@ class _Resultados extends StatelessWidget {
                     width: ancho,
                     child: DeporteCard(
                       deporte: deporte,
-                      onDetalles: () => mostrarDetalleDeporte(context, deporte),
+                      onDetalles: () => mostrarDetalleDeporte(
+                        context,
+                        deporte,
+                        inscripciones: inscripciones,
+                      ),
                     ),
                   ),
               ],

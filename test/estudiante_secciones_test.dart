@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
+import 'package:saman_sports/controllers/inscripciones_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/models/inscripcion.dart';
 import 'package:saman_sports/models/pago.dart';
@@ -70,7 +71,15 @@ void main() {
       ) async {
         await tester.binding.setSurfaceSize(tamano);
         await tester.pumpWidget(
-          MaterialApp(home: MisDisciplinasView(auth: AuthController())),
+          MaterialApp(
+            home: MisDisciplinasView(
+              auth: AuthController(),
+              controller: InscripcionesController(
+                uidActual: () => 'abc',
+                origen: (_) => Stream.value(const []),
+              ),
+            ),
+          ),
         );
         await tester.pumpAndSettle();
 
