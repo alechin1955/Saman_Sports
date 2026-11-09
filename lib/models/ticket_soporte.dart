@@ -46,6 +46,7 @@ class TicketSoporte {
     return switch (categoria) {
       'cuenta' => 'Cuenta y acceso',
       'disciplinas' => 'Disciplinas',
+            'pagos' => 'Pagos y solvencia',
       'asistencia' => 'Asistencia',
       'eventos' => 'Eventos',
       'otro' => 'Otro',

@@ -8,6 +8,7 @@ import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/core/utils/solicitud_evento_entrenador.dart';
 import 'package:saman_sports/core/utils/ticket_soporte_entrenador.dart';
+import 'package:saman_sports/core/utils/ticket_soporte_estudiante.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 
@@ -757,6 +758,275 @@ class FirebaseServices {
     } catch (_) {
       return AuthResponse(
         errorMessage: 'No se pudo eliminar la reseña. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: inscripciones)
+  // ---------------------------------------------------------------------------
+
+  /// Inscripciones del estudiante, en vivo. Sin orderBy para no necesitar
+  /// un índice compuesto: el controlador las ordena por fecha.
+  /// La usa InscripcionesController.
+  static Stream<List<Map<String, dynamic>>> streamMisInscripciones({
+    required String estudianteUid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(inscripcionesCollection)
+          .where('estudianteUid', isEqualTo: estudianteUid),
+    );
+  }
+
+  /// Inscribe al estudiante con sesión abierta en un deporte (RF-04).
+  ///
+  /// En una transacción: revisa que la cuenta esté activa, que el deporte
+  /// esté activo y tenga cupo, que no esté ya inscrito, suma 1 a
+  /// `inscritos` y deja la inscripción en 'pendiente'. El id es
+  /// `{uid}_{deporteId}` para que no se pueda inscribir dos veces.
+  static Future<AuthResponse> inscribirseEnDeporte({
+    required String deporteId,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      final usuario = await _db.collection(usuariosCollection).doc(uid).get();
+      if (usuario.data()?['estado'] == 'inactivo') {
+        throw StateError(AppStrings.inscripcionCuentaInactiva);
+      }
+      final deporteRef = _db.collection(deportesCollection).doc(deporteId);
+      final inscripcionRef = _db
+          .collection(inscripcionesCollection)
+          .doc('${uid}_$deporteId');
+      await _db.runTransaction((tx) async {
+        final deporte = await tx.get(deporteRef);
+        final inscripcion = await tx.get(inscripcionRef);
+        final datos = deporte.data();
+        if (!deporte.exists || datos == null || datos['activo'] == false) {
+          throw StateError(AppStrings.inscripcionDeporteNoDisponible);
+        }
+        final estadoActual = inscripcion.data()?['estado'];
+        if (inscripcion.exists && estadoActual != 'cancelada') {
+          throw StateError(AppStrings.inscripcionYaExiste);
+        }
+        final cupos = _enteroAdmin(datos['cupos']);
+        final inscritos = _enteroAdmin(datos['inscritos']);
+        if (inscritos >= cupos) {
+          throw StateError(AppStrings.inscripcionSinCupos);
+        }
+        tx.update(deporteRef, {'inscritos': inscritos + 1});
+        tx.set(inscripcionRef, {
+          'estudianteUid': uid,
+          'deporteId': deporteId,
+          'deporteNombre': '${datos['nombre'] ?? ''}',
+          'estado': 'pendiente',
+          'fecha': FieldValue.serverTimestamp(),
+        });
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Cancela una inscripción del estudiante con sesión abierta (RF-05).
+  /// En una transacción la marca 'cancelada' y libera el cupo (inscritos - 1).
+  static Future<AuthResponse> cancelarInscripcion({
+    required String inscripcionId,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      final inscripcionRef = _db
+          .collection(inscripcionesCollection)
+          .doc(inscripcionId);
+      await _db.runTransaction((tx) async {
+        final inscripcion = await tx.get(inscripcionRef);
+        final datos = inscripcion.data();
+        if (!inscripcion.exists ||
+            datos == null ||
+            datos['estudianteUid'] != uid) {
+          throw StateError(AppStrings.inscripcionNoEncontrada);
+        }
+        if (datos['estado'] == 'cancelada') {
+          throw StateError(AppStrings.inscripcionYaCancelada);
+        }
+        final deporteRef = _db
+            .collection(deportesCollection)
+            .doc('${datos['deporteId'] ?? ''}');
+        final deporte = await tx.get(deporteRef);
+        if (deporte.exists) {
+          final inscritos = _enteroAdmin(deporte.data()?['inscritos']);
+          if (inscritos > 0) {
+            tx.update(deporteRef, {'inscritos': inscritos - 1});
+          }
+        }
+        tx.update(inscripcionRef, {'estado': 'cancelada'});
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+  
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: pagos)
+  // ---------------------------------------------------------------------------
+
+  /// Pagos del estudiante, en vivo. Sin orderBy para no necesitar un
+  /// índice compuesto: PagosController los ordena por fecha.
+  static Stream<List<Map<String, dynamic>>> streamMisPagos({
+    required String estudianteUid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(pagosCollection)
+          .where('estudianteUid', isEqualTo: estudianteUid),
+    );
+  }
+
+  /// Registra el pago del período hecho con PayPal (simulado, RF-15).
+  ///
+  /// Queda 'pendiente' y sin verificar: el administrador lo verifica desde
+  /// su panel con el `paypalOrderId`. El estudiante nunca escribe
+  /// `verificado`, `verificadoPor` ni `fechaPago`.
+  static Future<AuthResponse> registrarPagoEstudiante({
+    required double monto,
+    required String periodo,
+    required String paypalOrderId,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      await _db.collection(pagosCollection).add({
+        'estudianteUid': uid,
+        'inscripcionId': '',
+        'monto': monto,
+        'periodo': periodo,
+        'paypalOrderId': paypalOrderId,
+        'idTransaccion': paypalOrderId,
+        'estado': 'pendiente',
+        'verificado': false,
+        'fecha': FieldValue.serverTimestamp(),
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: recordatorios)
+  // ---------------------------------------------------------------------------
+
+  /// Avisos del estudiante (pago pendiente, eventos de sus disciplinas), en
+  /// vivo. Para marcarlos como leídos se usa marcarNotificacionLeida.
+  static Stream<List<Map<String, dynamic>>> streamMisNotificaciones({
+    required String uid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(notificacionesCollection)
+          .where('destinatarioUid', isEqualTo: uid),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: soporte)
+  // ---------------------------------------------------------------------------
+
+  /// Tickets que creó el estudiante, en vivo, con la respuesta del admin.
+  static Stream<List<Map<String, dynamic>>> streamMisTickets({
+    required String uid,
+  }) {
+    return _streamConsulta(
+      _db.collection(ticketsCollection).where('autorUid', isEqualTo: uid),
+    );
+  }
+
+  /// Crea un ticket abierto del estudiante con la sesión actual. El nombre
+  /// y el rol salen de su perfil, no de lo que escribe en el formulario.
+  static Future<AuthResponse> crearTicketEstudiante({
+    required String categoria,
+    required String asunto,
+    required String descripcion,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      final perfil = await getUserData(uid: uid);
+      await _db
+          .collection(ticketsCollection)
+          .add(
+            construirTicketEstudiante(
+              estudianteUid: uid,
+              perfil: perfil,
+              categoria: categoria,
+              asunto: asunto,
+              descripcion: descripcion,
+              fechaServidor: FieldValue.serverTimestamp(),
+            ),
+          );
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
         isSuccess: false,
       );
     }

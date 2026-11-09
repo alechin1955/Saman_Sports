@@ -86,17 +86,40 @@ service cloud.firestore {
 
       allow create, delete: if isAdmin();
 
-      // El panel no escribe el documento raíz. Solo puede tocar `descripcion`
+            // El panel no escribe el documento raíz. Solo puede tocar `descripcion`
       // y no puede reasignarse la disciplina ni cambiar cupos, estado o cancha.
+      // El estudiante solo mueve `inscritos` en 1, y solo en la misma
+      // transacción en que crea o cancela su propia inscripción.
       allow update: if isAdmin() || (
           isEntrenador()
           && resource.data.entrenadorUid == request.auth.uid
           && request.resource.data.entrenadorUid == request.auth.uid
           && soloCambia(['descripcion'])
+        ) || (
+          isEstudiante()
+          && soloCambia(['inscritos'])
+          && request.resource.data.inscritos is int
+          && (
+            (
+              request.resource.data.inscritos == resource.data.get('inscritos', 0) + 1
+              && request.resource.data.inscritos <= resource.data.cupos
+              && getAfter(/databases/$(database)/documents/inscripciones/$(request.auth.uid + '_' + deporteId)).data.estado == 'pendiente'
+            ) || (
+              request.resource.data.inscritos == resource.data.get('inscritos', 0) - 1
+              && request.resource.data.inscritos >= 0
+              && getAfter(/databases/$(database)/documents/inscripciones/$(request.auth.uid + '_' + deporteId)).data.estado == 'cancelada'
+            )
+          )
         );
 
       match /asistencias/{fecha} {
-        allow read: if isAdmin() || esSuDeporte(deporteId);
+
+                // El estudiante lee la asistencia de una disciplina en la que tiene
+        // inscripción, para ver su porcentaje en el Historial (RF-14).
+        allow read: if isAdmin() || esSuDeporte(deporteId) || (
+          isEstudiante()
+          && exists(/databases/$(database)/documents/inscripciones/$(request.auth.uid + '_' + deporteId))
+        );
 
         allow create: if esSuDeporte(deporteId)
           && deporteDe(deporteId).activo == true
@@ -188,8 +211,15 @@ service cloud.firestore {
     }
 
     match /inscripciones/{id} {
+      // La transacción de inscripción del estudiante lee {uid}_{deporteId}
+      // antes de que exista (resource == null).
       allow get: if isAdmin()
         || (isEstudiante() && resource.data.estudianteUid == request.auth.uid)
+        || (
+          isEstudiante()
+          && resource == null
+          && id.matches(request.auth.uid + '_.+')
+        )
         || (
           isEntrenador()
           && resource.data.deporteId is string
@@ -203,9 +233,43 @@ service cloud.firestore {
         || (isEstudiante() && resource.data.estudianteUid == request.auth.uid)
         || (isEntrenador() && resource.data.deporteId is string);
 
-      allow create, update, delete: if isAdmin();
-    }
+      // El estudiante crea su inscripción pendiente con id {uid}_{deporteId}
+      // (RF-04). No puede confirmarla: eso lo hace el administrador.
+      allow create: if isAdmin() || (
+          isEstudiante()
+          && id == request.auth.uid + '_' + request.resource.data.deporteId
+          && request.resource.data.estudianteUid == request.auth.uid
+          && request.resource.data.estado == 'pendiente'
+          && request.resource.data.fecha == request.time
+          && request.resource.data.keys().hasOnly([
+            'estudianteUid', 'deporteId', 'deporteNombre', 'estado', 'fecha'
+          ])
+        );
 
+      // El estudiante solo cancela la suya (RF-05) o, si estaba cancelada,
+      // vuelve a pedirla como pendiente.
+      allow update: if isAdmin() || (
+          isEstudiante()
+          && resource.data.estudianteUid == request.auth.uid
+          && request.resource.data.estudianteUid == request.auth.uid
+          && request.resource.data.deporteId == resource.data.deporteId
+          && (
+            (
+              resource.data.estado in ['pendiente', 'confirmada']
+              && request.resource.data.estado == 'cancelada'
+              && soloCambia(['estado'])
+            ) || (
+              resource.data.estado == 'cancelada'
+              && request.resource.data.estado == 'pendiente'
+              && request.resource.data.fecha == request.time
+              && soloCambia(['estado', 'fecha', 'deporteNombre'])
+            )
+          )
+        );
+
+      allow delete: if isAdmin();
+    }
+    
     match /transacciones/{id} {
       allow read: if isAdmin()
         || (activo() && resource.data.usuarioUid == request.auth.uid);

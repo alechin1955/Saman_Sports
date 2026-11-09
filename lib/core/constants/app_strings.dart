@@ -245,6 +245,123 @@ class AppStrings {
   static const String sinResultadosTexto =
       'Prueba con otra búsqueda o quita los filtros.';
   static const String limpiarFiltros = 'Limpiar filtros';
+    static const String sinDisciplinasPublicadas =
+      'Aún no hay disciplinas publicadas';
+  static const String sinDisciplinasPublicadasTexto =
+      'Cuando el administrador publique una disciplina aparecerá aquí.';
+        // Inscripciones del estudiante (RF-04 y RF-05)
+  static const String inscribirme = 'Inscribirme';
+  static const String inscribiendo = 'Inscribiendo…';
+  static const String inscripcionRegistrada =
+      'Inscripción registrada. Queda pendiente hasta que pagues y el administrador la confirme.';
+  static const String inscripcionPendienteNota =
+      'Al inscribirte tu cupo queda reservado como pendiente. Se confirma cuando pagues y el administrador lo verifique.';
+  static const String yaInscrito = 'Ya estás inscrito en esta disciplina';
+  static const String sinCuposDisponibles = 'No quedan cupos disponibles';
+  static const String inscripcionCuentaInactiva =
+      'Tu cuenta está inactiva. Contacta a la coordinación de deportes.';
+  static const String inscripcionDeporteNoDisponible =
+      'Esta disciplina ya no está disponible.';
+  static const String inscripcionYaExiste =
+      'Ya tienes una inscripción activa en esta disciplina.';
+  static const String inscripcionSinCupos =
+      'La disciplina se quedó sin cupos.';
+  static const String inscripcionNoEncontrada =
+      'No encontramos esa inscripción.';
+  static const String inscripcionYaCancelada =
+      'Esa inscripción ya estaba cancelada.';
+  static const String estadoPendiente = 'Pendiente';
+  static const String estadoConfirmada = 'Confirmada';
+  static const String estadoCancelada = 'Cancelada';
+  static const String inscritoEl = 'Inscrito el';
+  static const String cancelarInscripcion = 'Cancelar inscripción';
+  static const String cancelarInscripcionPregunta =
+      '¿Seguro que quieres cancelar tu inscripción? Tu cupo quedará libre para otro estudiante.';
+  static const String inscripcionCancelada =
+      'Inscripción cancelada. El cupo quedó libre.';
+  static const String volver = 'Volver';
+  static const String esperaUnMomento = 'Espera un momento…';
+  static const String siCancelar = 'Sí, cancelar';
+  static const String irAPagos = 'Ir a pagos';
+  static const String pendienteDePagoTexto =
+      'Paga la cuota del período para que el administrador confirme tu inscripción.';
+
+  // Pagos del estudiante (RF-15, PayPal simulado)
+  static const String pagoDelPeriodo = 'Pago del período';
+  static const String periodo = 'Período';
+  static const String montoAPagar = 'Monto';
+  static const String fechaDeCorte = 'Fecha de corte';
+  static const String sinPeriodoPago =
+      'El administrador todavía no ha abierto el período de pago.';
+  static const String pagarConPaypal = 'Pagar con PayPal';
+  static const String pagoPayPalTitulo = 'Pago con PayPal';
+  static const String conceptoPago = 'Concepto';
+  static const String cuotaDeportiva = 'Cuota deportiva del período';
+  static const String pagoSimuladoNota =
+      'Esta es una simulación de PayPal: no se hace ningún cobro real.';
+  static const String conectandoPaypal = 'Conectando con PayPal…';
+  static const String pagoEnviado = 'Pago enviado';
+  static const String idTransaccion = 'ID de transacción';
+  static const String pagoEnviadoTexto =
+      'El administrador verificará tu pago. Mientras tanto aparecerá como pendiente de verificación.';
+  static const String pagoPendienteVerificacion = 'Pendiente de verificación';
+  static const String pagoVerificado = 'Verificado';
+  static const String pagoRechazado = 'Rechazado';
+  static const String pagoYaRegistrado =
+      'Ya registraste el pago de este período.';
+  static const String listo = 'Listo';
+  static const String pagadoEl = 'Pagado el';
+
+  // Historial del estudiante (RF-14)
+  static const String disciplinasEnHistorial = 'Disciplinas en tu historial';
+  static const String asistenciaGeneral = 'Asistencia general';
+  static const String asistencia = 'Asistencia';
+  static const String clases = 'clases';
+  static const String de = 'de';
+  static const String calculandoAsistencia = 'Calculando asistencia…';
+  static const String sinClasesRegistradas =
+      'Aún no hay clases registradas';
+  static const String asistenciaNoDisponible =
+      'La asistencia no está disponible por ahora';
+  static const String sinHistorial = 'Todavía no tienes historial';
+  static const String sinHistorialTexto =
+      'Cuando te inscribas en una disciplina aparecerá aquí con tu asistencia.';
+
+  // Recordatorios del estudiante (avisos del administrador)
+  static const String sinLeer = 'sin leer';
+  static const String nuevo = 'Nuevo';
+  static const String marcarLeida = 'Marcar como leída';
+  static const String marcarTodasLeidas = 'Marcar todas como leídas';
+  static const String sinRecordatorios = 'No tienes recordatorios';
+  static const String sinRecordatoriosTexto =
+      'Aquí verás los avisos de pagos pendientes y de eventos de tus disciplinas.';
+
+  // Soporte del estudiante
+  static const String soporteNuevoTicket = 'Nuevo ticket';
+  static const String soporteCategoria = 'Categoría';
+  static const String soporteAsunto = 'Asunto';
+  static const String soporteDescripcionCampo = 'Describe tu problema';
+  static const String soporteEnviar = 'Enviar ticket';
+  static const String soporteEnviando = 'Enviando…';
+  static const String soporteEnviado =
+      'Ticket enviado. El administrador te responderá aquí.';
+  static const String soporteMisTickets = 'Mis tickets';
+  static const String soporteAbierto = 'Abierto';
+  static const String soporteResuelto = 'Resuelto';
+  static const String soporteRespuesta = 'Respuesta del administrador';
+  static const String soporteSinRespuesta = 'Aún sin respuesta';
+  static const String soporteSinTickets = 'No has enviado tickets';
+  static const String soporteSinTicketsTexto =
+      'Si tienes un problema con tu cuenta, tus inscripciones o tus pagos, escríbenos.';
+  static const String soporteEligeCategoria = 'Elige una categoría.';
+  static const String soporteAsuntoCorto =
+      'El asunto debe tener al menos 5 caracteres.';
+  static const String soporteAsuntoLargo =
+      'El asunto puede tener máximo 80 caracteres.';
+  static const String soporteDescripcionCorta =
+      'Describe el problema con al menos 10 caracteres.';
+  static const String soporteDescripcionLarga =
+      'La descripción puede tener máximo 500 caracteres.';
   static const String horario = 'Horario';
   static const String entrenador = 'Entrenador';
   static const String cuposDisponibles = 'Cupos disponibles';

@@ -8,17 +8,19 @@ import 'package:saman_sports/views/entrenador/resenas_entrenador_view.dart';
 import 'package:saman_sports/views/entrenador/soporte_entrenador_view.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
-import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/views/auth/forgot_password_view.dart';
 import 'package:saman_sports/views/auth/login_view.dart';
 import 'package:saman_sports/views/auth/register_view.dart';
 import 'package:saman_sports/controllers/resultado_login.dart';
 import 'package:saman_sports/views/auth/guardia_rol.dart';
 import 'package:saman_sports/controllers/admin/admin_controladores.dart';
+import 'package:saman_sports/controllers/estudiante_controladores.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
-import 'package:saman_sports/views/estudiante/proximamente_estudiante_view.dart';
+import 'package:saman_sports/views/estudiante/historial_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/perfil_estudiante_view.dart';
+import 'package:saman_sports/views/estudiante/recordatorios_estudiante_view.dart';
+import 'package:saman_sports/views/estudiante/soporte_estudiante_view.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
 import 'package:saman_sports/views/estudiante/explorar_deportes_view.dart';
 import 'package:saman_sports/controllers/comunidad_controller.dart';
@@ -55,7 +57,9 @@ class AppRoutes {
     ExplorarDeportesController explorar,
     ComunidadController comunidad, [
     AdminControladores? admin,
+    EstudianteControladores? panelEstudiante,
   ]) {
+    final panel = panelEstudiante ?? EstudianteControladores();
     return {
       login: (_) => LoginView(controller: auth),
       registro: (_) => RegisterView(controller: auth),
@@ -72,40 +76,38 @@ class AppRoutes {
       ),
       estudianteExplorar: (_) => _soloEstudiante(
         auth,
-        ExplorarDeportesView(auth: auth, controller: explorar),
+        ExplorarDeportesView(
+          auth: auth,
+          controller: explorar,
+          inscripciones: panel.inscripciones,
+        ),
       ),
-      estudianteDisciplinas: (_) =>
-          _soloEstudiante(auth, MisDisciplinasView(auth: auth)),
+      estudianteDisciplinas: (_) => _soloEstudiante(
+        auth,
+        MisDisciplinasView(auth: auth, controller: panel.inscripciones),
+      ),
       estudiantePagos: (_) => _soloEstudiante(
         auth,
-        EstatusPagosView(auth: auth, controller: estudiante),
+        EstatusPagosView(
+          auth: auth,
+          controller: estudiante,
+          pagos: panel.pagos,
+        ),
       ),
       estudianteHistorial: (_) => _soloEstudiante(
         auth,
-        ProximamenteEstudianteView(
-          auth: auth,
-          ruta: estudianteHistorial,
-          titulo: AppStrings.historial,
-          descripcion: AppStrings.historialDescripcion,
-        ),
+        HistorialEstudianteView(auth: auth, controller: panel.historial),
       ),
       estudianteRecordatorios: (_) => _soloEstudiante(
         auth,
-        ProximamenteEstudianteView(
+        RecordatoriosEstudianteView(
           auth: auth,
-          ruta: estudianteRecordatorios,
-          titulo: AppStrings.recordatorios,
-          descripcion: AppStrings.recordatoriosDescripcion,
+          controller: panel.recordatorios,
         ),
       ),
       estudianteSoporte: (_) => _soloEstudiante(
         auth,
-        ProximamenteEstudianteView(
-          auth: auth,
-          ruta: estudianteSoporte,
-          titulo: AppStrings.soporte,
-          descripcion: AppStrings.soporteDescripcion,
-        ),
+        SoporteEstudianteView(auth: auth, controller: panel.soporte),
       ),
       estudianteComunidad: (_) => _soloEstudiante(
         auth,
