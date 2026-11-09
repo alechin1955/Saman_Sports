@@ -84,26 +84,44 @@ class SoporteAdminView extends StatelessWidget {
     final respuesta = TextEditingController();
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(AppStrings.adminSolventar),
-        content: CampoTexto(
-          label: AppStrings.adminRespuesta,
-          controller: respuesta,
-        ),
-        actions: [
-          BotonSecundario(
-            texto: AppStrings.cancelar,
-            onPressed: () => Navigator.pop(dialogContext),
-          ),
-          BotonPrimario(
-            texto: AppStrings.guardar,
-            onPressed: () async {
-              final error = await soporte.responder(ticket, respuesta.text);
-              if (!dialogContext.mounted || error != null) return;
-              Navigator.pop(dialogContext);
-            },
-          ),
-        ],
+      builder: (dialogContext) => ListenableBuilder(
+        listenable: soporte,
+        builder: (context, _) {
+          final guardando = soporte.guardando;
+          return AlertDialog(
+            title: Text(AppStrings.adminSolventar),
+            content: CampoTexto(
+              label: AppStrings.adminRespuesta,
+              controller: respuesta,
+            ),
+            actions: [
+              if (soporte.error != null)
+                Text(
+                  soporte.error!,
+                  style: AppTextStyles.body.copyWith(color: AppColors.error),
+                ),
+              BotonSecundario(
+                texto: AppStrings.cancelar,
+                onPressed: guardando ? null : () => Navigator.pop(dialogContext),
+              ),
+              BotonPrimario(
+                texto: AppStrings.guardar,
+                cargando: guardando,
+                onPressed: guardando
+                    ? null
+                    : () async {
+                        if (soporte.guardando) return;
+                        final error = await soporte.responder(
+                          ticket,
+                          respuesta.text,
+                        );
+                        if (!dialogContext.mounted || error != null) return;
+                        Navigator.pop(dialogContext);
+                      },
+              ),
+            ],
+          );
+        },
       ),
     );
     respuesta.dispose();

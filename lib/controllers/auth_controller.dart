@@ -8,6 +8,28 @@ import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/validators.dart';
 
 class AuthController extends ChangeNotifier {
+  AuthController({
+    this.leerRol,
+    this.enviarEnlace,
+    this.salir,
+    this.entrar,
+    this.uidSesion,
+  });
+
+  static const String cuentaDesactivada =
+      'Tu cuenta está desactivada. Contacta a la administración.';
+  static const String enlaceGenerico =
+      'Si el correo está registrado, recibirás un enlace';
+
+  final Future<({bool error, bool existe, String? rol, String estado})> Function(
+    String uid,
+  )?
+  leerRol;
+  final Future<AuthResponse> Function(String email)? enviarEnlace;
+  final Future<void> Function()? salir;
+  final Future<String?> Function(String correo, String clave)? entrar;
+  final String? Function()? uidSesion;
+
   bool cargando = false;
   bool registrando = false;
   String? error;
@@ -34,24 +56,23 @@ class AuthController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      await FirebaseServices.setRememberSession(recordar);
-      final (credential, errorMessage) = await FirebaseServices.signIn(
-        email: correo.trim(),
-        password: clave,
-      );
-      if (errorMessage != null || credential?.user == null) {
-        error = errorMessage ?? AppStrings.errorInesperado;
-        return null;
-      }
+      final uid = entrar == null
+          ? await _entrarConFirebase(correo, clave, recordar)
+          : await entrar!(correo, clave);
+      if (uid == null) return null;
 
-      final resultado = await _consultarRol(credential!.user!.uid);
+      final resultado = await _consultarRol(uid);
       if (resultado.tipo == TipoResultadoRol.error) {
         error = AppStrings.errorConexion;
         return null;
       }
       if (resultado.destino == null) {
-        await FirebaseServices.signOut();
-        error = AppStrings.cuentaNoHabilitada;
+        if (salir == null) {
+          await FirebaseServices.signOut();
+        } else {
+          await salir!();
+        }
+        error ??= AppStrings.cuentaNoHabilitada;
         destinoActual = null;
         return null;
       }
@@ -130,7 +151,13 @@ class AuthController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      await FirebaseServices.sendPasswordResetEmail(email: correo.trim());
+      final respuesta = enviarEnlace == null
+          ? await FirebaseServices.sendPasswordResetEmail(email: correo.trim())
+          : await enviarEnlace!(correo.trim());
+      if (!respuesta.isSuccess) {
+        error = _mensajeRecuperacion(respuesta.errorMessage);
+        return;
+      }
       enlaceEnviado = true;
       correoEnviado = correo.trim();
       _iniciarCuentaRegresiva();
@@ -162,7 +189,11 @@ class AuthController extends ChangeNotifier {
     cargando = true;
     notifyListeners();
     try {
-      await FirebaseServices.signOut();
+      if (salir == null) {
+        await FirebaseServices.signOut();
+      } else {
+        await salir!();
+      }
       destinoActual = null;
     } catch (_) {
       error = AppStrings.errorInesperado;
@@ -173,12 +204,14 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<ResultadoRol> rolSesionActual() async {
-    final user = FirebaseServices.currentUser;
-    if (user == null) {
+    final uid = uidSesion == null
+        ? FirebaseServices.currentUser?.uid
+        : uidSesion!();
+    if (uid == null) {
       destinoActual = null;
       return const ResultadoRol(tipo: TipoResultadoRol.sinRol);
     }
-    final resultado = await _consultarRol(user.uid);
+    final resultado = await _consultarRol(uid);
     destinoActual = resultado.destino;
     return resultado;
   }
@@ -204,15 +237,53 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<ResultadoRol> _consultarRol(String uid) async {
-    final consulta = await FirebaseServices.consultarRol(uid: uid);
+    final consulta = leerRol == null
+        ? await FirebaseServices.consultarRol(uid: uid)
+        : await leerRol!(uid);
     if (consulta.error) {
       return const ResultadoRol(tipo: TipoResultadoRol.error);
+    }
+    if (consulta.existe && consulta.estado == 'inactivo') {
+      if (salir == null) {
+        await FirebaseServices.signOut();
+      } else {
+        await salir!();
+      }
+      error = cuentaDesactivada;
+      return const ResultadoRol(tipo: TipoResultadoRol.sinRol);
     }
     final destino = _destinoDesdeRol(consulta.rol);
     if (!consulta.existe || destino == null) {
       return const ResultadoRol(tipo: TipoResultadoRol.sinRol);
     }
     return ResultadoRol(tipo: TipoResultadoRol.valido, destino: destino);
+  }
+
+  Future<String?> _entrarConFirebase(
+    String correo,
+    String clave,
+    bool recordar,
+  ) async {
+    await FirebaseServices.setRememberSession(recordar);
+    final (credential, errorMessage) = await FirebaseServices.signIn(
+      email: correo.trim(),
+      password: clave,
+    );
+    if (errorMessage != null || credential?.user == null) {
+      error = errorMessage ?? AppStrings.errorInesperado;
+      return null;
+    }
+    return credential!.user!.uid;
+  }
+
+  String _mensajeRecuperacion(String? mensaje) {
+    final texto = (mensaje ?? '').toLowerCase();
+    if (texto.contains('user-not-found') || texto.contains('no existe')) {
+      return enlaceGenerico;
+    }
+    return mensaje == null || mensaje.isEmpty
+        ? AppStrings.errorInesperado
+        : mensaje;
   }
 
   String _traducirRegistro(String? mensaje) {

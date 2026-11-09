@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/admin/admin_entrenador_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
+import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/entrenador_admin.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
@@ -72,6 +73,7 @@ class _EntrenadorFormDialogState extends State<EntrenadorFormDialog> {
   }
 
   Future<void> _guardar() async {
+    if (widget.entrenadores.guardando) return;
     final editando = widget.entrenador;
     final error = editando == null
         ? await widget.entrenadores.crearEntrenador(
@@ -109,6 +111,13 @@ class _EntrenadorFormDialogState extends State<EntrenadorFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.entrenadores,
+      builder: (context, _) => _dialogo(context),
+    );
+  }
+
+  Widget _dialogo(BuildContext context) {
     final editando = widget.entrenador != null;
     return AlertDialog(
       title: Text(
@@ -168,18 +177,27 @@ class _EntrenadorFormDialogState extends State<EntrenadorFormDialog> {
                 label: AppStrings.adminDescripcion,
                 controller: _descripcion,
               ),
-              if (widget.entrenadores.error != null)
-                Text(widget.entrenadores.error!),
             ],
           ),
         ),
       ),
       actions: [
+        if (widget.entrenadores.error != null)
+          Text(
+            widget.entrenadores.error!,
+            style: AppTextStyles.body.copyWith(color: AppColors.error),
+          ),
         BotonSecundario(
           texto: AppStrings.cancelar,
-          onPressed: () => Navigator.pop(context),
+          onPressed: widget.entrenadores.guardando
+              ? null
+              : () => Navigator.pop(context),
         ),
-        BotonPrimario(texto: AppStrings.guardar, onPressed: _guardar),
+        BotonPrimario(
+          texto: AppStrings.guardar,
+          cargando: widget.entrenadores.guardando,
+          onPressed: widget.entrenadores.guardando ? null : _guardar,
+        ),
       ],
     );
   }

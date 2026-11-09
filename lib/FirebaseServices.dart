@@ -160,18 +160,24 @@ class FirebaseServices {
   /// Borra la cuenta recién creada en Auth. Se usa en el registro si la cuenta
   /// se creó pero no se pudieron guardar sus datos en Firestore, para no dejar
   /// cuentas a medias.
-  static Future<({bool error, bool existe, String? rol})> consultarRol({
-    required String uid,
-  }) async {
+  static Future<({bool error, bool existe, String? rol, String estado})>
+  consultarRol({required String uid}) async {
     try {
       final doc = await _db.collection(usuariosCollection).doc(uid).get();
       if (!doc.exists) {
-        return (error: false, existe: false, rol: null);
+        return (error: false, existe: false, rol: null, estado: 'activo');
       }
-      final rol = doc.data()?['rol'];
-      return (error: false, existe: true, rol: rol is String ? rol : null);
+      final datos = doc.data();
+      final rol = datos?['rol'];
+      final estado = datos?['estado'];
+      return (
+        error: false,
+        existe: true,
+        rol: rol is String ? rol : null,
+        estado: estado is String && estado.isNotEmpty ? estado : 'activo',
+      );
     } catch (_) {
-      return (error: true, existe: false, rol: null);
+      return (error: true, existe: false, rol: null, estado: 'activo');
     }
   }
 
@@ -304,6 +310,30 @@ class FirebaseServices {
       return snapshot.docs
           .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
           .toList();
+    });
+  }
+
+  /// Avisos del usuario actual. Sin orderBy: el controlador ordena en Dart.
+  static Stream<List<Map<String, dynamic>>> streamNotificacionesEntrenador(
+    String uid,
+  ) {
+    return _streamConsultaEntrenador(
+      _db
+          .collection(notificacionesCollection)
+          .where('destinatarioUid', isEqualTo: uid),
+    );
+  }
+
+  static Future<AuthResponse> marcarNotificacionLeida({required String id}) {
+    return _ejecutarAdmin(() async {
+      final uid = _auth.currentUser?.uid ?? '';
+      final ref = _db.collection(notificacionesCollection).doc(id);
+      final doc = await ref.get();
+      if (!doc.exists) throw StateError('La notificación no existe.');
+      if ('${doc.data()?['destinatarioUid'] ?? ''}' != uid) {
+        throw StateError('No puedes marcar esta notificación.');
+      }
+      await ref.update({'leida': true});
     });
   }
 
