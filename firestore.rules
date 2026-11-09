@@ -46,6 +46,34 @@ service cloud.firestore {
       return isEntrenador() && deporteDe(deporteId).entrenadorUid == request.auth.uid;
     }
 
+    function pathInscripcion(deporteId) {
+      return /databases/$(database)/documents/inscripciones/$(request.auth.uid + '_' + deporteId);
+    }
+
+    function pathDeporte(deporteId) {
+      return /databases/$(database)/documents/deportes/$(deporteId);
+    }
+
+    // El administrador marca `solvente`. Si falta el campo, no está solvente.
+    function esSolvente() {
+      return userDoc().data.solvente == true;
+    }
+
+    function deporteActivo(deporteId) {
+      return exists(pathDeporte(deporteId))
+        && get(pathDeporte(deporteId)).data.activo == true;
+    }
+
+    function subeUnInscrito(deporteId) {
+      return getAfter(pathDeporte(deporteId)).data.inscritos
+        == get(pathDeporte(deporteId)).data.inscritos + 1;
+    }
+
+    function bajaUnInscrito(deporteId) {
+      return getAfter(pathDeporte(deporteId)).data.inscritos
+        == get(pathDeporte(deporteId)).data.inscritos - 1;
+    }
+
     match /usuarios/{userId} {
       // El propio documento se puede leer aunque esté inactivo: el login
       // necesita ver `estado`. El resto de lecturas privadas sí exigen activo().
@@ -86,7 +114,7 @@ service cloud.firestore {
 
       allow create, delete: if isAdmin();
 
-            // El panel no escribe el documento raíz. Solo puede tocar `descripcion`
+      // El panel no escribe el documento raíz. Solo puede tocar `descripcion`
       // y no puede reasignarse la disciplina ni cambiar cupos, estado o cancha.
       // El estudiante solo mueve `inscritos` en 1, y solo en la misma
       // transacción en que crea o cancela su propia inscripción.
@@ -103,22 +131,25 @@ service cloud.firestore {
             (
               request.resource.data.inscritos == resource.data.get('inscritos', 0) + 1
               && request.resource.data.inscritos <= resource.data.cupos
-              && getAfter(/databases/$(database)/documents/inscripciones/$(request.auth.uid + '_' + deporteId)).data.estado == 'pendiente'
+              && (!exists(pathInscripcion(deporteId))
+                || get(pathInscripcion(deporteId)).data.estado == 'cancelada')
+              && getAfter(pathInscripcion(deporteId)).data.estado == 'pendiente'
             ) || (
               request.resource.data.inscritos == resource.data.get('inscritos', 0) - 1
               && request.resource.data.inscritos >= 0
-              && getAfter(/databases/$(database)/documents/inscripciones/$(request.auth.uid + '_' + deporteId)).data.estado == 'cancelada'
+              && get(pathInscripcion(deporteId)).data.estado in ['pendiente', 'confirmada']
+              && getAfter(pathInscripcion(deporteId)).data.estado == 'cancelada'
             )
           )
         );
 
       match /asistencias/{fecha} {
 
-                // El estudiante lee la asistencia de una disciplina en la que tiene
-        // inscripción, para ver su porcentaje en el Historial (RF-14).
+        // El estudiante lee la asistencia solo si su inscripción sigue
+        // pendiente o confirmada, para ver su porcentaje en el Historial (RF-14).
         allow read: if isAdmin() || esSuDeporte(deporteId) || (
           isEstudiante()
-          && exists(/databases/$(database)/documents/inscripciones/$(request.auth.uid + '_' + deporteId))
+          && get(pathInscripcion(deporteId)).data.estado in ['pendiente', 'confirmada']
         );
 
         allow create: if esSuDeporte(deporteId)
@@ -244,6 +275,9 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly([
             'estudianteUid', 'deporteId', 'deporteNombre', 'estado', 'fecha'
           ])
+          && deporteActivo(request.resource.data.deporteId)
+          && esSolvente()
+          && subeUnInscrito(request.resource.data.deporteId)
         );
 
       // El estudiante solo cancela la suya (RF-05) o, si estaba cancelada,
@@ -258,11 +292,15 @@ service cloud.firestore {
               resource.data.estado in ['pendiente', 'confirmada']
               && request.resource.data.estado == 'cancelada'
               && soloCambia(['estado'])
+              && bajaUnInscrito(resource.data.deporteId)
             ) || (
               resource.data.estado == 'cancelada'
               && request.resource.data.estado == 'pendiente'
               && request.resource.data.fecha == request.time
               && soloCambia(['estado', 'fecha', 'deporteNombre'])
+              && deporteActivo(resource.data.deporteId)
+              && esSolvente()
+              && subeUnInscrito(resource.data.deporteId)
             )
           )
         );

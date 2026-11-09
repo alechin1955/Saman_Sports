@@ -800,13 +800,18 @@ class FirebaseServices {
       if (usuario.data()?['estado'] == 'inactivo') {
         throw StateError(AppStrings.inscripcionCuentaInactiva);
       }
+      final usuarioRef = _db.collection(usuariosCollection).doc(uid);
       final deporteRef = _db.collection(deportesCollection).doc(deporteId);
       final inscripcionRef = _db
           .collection(inscripcionesCollection)
           .doc('${uid}_$deporteId');
       await _db.runTransaction((tx) async {
+        final usuarioTx = await tx.get(usuarioRef);
         final deporte = await tx.get(deporteRef);
         final inscripcion = await tx.get(inscripcionRef);
+        if (usuarioTx.data()?['solvente'] != true) {
+          throw StateError(AppStrings.debesEstarSolvente);
+        }
         final datos = deporte.data();
         if (!deporte.exists || datos == null || datos['activo'] == false) {
           throw StateError(AppStrings.inscripcionDeporteNoDisponible);

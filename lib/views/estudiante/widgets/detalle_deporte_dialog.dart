@@ -57,7 +57,11 @@ Future<void> mostrarDetalleDeporte(
               ListenableBuilder(
                 listenable: inscripciones,
                 builder: (context, _) => _Aviso(
-                  texto: inscripciones.activaEn(deporte.id) != null
+                  texto: !inscripciones.solvenciaConocida
+                      ? AppStrings.inscripcionPendienteNota
+                      : !inscripciones.solvente
+                      ? AppStrings.debesEstarSolvente
+                      : inscripciones.activaEn(deporte.id) != null
                       ? AppStrings.yaInscrito
                       : deporte.disponibles <= 0
                       ? AppStrings.sinCuposDisponibles
@@ -77,6 +81,7 @@ Future<void> mostrarDetalleDeporte(
           listenable: inscripciones,
           builder: (context, _) {
             final habilitado =
+                inscripciones.solvenciaConocida &&
                 inscripciones.puedeInscribirse(deporte) &&
                 !inscripciones.procesando;
             return ElevatedButton(
