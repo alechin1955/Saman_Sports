@@ -958,6 +958,22 @@ class FirebaseServices {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: recordatorios)
+  // ---------------------------------------------------------------------------
+
+  /// Avisos del estudiante (pago pendiente, eventos de sus disciplinas), en
+  /// vivo. Para marcarlos como leídos se usa marcarNotificacionLeida.
+  static Stream<List<Map<String, dynamic>>> streamMisNotificaciones({
+    required String uid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(notificacionesCollection)
+          .where('destinatarioUid', isEqualTo: uid),
+    );
+  }
+
   // ===== ADMINISTRADOR (Andrés): canchas, reservas y deportes =====
 
   static Stream<List<Map<String, dynamic>>> streamCanchas() {

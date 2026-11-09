@@ -326,6 +326,15 @@ class AppStrings {
   static const String sinHistorial = 'Todavía no tienes historial';
   static const String sinHistorialTexto =
       'Cuando te inscribas en una disciplina aparecerá aquí con tu asistencia.';
+
+  // Recordatorios del estudiante (avisos del administrador)
+  static const String sinLeer = 'sin leer';
+  static const String nuevo = 'Nuevo';
+  static const String marcarLeida = 'Marcar como leída';
+  static const String marcarTodasLeidas = 'Marcar todas como leídas';
+  static const String sinRecordatorios = 'No tienes recordatorios';
+  static const String sinRecordatoriosTexto =
+      'Aquí verás los avisos de pagos pendientes y de eventos de tus disciplinas.';
   static const String horario = 'Horario';
   static const String entrenador = 'Entrenador';
   static const String cuposDisponibles = 'Cupos disponibles';
