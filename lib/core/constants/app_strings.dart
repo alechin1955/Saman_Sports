@@ -249,6 +249,42 @@ class AppStrings {
       'Aún no hay disciplinas publicadas';
   static const String sinDisciplinasPublicadasTexto =
       'Cuando el administrador publique una disciplina aparecerá aquí.';
+        // Inscripciones del estudiante (RF-04 y RF-05)
+  static const String inscribirme = 'Inscribirme';
+  static const String inscribiendo = 'Inscribiendo…';
+  static const String inscripcionRegistrada =
+      'Inscripción registrada. Queda pendiente hasta que pagues y el administrador la confirme.';
+  static const String inscripcionPendienteNota =
+      'Al inscribirte tu cupo queda reservado como pendiente. Se confirma cuando pagues y el administrador lo verifique.';
+  static const String yaInscrito = 'Ya estás inscrito en esta disciplina';
+  static const String sinCuposDisponibles = 'No quedan cupos disponibles';
+  static const String inscripcionCuentaInactiva =
+      'Tu cuenta está inactiva. Contacta a la coordinación de deportes.';
+  static const String inscripcionDeporteNoDisponible =
+      'Esta disciplina ya no está disponible.';
+  static const String inscripcionYaExiste =
+      'Ya tienes una inscripción activa en esta disciplina.';
+  static const String inscripcionSinCupos =
+      'La disciplina se quedó sin cupos.';
+  static const String inscripcionNoEncontrada =
+      'No encontramos esa inscripción.';
+  static const String inscripcionYaCancelada =
+      'Esa inscripción ya estaba cancelada.';
+  static const String estadoPendiente = 'Pendiente';
+  static const String estadoConfirmada = 'Confirmada';
+  static const String estadoCancelada = 'Cancelada';
+  static const String inscritoEl = 'Inscrito el';
+  static const String cancelarInscripcion = 'Cancelar inscripción';
+  static const String cancelarInscripcionPregunta =
+      '¿Seguro que quieres cancelar tu inscripción? Tu cupo quedará libre para otro estudiante.';
+  static const String inscripcionCancelada =
+      'Inscripción cancelada. El cupo quedó libre.';
+  static const String volver = 'Volver';
+  static const String esperaUnMomento = 'Espera un momento…';
+  static const String siCancelar = 'Sí, cancelar';
+  static const String irAPagos = 'Ir a pagos';
+  static const String pendienteDePagoTexto =
+      'Paga la cuota del período para que el administrador confirme tu inscripción.';
   static const String horario = 'Horario';
   static const String entrenador = 'Entrenador';
   static const String cuposDisponibles = 'Cupos disponibles';
