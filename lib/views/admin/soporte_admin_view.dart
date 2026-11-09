@@ -94,50 +94,75 @@ class SoporteAdminView extends StatelessWidget {
   }
 
   Future<void> _responder(BuildContext context, TicketSoporte ticket) async {
-    final respuesta = TextEditingController();
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => ListenableBuilder(
-        listenable: soporte,
-        builder: (context, _) {
-          final guardando = soporte.guardando;
-          return AlertDialog(
-            title: Text(AppStrings.adminSolventar),
-            content: CampoTexto(
-              label: AppStrings.adminRespuesta,
-              controller: respuesta,
-            ),
-            actions: [
-              if (soporte.error != null)
-                Text(
-                  soporte.error!,
-                  style: AppTextStyles.body.copyWith(color: AppColors.error),
-                ),
-              BotonSecundario(
-                texto: AppStrings.cancelar,
-                onPressed: guardando ? null : () => Navigator.pop(dialogContext),
-              ),
-              BotonPrimario(
-                texto: AppStrings.guardar,
-                cargando: guardando,
-                onPressed: guardando
-                    ? null
-                    : () async {
-                        if (soporte.guardando) return;
-                        final error = await soporte.responder(
-                          ticket,
-                          respuesta.text,
-                        );
-                        if (!dialogContext.mounted || error != null) return;
-                        Navigator.pop(dialogContext);
-                      },
-              ),
-            ],
-          );
-        },
-      ),
+      builder: (_) =>
+          _DialogoRespuestaTicket(soporte: soporte, ticket: ticket),
     );
-    respuesta.dispose();
+  }
+}
+
+class _DialogoRespuestaTicket extends StatefulWidget {
+  const _DialogoRespuestaTicket({required this.soporte, required this.ticket});
+
+  final AdminSoporteController soporte;
+  final TicketSoporte ticket;
+
+  @override
+  State<_DialogoRespuestaTicket> createState() =>
+      _DialogoRespuestaTicketState();
+}
+
+class _DialogoRespuestaTicketState extends State<_DialogoRespuestaTicket> {
+  final _respuesta = TextEditingController();
+
+  @override
+  void dispose() {
+    _respuesta.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    if (widget.soporte.guardando) return;
+    final error = await widget.soporte.responder(
+      widget.ticket,
+      _respuesta.text,
+    );
+    if (!mounted || error != null) return;
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.soporte,
+      builder: (context, _) {
+        final guardando = widget.soporte.guardando;
+        return AlertDialog(
+          title: Text(AppStrings.adminSolventar),
+          content: CampoTexto(
+            label: AppStrings.adminRespuesta,
+            controller: _respuesta,
+          ),
+          actions: [
+            if (widget.soporte.error != null)
+              Text(
+                widget.soporte.error!,
+                style: AppTextStyles.body.copyWith(color: AppColors.error),
+              ),
+            BotonSecundario(
+              texto: AppStrings.cancelar,
+              onPressed: guardando ? null : () => Navigator.pop(context),
+            ),
+            BotonPrimario(
+              texto: AppStrings.guardar,
+              cargando: guardando,
+              onPressed: guardando ? null : _guardar,
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

@@ -110,6 +110,30 @@ void main() {
     expect(find.text('${AppStrings.adminFecha}: 08/11/2026 10:00'), findsOneWidget);
   });
 
+  testWidgets('responder un ticket abierto no produce errores al cerrar', (
+    tester,
+  ) async {
+    final soporte = AdminSoporteController(
+      repository: _Soporte(estado: EstadoTicket.abierto),
+    );
+    addTearDown(soporte.dispose);
+    soporte.iniciar();
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: SoporteAdminView(soporte: soporte))),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(AppStrings.adminSolventar));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'Ya está resuelto');
+    await tester.tap(find.text(AppStrings.guardar));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Editar cabe en el ancho útil de una ventana de 1280', (
     tester,
   ) async {
@@ -318,6 +342,10 @@ Evento _evento(String titulo, EstadoEvento estado) {
 }
 
 class _Soporte implements AdminSoporteRepository {
+  _Soporte({this.estado = EstadoTicket.resuelto});
+
+  final EstadoTicket estado;
+
   @override
   Stream<List<TicketSoporte>> tickets() => Stream.value([
     TicketSoporte(
@@ -328,7 +356,7 @@ class _Soporte implements AdminSoporteRepository {
       autorUid: 'e1',
       autorNombre: 'Juan',
       autorRol: 'entrenador',
-      estado: EstadoTicket.resuelto,
+      estado: estado,
       fecha: DateTime(2026, 11, 1, 9),
       respuesta: 'Listo',
       resueltoEn: DateTime(2026, 11, 8, 10),
