@@ -149,32 +149,30 @@ class FirebaseServices {
     }
   }
 
-  /// Devuelve el rol guardado en usuarios/{uid}
-  /// ('estudiante', 'entrenador' o 'administrador'), o null si no hay rol.
-  static Future<String?> getUserRole({required String uid}) async {
-    final data = await getUserData(uid: uid);
-    final rol = data?['rol'];
-    return rol is String ? rol : null;
+  static Future<({bool error, bool existe, String? rol, String estado})>
+  consultarRol({required String uid}) async {
+    try {
+      final doc = await _db.collection(usuariosCollection).doc(uid).get();
+      if (!doc.exists) {
+        return (error: false, existe: false, rol: null, estado: 'activo');
+      }
+      final datos = doc.data();
+      final rol = datos?['rol'];
+      final estado = datos?['estado'];
+      return (
+        error: false,
+        existe: true,
+        rol: rol is String ? rol : null,
+        estado: estado is String && estado.isNotEmpty ? estado : 'activo',
+      );
+    } catch (_) {
+      return (error: true, existe: false, rol: null, estado: 'activo');
+    }
   }
 
   /// Borra la cuenta recién creada en Auth. Se usa en el registro si la cuenta
   /// se creó pero no se pudieron guardar sus datos en Firestore, para no dejar
   /// cuentas a medias.
-  static Future<({bool error, bool existe, String? rol})> consultarRol({
-    required String uid,
-  }) async {
-    try {
-      final doc = await _db.collection(usuariosCollection).doc(uid).get();
-      if (!doc.exists) {
-        return (error: false, existe: false, rol: null);
-      }
-      final rol = doc.data()?['rol'];
-      return (error: false, existe: true, rol: rol is String ? rol : null);
-    } catch (_) {
-      return (error: true, existe: false, rol: null);
-    }
-  }
-
   static Future<void> deleteCurrentUser() async {
     try {
       await _auth.currentUser?.delete();
@@ -232,30 +230,43 @@ class FirebaseServices {
 
   static Stream<List<Map<String, dynamic>>> streamDeportes() {
     return _streamConsulta(
-      _db
-          .collection(deportesCollection)
-          .where('activo', isEqualTo: true)
-          .orderBy('nombre'),
-    );
+      _db.collection(deportesCollection).where('activo', isEqualTo: true),
+    ).map((lista) => _ordenarPorTexto(lista, 'nombre'));
   }
 
   static Stream<List<Map<String, dynamic>>> streamEntrenadores() {
     return _streamConsulta(
-      _db
-          .collection(entrenadoresCollection)
-          .where('activo', isEqualTo: true)
-          .orderBy('nombre'),
-    );
+      _db.collection(entrenadoresCollection).where('activo', isEqualTo: true),
+    ).map((lista) => _ordenarPorTexto(lista, 'nombre'));
   }
 
   static Stream<List<Map<String, dynamic>>> streamResenas({int limite = 6}) {
     return _streamConsulta(
-      _db
-          .collection(resenasCollection)
-          .where('visible', isEqualTo: true)
-          .orderBy('fecha', descending: true)
-          .limit(limite),
-    );
+      _db.collection(resenasCollection).where('visible', isEqualTo: true),
+    ).map((lista) {
+      final ordenada = [...lista]
+        ..sort((a, b) => _milis(b['fecha']).compareTo(_milis(a['fecha'])));
+      return ordenada.take(limite).toList();
+    });
+  }
+
+  static List<Map<String, dynamic>> _ordenarPorTexto(
+    List<Map<String, dynamic>> lista,
+    String campo,
+  ) {
+    return [...lista]
+      ..sort((a, b) => '${a[campo] ?? ''}'
+          .toLowerCase()
+          .compareTo('${b[campo] ?? ''}'.toLowerCase()));
+  }
+
+  static int _milis(dynamic valor) {
+    if (valor is Timestamp) return valor.millisecondsSinceEpoch;
+    if (valor is DateTime) return valor.millisecondsSinceEpoch;
+    if (valor is String) {
+      return DateTime.tryParse(valor)?.millisecondsSinceEpoch ?? 0;
+    }
+    return 0;
   }
 
   static Stream<List<Map<String, dynamic>>> _streamConsulta(
@@ -291,6 +302,30 @@ class FirebaseServices {
       return snapshot.docs
           .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
           .toList();
+    });
+  }
+
+  /// Avisos del usuario actual. Sin orderBy: el controlador ordena en Dart.
+  static Stream<List<Map<String, dynamic>>> streamNotificacionesEntrenador(
+    String uid,
+  ) {
+    return _streamConsultaEntrenador(
+      _db
+          .collection(notificacionesCollection)
+          .where('destinatarioUid', isEqualTo: uid),
+    );
+  }
+
+  static Future<AuthResponse> marcarNotificacionLeida({required String id}) {
+    return _ejecutarAdmin(() async {
+      final uid = _auth.currentUser?.uid ?? '';
+      final ref = _db.collection(notificacionesCollection).doc(id);
+      final doc = await ref.get();
+      if (!doc.exists) throw StateError('La notificación no existe.');
+      if ('${doc.data()?['destinatarioUid'] ?? ''}' != uid) {
+        throw StateError('No puedes marcar esta notificación.');
+      }
+      await ref.update({'leida': true});
     });
   }
 
@@ -798,7 +833,7 @@ class FirebaseServices {
     });
   }
 
-  /// Requiere índice compuesto canchaId + activa + dia + horaInicio.
+  /// Sin orderBy para no exigir índice compuesto; se ordena en Dart.
   static Stream<List<Map<String, dynamic>>> streamReservasCancha(
     String canchaId,
   ) {
@@ -806,49 +841,15 @@ class FirebaseServices {
       _db
           .collection(reservasCollection)
           .where('canchaId', isEqualTo: canchaId)
-          .where('activa', isEqualTo: true)
-          .orderBy('dia')
-          .orderBy('horaInicio'),
-    );
-  }
-
-  static Future<Map<String, dynamic>?> hayChoqueHorario({
-    required String canchaId,
-    required List<Map<String, dynamic>> franjas,
-    String? fecha,
-    String? ignorarRefId,
-  }) async {
-    final snapshot = await _db
-        .collection(reservasCollection)
-        .where('canchaId', isEqualTo: canchaId)
-        .where('activa', isEqualTo: true)
-        .get();
-    final existentes = snapshot.docs
-        .map((doc) => ReservaHorario.fromMap(doc.id, doc.data()))
-        .toList();
-    final nuevas = franjas.map((franja) {
-      final modelo = FranjaHorario.fromMap(franja);
-      return ReservaHorario(
-        id: '',
-        canchaId: canchaId,
-        canchaNombre: '',
-        dia: modelo.dia,
-        horaInicio: modelo.horaInicio,
-        horaFin: modelo.horaFin,
-        fecha: fecha,
-        tipo: fecha == null ? TipoReserva.deporte : TipoReserva.evento,
-        refId: '',
-        refNombre: '',
-        activa: true,
-      );
-    }).toList();
-    final choque = buscarChoque(
-      nuevas: nuevas,
-      existentes: existentes,
-      ignorarRefId: ignorarRefId,
-    );
-    if (choque == null) return null;
-    return {'id': choque.id, ...choque.toMap()};
+          .where('activa', isEqualTo: true),
+    ).map((lista) {
+      return [...lista]..sort((a, b) {
+        final dia = _enteroAdmin(a['dia']).compareTo(_enteroAdmin(b['dia']));
+        if (dia != 0) return dia;
+        return _enteroAdmin(a['horaInicio'])
+            .compareTo(_enteroAdmin(b['horaInicio']));
+      });
+    });
   }
 
   static Stream<List<Map<String, dynamic>>> streamDeportesAdmin() {
@@ -2200,7 +2201,7 @@ class FirebaseServices {
         final usuario = await tx.get(userRef);
         if (!usuario.exists) throw StateError('El estudiante no existe.');
         final datosUsuario = usuario.data() ?? {};
-        final activo = datosUsuario['estado'] == 'activo';
+        final activo = '${datosUsuario['estado'] ?? 'activo'}' != 'inactivo';
         if (!activo) return;
         final aviso = await tx.get(avisoRef);
         var valido = false;
@@ -2571,14 +2572,18 @@ class FirebaseServices {
     }
   }
 
+  /// Suma en Dart: sum('monto') con filtro exige un índice compuesto.
   static Future<num> _sumarIngresos() async {
     try {
       final snapshot = await _db
           .collection(pagosCollection)
           .where('estado', isEqualTo: 'realizado')
-          .aggregate(sum('monto'))
           .get();
-      return snapshot.getSum('monto') ?? 0;
+      var total = 0.0;
+      for (final doc in snapshot.docs) {
+        total += _numeroAdmin(doc.data()['monto']);
+      }
+      return total;
     } catch (_) {
       return 0;
     }

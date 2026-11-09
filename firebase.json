@@ -1,1 +1,22 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"saman-sports","configurations":{"web":"1:995061509637:web:b998b439f632ee2bb9f66c"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "saman-sports",
+          "configurations": {
+            "web": "1:995061509637:web:b998b439f632ee2bb9f66c"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    }
+  }
+}

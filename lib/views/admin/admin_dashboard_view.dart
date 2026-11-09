@@ -51,8 +51,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         panel.transacciones.iniciar();
       case SeccionAdmin.deportes:
         panel.deportes.iniciar();
+        panel.entrenadores.iniciar();
       case SeccionAdmin.entrenadores:
         panel.entrenadores.iniciar();
+        panel.deportes.iniciar();
       case SeccionAdmin.estudiantes:
         panel.estudiantes.iniciar();
       case SeccionAdmin.resenas:
