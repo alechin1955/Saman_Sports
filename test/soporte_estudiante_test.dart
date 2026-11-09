@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/FirebaseServices.dart';
+import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/soporte_estudiante_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/ticket_soporte_estudiante.dart';
+import 'package:saman_sports/views/estudiante/soporte_estudiante_view.dart';
 
 /// Ticket con el formato que guarda la colección tickets.
 Map<String, dynamic> ticket(
@@ -130,6 +133,95 @@ void main() {
       expect(enviados, ['pagos|Pago no aparece']);
       expect(c.enviando, isFalse);
       c.dispose();
+    });
+  });
+
+  group('SoporteEstudianteView', () {
+    SoporteEstudianteController conDatos(
+      List<Map<String, dynamic>> lista, {
+      List<String>? enviados,
+    }) {
+      return SoporteEstudianteController(
+        uidActual: () => 'u1',
+        origen: (_) => Stream.value(lista),
+        crear: (categoria, asunto, descripcion) async {
+          enviados?.add('$categoria|$asunto');
+          return AuthResponse(isSuccess: true);
+        },
+      );
+    }
+
+    Widget pantalla(SoporteEstudianteController c) => MaterialApp(
+      home: SoporteEstudianteView(auth: AuthController(), controller: c),
+    );
+
+    final tickets = [
+      ticket('a', dia: 1),
+      ticket(
+        'b',
+        estado: 'resuelto',
+        respuesta: 'Ya registramos tu pago.',
+        dia: 4,
+      ),
+    ];
+
+    const tamanos = [Size(390, 844), Size(768, 1024), Size(1440, 900)];
+    for (final tamano in tamanos) {
+      testWidgets('muestra el formulario y los tickets en '
+          '${tamano.width.toInt()} px', (tester) async {
+        await tester.binding.setSurfaceSize(tamano);
+        await tester.pumpWidget(pantalla(conDatos(tickets)));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text(AppStrings.soporteNuevoTicket), findsOneWidget);
+        expect(find.text('Asunto a'), findsOneWidget);
+        expect(find.text('Asunto b'), findsOneWidget);
+        expect(find.text(AppStrings.soporteResuelto), findsOneWidget);
+        expect(find.text('Ya registramos tu pago.'), findsOneWidget);
+        expect(find.text(AppStrings.soporteSinRespuesta), findsOneWidget);
+        await tester.binding.setSurfaceSize(null);
+      });
+    }
+
+    testWidgets('enviar el formulario llama a la fachada y lo limpia', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      final enviados = <String>[];
+      await tester.pumpWidget(
+        pantalla(conDatos(const [], enviados: enviados)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pagos y solvencia').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('soporte_asunto')),
+        'Pago no aparece',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('soporte_descripcion')),
+        'Pagué con PayPal y sigue pendiente.',
+      );
+      await tester.tap(find.text(AppStrings.soporteEnviar));
+      await tester.pumpAndSettle();
+
+      expect(enviados, ['pagos|Pago no aparece']);
+      expect(find.text(AppStrings.soporteEnviado), findsOneWidget);
+      expect(find.text('Pago no aparece'), findsNothing);
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    testWidgets('sin tickets muestra el estado vacío', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      await tester.pumpWidget(pantalla(conDatos(const [])));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.soporteSinTickets), findsOneWidget);
+      await tester.binding.setSurfaceSize(null);
     });
   });
 }

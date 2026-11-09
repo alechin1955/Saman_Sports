@@ -8,7 +8,6 @@ import 'package:saman_sports/views/entrenador/resenas_entrenador_view.dart';
 import 'package:saman_sports/views/entrenador/soporte_entrenador_view.dart';
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
-import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/views/auth/forgot_password_view.dart';
 import 'package:saman_sports/views/auth/login_view.dart';
 import 'package:saman_sports/views/auth/register_view.dart';
@@ -19,9 +18,9 @@ import 'package:saman_sports/controllers/estudiante_controladores.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/historial_estudiante_view.dart';
-import 'package:saman_sports/views/estudiante/proximamente_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/perfil_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/recordatorios_estudiante_view.dart';
+import 'package:saman_sports/views/estudiante/soporte_estudiante_view.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
 import 'package:saman_sports/views/estudiante/explorar_deportes_view.dart';
 import 'package:saman_sports/controllers/comunidad_controller.dart';
@@ -107,12 +106,7 @@ class AppRoutes {
       ),
       estudianteSoporte: (_) => _soloEstudiante(
         auth,
-        ProximamenteEstudianteView(
-          auth: auth,
-          ruta: estudianteSoporte,
-          titulo: AppStrings.soporte,
-          descripcion: AppStrings.soporteDescripcion,
-        ),
+                SoporteEstudianteView(auth: auth, controller: panel.soporte),
       ),
       estudianteComunidad: (_) => _soloEstudiante(
         auth,
