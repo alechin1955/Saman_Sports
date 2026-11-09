@@ -75,13 +75,17 @@ void main() {
     expect(find.text(AppStrings.adminReactivar), findsWidgets);
   });
 
-  testWidgets('el filtro Cancelados muestra solo los cancelados', (tester) async {
+  testWidgets('el filtro Cancelados muestra solo los cancelados', (
+    tester,
+  ) async {
     final eventos = AdminEventoController(repository: _Eventos());
     addTearDown(eventos.dispose);
     eventos.iniciar();
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: EventosAdminView(eventos: eventos))),
+      MaterialApp(
+        home: Scaffold(body: EventosAdminView(eventos: eventos)),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -100,14 +104,19 @@ void main() {
     soporte.iniciar();
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: SoporteAdminView(soporte: soporte))),
+      MaterialApp(
+        home: Scaffold(body: SoporteAdminView(soporte: soporte)),
+      ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Cuenta y acceso'), findsOneWidget);
     expect(find.text('cuenta'), findsNothing);
     expect(find.text('${AppStrings.adminRespuesta}: Listo'), findsOneWidget);
-    expect(find.text('${AppStrings.adminFecha}: 08/11/2026 10:00'), findsOneWidget);
+    expect(
+      find.text('${AppStrings.adminFecha}: 08/11/2026 10:00'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Editar cabe en el ancho útil de una ventana de 1280', (
@@ -237,15 +246,21 @@ class _Entrenadores implements AdminEntrenadorRepository {
   @override
   Stream<Map<String, Map<String, dynamic>>> perfilesPrivados() {
     return Stream.value({
-      'e1': {'correo': 'juan@unimet.edu.ve', 'cedula': 'V-1', 'telefono': '0412'},
+      'e1': {
+        'correo': 'juan@unimet.edu.ve',
+        'cedula': 'V-1',
+        'telefono': '0412',
+      },
     });
   }
 
   @override
   Future<String?> actualizar(EntrenadorAdmin datos) async => null;
   @override
-  Future<String?> cambiarEstado({required String uid, required bool activo}) async =>
-      null;
+  Future<String?> cambiarEstado({
+    required String uid,
+    required bool activo,
+  }) async => null;
   @override
   Future<String?> crearCuenta({
     required String correo,
@@ -336,8 +351,10 @@ class _Soporte implements AdminSoporteRepository {
   ]);
 
   @override
-  Future<String?> responder({required String id, required String respuesta}) async =>
-      null;
+  Future<String?> responder({
+    required String id,
+    required String respuesta,
+  }) async => null;
 }
 
 class _Estudiantes implements AdminEstudianteRepository {
@@ -361,6 +378,8 @@ class _Estudiantes implements AdminEstudianteRepository {
     required bool solvente,
   }) async => null;
   @override
-  Future<String?> cambiarEstado({required String uid, required bool activo}) async =>
-      null;
+  Future<String?> cambiarEstado({
+    required String uid,
+    required bool activo,
+  }) async => null;
 }

@@ -189,9 +189,7 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(1440, 900));
       final enviados = <String>[];
-      await tester.pumpWidget(
-        pantalla(conDatos(const [], enviados: enviados)),
-      );
+      await tester.pumpWidget(pantalla(conDatos(const [], enviados: enviados)));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(DropdownButtonFormField<String>));

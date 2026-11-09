@@ -72,8 +72,7 @@ void main() {
       expect(orden.length, 14);
     });
 
-    test('sigue cargando hasta recibir la configuración y los pagos',
-        () async {
+    test('sigue cargando hasta recibir la configuración y los pagos', () async {
       final c = crear()..iniciar();
       fuenteConfig.add(configuracion);
       await Future<void>.delayed(Duration.zero);
@@ -92,10 +91,7 @@ void main() {
 
       expect(c.hayPeriodo, isFalse);
       expect(c.puedePagar, isFalse);
-      expect(
-        () => c.pagarConPaypal(),
-        throwsA(isA<StateError>()),
-      );
+      expect(() => c.pagarConPaypal(), throwsA(isA<StateError>()));
       c.dispose();
     });
 
@@ -213,9 +209,7 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(1440, 900));
       final registrados = <String>[];
-      await tester.pumpWidget(
-        pantalla(conDatos([], registrados: registrados)),
-      );
+      await tester.pumpWidget(pantalla(conDatos([], registrados: registrados)));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(AppStrings.pagarConPaypal));
@@ -242,14 +236,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(AppStrings.pagarConPaypal), findsNothing);
-      expect(
-        find.text(AppStrings.pagoPendienteVerificacion),
-        findsNWidgets(2),
-      );
-      expect(
-        find.text('${AppStrings.idTransaccion}: SIM-p1'),
-        findsOneWidget,
-      );
+      expect(find.text(AppStrings.pagoPendienteVerificacion), findsNWidgets(2));
+      expect(find.text('${AppStrings.idTransaccion}: SIM-p1'), findsOneWidget);
       await tester.binding.setSurfaceSize(null);
     });
   });

@@ -10,7 +10,9 @@ import 'package:saman_sports/views/auth/forgot_password_view.dart';
 void main() {
   setUp(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-  testWidgets('muestra la confirmación genérica y vuelve al formulario', (tester) async {
+  testWidgets('muestra la confirmación genérica y vuelve al formulario', (
+    tester,
+  ) async {
     final auth = AuthController(
       enviarEnlace: (correo) async => AuthResponse(isSuccess: true),
     );
@@ -25,7 +27,9 @@ void main() {
       find.byType(TextFormField),
       'ana@correo.unimet.edu.ve',
     );
-    await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.enviarEnlace));
+    await tester.tap(
+      find.widgetWithText(ElevatedButton, AppStrings.enviarEnlace),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.revisarCorreo), findsOneWidget);

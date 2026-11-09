@@ -224,7 +224,8 @@ class _Asistencia extends StatelessWidget {
       return Text(AppStrings.calculandoAsistencia, style: estilo);
     }
     final r = resumen;
-    if (r == null) return Text(AppStrings.asistenciaNoDisponible, style: estilo);
+    if (r == null)
+      return Text(AppStrings.asistenciaNoDisponible, style: estilo);
     if (r.total == 0) {
       return Text(AppStrings.sinClasesRegistradas, style: estilo);
     }

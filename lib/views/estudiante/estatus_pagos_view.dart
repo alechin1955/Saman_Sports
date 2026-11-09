@@ -370,7 +370,9 @@ class _FilaPago extends StatelessWidget {
             style: AppTextStyles.bodySmall,
           ),
           Text(
-            pago.paypalOrderId.isEmpty ? pago.idTransaccion : pago.paypalOrderId,
+            pago.paypalOrderId.isEmpty
+                ? pago.idTransaccion
+                : pago.paypalOrderId,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),

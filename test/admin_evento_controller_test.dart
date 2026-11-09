@@ -165,68 +165,71 @@ void main() {
     );
   });
 
-  test('otra disciplina sigue bloqueada y aprobar notifica inscritos', () async {
-    final miercoles = conWeekday(DateTime.wednesday);
-    repo.reservas = [
-      ReservaHorario(
-        id: 'r1',
+  test(
+    'otra disciplina sigue bloqueada y aprobar notifica inscritos',
+    () async {
+      final miercoles = conWeekday(DateTime.wednesday);
+      repo.reservas = [
+        ReservaHorario(
+          id: 'r1',
+          canchaId: 'c1',
+          canchaNombre: 'Cancha 1',
+          dia: DateTime.wednesday,
+          horaInicio: 960,
+          horaFin: 1080,
+          tipo: TipoReserva.deporte,
+          refId: 'futbol',
+          refNombre: 'Fútbol',
+          activa: true,
+        ),
+      ];
+      controller.observarCancha('c1');
+      await Future<void>.delayed(Duration.zero);
+
+      final bloqueado = await controller.crearEvento(
+        titulo: 'Torneo',
+        tipo: TipoEvento.evento,
+        canchaId: 'c1',
+        fecha: iso(miercoles),
+        horaInicio: 960,
+        horaFin: 1020,
+        descripcion: 'Otro',
+        deporteId: 'tenis',
+        deporteNombre: 'Tenis',
+      );
+      expect(bloqueado, isNotNull);
+      expect(repo.creados, 0);
+
+      controller.filtrar(estado: EstadoEvento.pendiente);
+      expect(controller.filtroEstado, EstadoEvento.pendiente);
+      final evento = Evento(
+        id: 'e1',
+        titulo: 'Torneo',
+        tipo: TipoEvento.evento,
         canchaId: 'c1',
         canchaNombre: 'Cancha 1',
-        dia: DateTime.wednesday,
+        fecha: iso(miercoles),
         horaInicio: 960,
-        horaFin: 1080,
-        tipo: TipoReserva.deporte,
-        refId: 'futbol',
-        refNombre: 'Fútbol',
-        activa: true,
-      ),
-    ];
-    controller.observarCancha('c1');
-    await Future<void>.delayed(Duration.zero);
-
-    final bloqueado = await controller.crearEvento(
-      titulo: 'Torneo',
-      tipo: TipoEvento.evento,
-      canchaId: 'c1',
-      fecha: iso(miercoles),
-      horaInicio: 960,
-      horaFin: 1020,
-      descripcion: 'Otro',
-      deporteId: 'tenis',
-      deporteNombre: 'Tenis',
-    );
-    expect(bloqueado, isNotNull);
-    expect(repo.creados, 0);
-
-    controller.filtrar(estado: EstadoEvento.pendiente);
-    expect(controller.filtroEstado, EstadoEvento.pendiente);
-    final evento = Evento(
-      id: 'e1',
-      titulo: 'Torneo',
-      tipo: TipoEvento.evento,
-      canchaId: 'c1',
-      canchaNombre: 'Cancha 1',
-      fecha: iso(miercoles),
-      horaInicio: 960,
-      horaFin: 1020,
-      descripcion: 'Otro',
-      estado: EstadoEvento.pendiente,
-      creadoPorUid: 'admin',
-      deporteId: 'tenis',
-    );
-    expect(
-      await controller.cambiarEstado(evento, EstadoEvento.aprobado),
-      isNull,
-    );
-    expect(repo.ultimoEstado, 'aprobado');
-    expect(repo.notificaciones, 1);
-    expect(
-      await controller.cambiarEstado(evento, EstadoEvento.rechazado),
-      isNull,
-    );
-    expect(repo.ultimoEstado, 'rechazado');
-    expect(repo.notificaciones, 1);
-  });
+        horaFin: 1020,
+        descripcion: 'Otro',
+        estado: EstadoEvento.pendiente,
+        creadoPorUid: 'admin',
+        deporteId: 'tenis',
+      );
+      expect(
+        await controller.cambiarEstado(evento, EstadoEvento.aprobado),
+        isNull,
+      );
+      expect(repo.ultimoEstado, 'aprobado');
+      expect(repo.notificaciones, 1);
+      expect(
+        await controller.cambiarEstado(evento, EstadoEvento.rechazado),
+        isNull,
+      );
+      expect(repo.ultimoEstado, 'rechazado');
+      expect(repo.notificaciones, 1);
+    },
+  );
 }
 
 class _FalsoEventos implements AdminEventoRepository {

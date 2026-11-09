@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/FirebaseServices.dart';
@@ -60,23 +61,25 @@ void main() {
       );
     }
 
-    test('ordena de la más nueva a la más vieja y separa las activas',
-        () async {
-      final c = crear()..iniciar();
-      fuente.add([
-        inscripcion('a', 'd1', 'pendiente', dia: 2),
-        inscripcion('b', 'd2', 'cancelada', dia: 5),
-        inscripcion('c', 'd3', 'confirmada', dia: 3),
-      ]);
-      await Future<void>.delayed(Duration.zero);
+    test(
+      'ordena de la más nueva a la más vieja y separa las activas',
+      () async {
+        final c = crear()..iniciar();
+        fuente.add([
+          inscripcion('a', 'd1', 'pendiente', dia: 2),
+          inscripcion('b', 'd2', 'cancelada', dia: 5),
+          inscripcion('c', 'd3', 'confirmada', dia: 3),
+        ]);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(c.cargando, isFalse);
-      expect(c.inscripciones.map((i) => i.id), ['b', 'c', 'a']);
-      expect(c.activas.map((i) => i.id), ['c', 'a']);
-      expect(c.activaEn('d1')?.id, 'a');
-      expect(c.activaEn('d2'), isNull);
-      c.dispose();
-    });
+        expect(c.cargando, isFalse);
+        expect(c.inscripciones.map((i) => i.id), ['b', 'c', 'a']);
+        expect(c.activas.map((i) => i.id), ['c', 'a']);
+        expect(c.activaEn('d1')?.id, 'a');
+        expect(c.activaEn('d2'), isNull);
+        c.dispose();
+      },
+    );
 
     test('sin sesión muestra el error de sesión', () {
       final c = crear(uid: () => null)..iniciar();

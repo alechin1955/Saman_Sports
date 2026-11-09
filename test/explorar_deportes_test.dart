@@ -9,17 +9,80 @@ import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/views/estudiante/explorar_deportes_view.dart';
 
 /// Franja con el formato que guarda el administrador (minutos del día).
-Map<String, int> franja(int dia, int hora) =>
-    {'dia': dia, 'horaInicio': hora * 60, 'horaFin': (hora + 2) * 60};
+Map<String, int> franja(int dia, int hora) => {
+  'dia': dia,
+  'horaInicio': hora * 60,
+  'horaFin': (hora + 2) * 60,
+};
 
 /// Seis deportes con el mismo formato que crea el panel del administrador.
 final List<Map<String, dynamic>> deportesDelAdmin = [
-  {'id': 'd1', 'nombre': 'Fútbol', 'descripcion': 'Cancha principal.', 'icono': 'futbol', 'horario': 'Lun y Mié 16:00', 'cupos': 22, 'inscritos': 18, 'entrenadorNombre': 'Carlos Méndez', 'horarios': [franja(1, 16), franja(3, 16)]},
-  {'id': 'd2', 'nombre': 'Baloncesto', 'descripcion': 'Fundamentos.', 'icono': 'baloncesto', 'horario': 'Mar y Jue 17:00', 'cupos': 15, 'inscritos': 14, 'entrenadorNombre': 'Laura Pérez', 'horarios': [franja(2, 17), franja(4, 17)]},
-  {'id': 'd3', 'nombre': 'Tenis', 'descripcion': 'Técnica.', 'icono': 'tenis', 'horario': 'Vie 15:00', 'cupos': 10, 'inscritos': 4, 'entrenadorNombre': 'Andrés Rojas', 'horarios': [franja(5, 15)]},
-  {'id': 'd4', 'nombre': 'Voleibol', 'descripcion': 'Gimnasio.', 'icono': 'voleibol', 'horario': 'Lun y Vie 18:00', 'cupos': 16, 'inscritos': 9, 'entrenadorNombre': 'Ana Torres', 'horarios': [franja(1, 18), franja(5, 18)]},
-  {'id': 'd5', 'nombre': 'Natación', 'descripcion': 'Piscina.', 'icono': 'natacion', 'horario': 'Mar y Jue 7:00', 'cupos': 12, 'inscritos': 12, 'entrenadorNombre': 'Carlos Méndez', 'horarios': [franja(2, 7), franja(4, 7)]},
-  {'id': 'd6', 'nombre': 'Running', 'descripcion': 'Campus.', 'icono': 'running', 'horario': 'Sáb 7:00', 'cupos': 30, 'inscritos': 11, 'entrenadorNombre': 'Laura Pérez', 'horarios': [franja(6, 7)]},
+  {
+    'id': 'd1',
+    'nombre': 'Fútbol',
+    'descripcion': 'Cancha principal.',
+    'icono': 'futbol',
+    'horario': 'Lun y Mié 16:00',
+    'cupos': 22,
+    'inscritos': 18,
+    'entrenadorNombre': 'Carlos Méndez',
+    'horarios': [franja(1, 16), franja(3, 16)],
+  },
+  {
+    'id': 'd2',
+    'nombre': 'Baloncesto',
+    'descripcion': 'Fundamentos.',
+    'icono': 'baloncesto',
+    'horario': 'Mar y Jue 17:00',
+    'cupos': 15,
+    'inscritos': 14,
+    'entrenadorNombre': 'Laura Pérez',
+    'horarios': [franja(2, 17), franja(4, 17)],
+  },
+  {
+    'id': 'd3',
+    'nombre': 'Tenis',
+    'descripcion': 'Técnica.',
+    'icono': 'tenis',
+    'horario': 'Vie 15:00',
+    'cupos': 10,
+    'inscritos': 4,
+    'entrenadorNombre': 'Andrés Rojas',
+    'horarios': [franja(5, 15)],
+  },
+  {
+    'id': 'd4',
+    'nombre': 'Voleibol',
+    'descripcion': 'Gimnasio.',
+    'icono': 'voleibol',
+    'horario': 'Lun y Vie 18:00',
+    'cupos': 16,
+    'inscritos': 9,
+    'entrenadorNombre': 'Ana Torres',
+    'horarios': [franja(1, 18), franja(5, 18)],
+  },
+  {
+    'id': 'd5',
+    'nombre': 'Natación',
+    'descripcion': 'Piscina.',
+    'icono': 'natacion',
+    'horario': 'Mar y Jue 7:00',
+    'cupos': 12,
+    'inscritos': 12,
+    'entrenadorNombre': 'Carlos Méndez',
+    'horarios': [franja(2, 7), franja(4, 7)],
+  },
+  {
+    'id': 'd6',
+    'nombre': 'Running',
+    'descripcion': 'Campus.',
+    'icono': 'running',
+    'horario': 'Sáb 7:00',
+    'cupos': 30,
+    'inscritos': 11,
+    'entrenadorNombre': 'Laura Pérez',
+    'horarios': [franja(6, 7)],
+  },
 ];
 
 ExplorarDeportesController controladorConDeportes() {
@@ -40,6 +103,7 @@ InscripcionesController inscripcionesDePrueba({List<String>? inscritos}) {
     cancelar: (_) async => AuthResponse(isSuccess: true),
   );
 }
+
 void main() {
   group('ExplorarDeportesController', () {
     Future<ExplorarDeportesController> iniciado() async {
@@ -57,9 +121,8 @@ void main() {
     });
 
     test('si no hay deportes publicados no inventa ninguno', () async {
-      final c = ExplorarDeportesController(
-        origen: () => Stream.value(const []),
-      )..iniciar();
+      final c = ExplorarDeportesController(origen: () => Stream.value(const []))
+        ..iniciar();
       await Future<void>.delayed(Duration.zero);
 
       expect(c.deportes, isEmpty);
@@ -100,17 +163,22 @@ void main() {
       c.dispose();
     });
 
-    test('filtra por día con los horarios del admin y se quita al repetir',
-        () async {
-      final c = await iniciado();
-      c.elegirDia('Sáb');
-      expect(c.deportesFiltrados.single.nombre, 'Running');
-      c.elegirDia('Lun');
-      expect(c.deportesFiltrados.map((d) => d.nombre), ['Fútbol', 'Voleibol']);
-      c.elegirDia('Lun');
-      expect(c.dia, isNull);
-      c.dispose();
-    });
+    test(
+      'filtra por día con los horarios del admin y se quita al repetir',
+      () async {
+        final c = await iniciado();
+        c.elegirDia('Sáb');
+        expect(c.deportesFiltrados.single.nombre, 'Running');
+        c.elegirDia('Lun');
+        expect(c.deportesFiltrados.map((d) => d.nombre), [
+          'Fútbol',
+          'Voleibol',
+        ]);
+        c.elegirDia('Lun');
+        expect(c.dia, isNull);
+        c.dispose();
+      },
+    );
 
     test('un deporte sin franjas se filtra por el texto del horario', () {
       final viejo = Deporte.fromMap(const {
@@ -175,7 +243,9 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(1440, 900));
       await tester.pumpWidget(
-        pantalla(ExplorarDeportesController(origen: () => Stream.value(const []))),
+        pantalla(
+          ExplorarDeportesController(origen: () => Stream.value(const [])),
+        ),
       );
       await tester.pumpAndSettle();
 

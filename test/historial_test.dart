@@ -23,14 +23,32 @@ Map<String, dynamic> inscripcion(String deporteId, String estado, int dia) {
 /// Sesiones como las guarda el entrenador en deportes/{id}/asistencias.
 final Map<String, List<Map<String, dynamic>>> sesionesPorDeporte = {
   'd1': [
-    {'id': '2026-10-06', 'estados': {'u1_d1': 'presente', 'otro': 'ausente'}},
-    {'id': '2026-10-08', 'estados': {'u1_d1': 'ausente'}},
-    {'id': '2026-10-13', 'estados': {'u1_d1': 'presente'}},
-    {'id': '2026-10-15', 'estados': {'u1_d1': 'presente'}},
-    {'id': '2026-10-20', 'estados': {'otro': 'presente'}},
+    {
+      'id': '2026-10-06',
+      'estados': {'u1_d1': 'presente', 'otro': 'ausente'},
+    },
+    {
+      'id': '2026-10-08',
+      'estados': {'u1_d1': 'ausente'},
+    },
+    {
+      'id': '2026-10-13',
+      'estados': {'u1_d1': 'presente'},
+    },
+    {
+      'id': '2026-10-15',
+      'estados': {'u1_d1': 'presente'},
+    },
+    {
+      'id': '2026-10-20',
+      'estados': {'otro': 'presente'},
+    },
   ],
   'd2': [
-    {'id': '2026-10-07', 'estados': {'u1_d2': 'ausente'}},
+    {
+      'id': '2026-10-07',
+      'estados': {'u1_d2': 'ausente'},
+    },
   ],
 };
 

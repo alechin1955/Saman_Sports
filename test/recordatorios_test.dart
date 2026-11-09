@@ -45,8 +45,7 @@ void main() {
       );
     }
 
-    test('ordena del más nuevo al más viejo y cuenta los no leídos',
-        () async {
+    test('ordena del más nuevo al más viejo y cuenta los no leídos', () async {
       final c = crear()..iniciar();
       fuente.add([
         aviso('a', 'pago_pendiente', dia: 1),
@@ -160,9 +159,7 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(1440, 900));
       final marcados = <String>[];
-      await tester.pumpWidget(
-        pantalla(conDatos(avisos, marcados: marcados)),
-      );
+      await tester.pumpWidget(pantalla(conDatos(avisos, marcados: marcados)));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(AppStrings.marcarLeida));

@@ -17,14 +17,18 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'ana@gmail.com');
     await tester.enterText(find.byType(TextFormField).at(1), '123456');
-    await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.iniciarSesion));
+    await tester.tap(
+      find.widgetWithText(ElevatedButton, AppStrings.iniciarSesion),
+    );
     await tester.pump();
 
     expect(find.text(AppStrings.correoInstitucionalInvalido), findsOneWidget);
     expect(find.text(AppStrings.panelEstudiante), findsNothing);
   });
 
-  testWidgets('un correo institucional válido no entra sin Firebase', (tester) async {
+  testWidgets('un correo institucional válido no entra sin Firebase', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     await tester.pumpWidget(const SamanSportsApp());
     await tester.pumpAndSettle();
@@ -33,9 +37,14 @@ void main() {
     await tester.tap(find.text(AppStrings.iniciarSesion));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'ana@unimet.edu.ve');
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'ana@unimet.edu.ve',
+    );
     await tester.enterText(find.byType(TextFormField).at(1), '123456');
-    await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.iniciarSesion));
+    await tester.tap(
+      find.widgetWithText(ElevatedButton, AppStrings.iniciarSesion),
+    );
     await tester.pump();
     await tester.pumpAndSettle();
 

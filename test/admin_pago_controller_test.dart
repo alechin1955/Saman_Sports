@@ -216,28 +216,31 @@ void main() {
     controller.dispose();
   });
 
-  test('reaplicar el corte no duplica el aviso ni quita la solvencia', () async {
-    final repo = _FalsoPagos();
-    final controller = AdminPagoController(
-      repository: repo,
-      reloj: () => DateTime(2026, 4, 2),
-    );
-    repo.config = config;
-    repo.listaPagos = [pago(fechaPago: DateTime(2026, 4, 2))];
-    repo.listaEstudiantes = [_estudiante('est-1', solvente: false)];
-    controller.iniciar();
-    await Future<void>.delayed(Duration.zero);
+  test(
+    'reaplicar el corte no duplica el aviso ni quita la solvencia',
+    () async {
+      final repo = _FalsoPagos();
+      final controller = AdminPagoController(
+        repository: repo,
+        reloj: () => DateTime(2026, 4, 2),
+      );
+      repo.config = config;
+      repo.listaPagos = [pago(fechaPago: DateTime(2026, 4, 2))];
+      repo.listaEstudiantes = [_estudiante('est-1', solvente: false)];
+      controller.iniciar();
+      await Future<void>.delayed(Duration.zero);
 
-    expect(await controller.aplicarCorte(), isNull);
-    expect(repo.avisos, 0);
-    expect(repo.solventes['est-1'], isTrue);
+      expect(await controller.aplicarCorte(), isNull);
+      expect(repo.avisos, 0);
+      expect(repo.solventes['est-1'], isTrue);
 
-    repo.listaEstudiantes = [_estudiante('est-1', solvente: true)];
-    expect(await controller.aplicarCorte(), isNull);
-    expect(repo.avisos, 0);
-    expect(repo.solventes['est-1'], isTrue);
-    controller.dispose();
-  });
+      repo.listaEstudiantes = [_estudiante('est-1', solvente: true)];
+      expect(await controller.aplicarCorte(), isNull);
+      expect(repo.avisos, 0);
+      expect(repo.solventes['est-1'], isTrue);
+      controller.dispose();
+    },
+  );
 
   test('sin configuración o estudiante inactivo no aplica corte', () async {
     final repo = _FalsoPagos();
@@ -247,7 +250,10 @@ void main() {
     );
     controller.iniciar();
     await Future<void>.delayed(Duration.zero);
-    expect(await controller.aplicarCorte(), AdminPagoController.sinConfiguracion);
+    expect(
+      await controller.aplicarCorte(),
+      AdminPagoController.sinConfiguracion,
+    );
     controller.dispose();
 
     final conConfig = AdminPagoController(
@@ -255,9 +261,7 @@ void main() {
       reloj: () => DateTime(2026, 4, 2),
     );
     repo.config = config;
-    repo.listaEstudiantes = [
-      _estudiante('off', solvente: true, activo: false),
-    ];
+    repo.listaEstudiantes = [_estudiante('off', solvente: true, activo: false)];
     conConfig.iniciar();
     await Future<void>.delayed(Duration.zero);
     expect(await conConfig.aplicarCorte(), isNull);

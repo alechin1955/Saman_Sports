@@ -96,7 +96,8 @@ class AppRoutes {
       ),
       estudianteHistorial: (_) => _soloEstudiante(
         auth,
-        HistorialEstudianteView(auth: auth, controller: panel.historial),      ),
+        HistorialEstudianteView(auth: auth, controller: panel.historial),
+      ),
       estudianteRecordatorios: (_) => _soloEstudiante(
         auth,
         RecordatoriosEstudianteView(
@@ -106,7 +107,7 @@ class AppRoutes {
       ),
       estudianteSoporte: (_) => _soloEstudiante(
         auth,
-                SoporteEstudianteView(auth: auth, controller: panel.soporte),
+        SoporteEstudianteView(auth: auth, controller: panel.soporte),
       ),
       estudianteComunidad: (_) => _soloEstudiante(
         auth,
