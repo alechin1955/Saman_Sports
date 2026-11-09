@@ -1,9 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/FirebaseServices.dart';
+import 'package:saman_sports/controllers/auth_controller.dart';
+import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/controllers/pagos_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
+import 'package:saman_sports/views/estudiante/estatus_pagos_view.dart';
 
 /// Configuración que guarda el administrador en configuracion/pagos.
 final Map<String, dynamic> configuracion = {
@@ -150,6 +154,103 @@ void main() {
       );
       expect(c.procesando, isFalse);
       c.dispose();
+    });
+  });
+
+  group('EstatusPagosView', () {
+    Widget pantalla(PagosController pagos) => MaterialApp(
+      home: EstatusPagosView(
+        auth: AuthController(),
+        controller: EstudianteController(
+          uidActual: () => 'u1',
+          leer: (_) async => {
+            'nombre': 'María',
+            'apellido': 'González',
+            'rol': 'estudiante',
+            'estado': 'activo',
+          },
+        ),
+        pagos: pagos,
+      ),
+    );
+
+    PagosController conDatos(
+      List<Map<String, dynamic>> lista, {
+      List<String>? registrados,
+    }) {
+      return PagosController(
+        uidActual: () => 'u1',
+        origenConfiguracion: () => Stream.value(configuracion),
+        origenPagos: (_) => Stream.value(lista),
+        registrar: (monto, periodo, orden) async {
+          registrados?.add(orden);
+          return AuthResponse(isSuccess: true);
+        },
+        generarOrden: () => 'SIM-PRUEBA',
+        esperaPaypal: Duration.zero,
+      );
+    }
+
+    const tamanos = [Size(390, 844), Size(768, 1024), Size(1440, 900)];
+    for (final tamano in tamanos) {
+      testWidgets('muestra el período y el botón de PayPal en '
+          '${tamano.width.toInt()} px', (tester) async {
+        await tester.binding.setSurfaceSize(tamano);
+        await tester.pumpWidget(pantalla(conDatos([])));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('2026-11'), findsOneWidget);
+        expect(find.text(r'$25.00'), findsOneWidget);
+        expect(find.text(AppStrings.pagarConPaypal), findsOneWidget);
+        expect(find.text(AppStrings.sinPagos), findsOneWidget);
+        await tester.binding.setSurfaceSize(null);
+      });
+    }
+
+    testWidgets('pagar con PayPal muestra el comprobante con el ID', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      final registrados = <String>[];
+      await tester.pumpWidget(
+        pantalla(conDatos([], registrados: registrados)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(AppStrings.pagarConPaypal));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.pagoSimuladoNota), findsOneWidget);
+
+      await tester.tap(find.text(AppStrings.pagarConPaypal).last);
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.pagoEnviado), findsOneWidget);
+      expect(find.text('SIM-PRUEBA'), findsOneWidget);
+      expect(registrados, ['SIM-PRUEBA']);
+
+      await tester.tap(find.text(AppStrings.listo));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.pagoEnviado), findsNothing);
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    testWidgets('si ya pagó muestra el estado y no el botón', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      await tester.pumpWidget(
+        pantalla(conDatos([pago('p1', '2026-11', 'pendiente')])),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.pagarConPaypal), findsNothing);
+      expect(
+        find.text(AppStrings.pagoPendienteVerificacion),
+        findsNWidgets(2),
+      );
+      expect(
+        find.text('${AppStrings.idTransaccion}: SIM-p1'),
+        findsOneWidget,
+      );
+      await tester.binding.setSurfaceSize(null);
     });
   });
 }

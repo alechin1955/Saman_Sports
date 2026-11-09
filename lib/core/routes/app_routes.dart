@@ -87,7 +87,11 @@ class AppRoutes {
       ),
       estudiantePagos: (_) => _soloEstudiante(
         auth,
-        EstatusPagosView(auth: auth, controller: estudiante),
+        EstatusPagosView(
+          auth: auth,
+          controller: estudiante,
+          pagos: panel.pagos,
+        ),
       ),
       estudianteHistorial: (_) => _soloEstudiante(
         auth,

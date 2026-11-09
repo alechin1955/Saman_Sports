@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/controllers/inscripciones_controller.dart';
+import 'package:saman_sports/controllers/pagos_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/models/inscripcion.dart';
 import 'package:saman_sports/models/pago.dart';
@@ -101,6 +102,11 @@ void main() {
               home: EstatusPagosView(
                 auth: AuthController(),
                 controller: controller,
+                pagos: PagosController(
+                  uidActual: () => 'abc',
+                  origenConfiguracion: () => Stream.value(null),
+                  origenPagos: (_) => Stream.value(const []),
+                ),
               ),
             ),
           );
