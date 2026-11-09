@@ -311,6 +311,21 @@ class AppStrings {
       'Ya registraste el pago de este período.';
   static const String listo = 'Listo';
   static const String pagadoEl = 'Pagado el';
+
+  // Historial del estudiante (RF-14)
+  static const String disciplinasEnHistorial = 'Disciplinas en tu historial';
+  static const String asistenciaGeneral = 'Asistencia general';
+  static const String asistencia = 'Asistencia';
+  static const String clases = 'clases';
+  static const String de = 'de';
+  static const String calculandoAsistencia = 'Calculando asistencia…';
+  static const String sinClasesRegistradas =
+      'Aún no hay clases registradas';
+  static const String asistenciaNoDisponible =
+      'La asistencia no está disponible por ahora';
+  static const String sinHistorial = 'Todavía no tienes historial';
+  static const String sinHistorialTexto =
+      'Cuando te inscribas en una disciplina aparecerá aquí con tu asistencia.';
   static const String horario = 'Horario';
   static const String entrenador = 'Entrenador';
   static const String cuposDisponibles = 'Cupos disponibles';

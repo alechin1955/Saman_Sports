@@ -18,6 +18,7 @@ import 'package:saman_sports/controllers/admin/admin_controladores.dart';
 import 'package:saman_sports/controllers/estudiante_controladores.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
+import 'package:saman_sports/views/estudiante/historial_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/proximamente_estudiante_view.dart';
 import 'package:saman_sports/views/estudiante/perfil_estudiante_view.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
@@ -95,13 +96,7 @@ class AppRoutes {
       ),
       estudianteHistorial: (_) => _soloEstudiante(
         auth,
-        ProximamenteEstudianteView(
-          auth: auth,
-          ruta: estudianteHistorial,
-          titulo: AppStrings.historial,
-          descripcion: AppStrings.historialDescripcion,
-        ),
-      ),
+        HistorialEstudianteView(auth: auth, controller: panel.historial),      ),
       estudianteRecordatorios: (_) => _soloEstudiante(
         auth,
         ProximamenteEstudianteView(
