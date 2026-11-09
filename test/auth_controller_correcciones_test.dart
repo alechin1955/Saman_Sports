@@ -96,8 +96,10 @@ void main() {
 
   test('un correo inexistente usa el mensaje genérico', () async {
     final auth = AuthController(
-      enviarEnlace: (correo) async =>
-          AuthResponse(isSuccess: false, errorMessage: 'user-not-found'),
+      enviarEnlace: (correo) async => AuthResponse(
+        isSuccess: false,
+        errorMessage: 'user-not-found',
+      ),
     );
 
     await auth.enviarEnlaceRecuperacion('ana@correo.unimet.edu.ve');

@@ -20,15 +20,17 @@ void main() {
       final boton = tester.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, texto),
       );
-      expect(boton.style?.backgroundColor?.resolve({}), AppColors.primary);
-      expect(boton.style?.foregroundColor?.resolve({}), AppColors.surface);
+      expect(
+        boton.style?.backgroundColor?.resolve({}),
+        AppColors.primary,
+      );
+      expect(
+        boton.style?.foregroundColor?.resolve({}),
+        AppColors.surface,
+      );
     }
 
-    for (final tamano in [
-      const Size(360, 800),
-      const Size(768, 1024),
-      const Size(1440, 900),
-    ]) {
+    for (final tamano in [const Size(360, 800), const Size(768, 1024), const Size(1440, 900)]) {
       await tester.binding.setSurfaceSize(tamano);
       await tester.pump();
       expect(tester.takeException(), isNull);

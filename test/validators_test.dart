@@ -5,7 +5,10 @@ import 'package:saman_sports/core/utils/validators.dart';
 void main() {
   group('correo de estudiante', () {
     test('acepta un correo @correo.unimet.edu.ve', () {
-      expect(Validators.correoEstudiante('ana@correo.unimet.edu.ve'), isNull);
+      expect(
+        Validators.correoEstudiante('ana@correo.unimet.edu.ve'),
+        isNull,
+      );
       expect(
         Validators.esCorreoEstudiante('  ANA@correo.unimet.edu.ve  '),
         isTrue,

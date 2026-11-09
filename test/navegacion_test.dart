@@ -20,9 +20,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('recorre home, login, registro, recuperar y dashboard', (
-    tester,
-  ) async {
+  testWidgets('recorre home, login, registro, recuperar y dashboard', (tester) async {
     for (final tamano in tamanos) {
       await abrir(tester, tamano);
       expect(find.text(AppStrings.homeTitulo), findsOneWidget);

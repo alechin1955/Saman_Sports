@@ -18,10 +18,7 @@ void main() {
     expect(controller.noLeidas, 1);
     expect(controller.notificaciones.first.titulo, 'Más reciente');
 
-    expect(
-      await controller.marcarLeida(controller.notificaciones.first),
-      isNull,
-    );
+    expect(await controller.marcarLeida(controller.notificaciones.first), isNull);
     expect(repo.leidas, ['nueva']);
     controller.dispose();
   });
@@ -32,9 +29,7 @@ void main() {
     controller.iniciar();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: CampanaEntrenador(controller: controller)),
-      ),
+      MaterialApp(home: Scaffold(body: CampanaEntrenador(controller: controller))),
     );
     await tester.pump();
 
