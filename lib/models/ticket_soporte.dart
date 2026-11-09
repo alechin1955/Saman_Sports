@@ -41,6 +41,18 @@ class TicketSoporte {
   final DateTime fecha;
   final DateTime? resueltoEn;
 
+  /// Nombre visible de la clave guardada en Firestore.
+  String get categoriaVisible {
+    return switch (categoria) {
+      'cuenta' => 'Cuenta y acceso',
+      'disciplinas' => 'Disciplinas',
+      'asistencia' => 'Asistencia',
+      'eventos' => 'Eventos',
+      'otro' => 'Otro',
+      _ => categoria,
+    };
+  }
+
   factory TicketSoporte.fromMap(String id, Map<String, dynamic> map) {
     return TicketSoporte(
       id: id,

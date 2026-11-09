@@ -59,12 +59,25 @@ class SoporteAdminView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(ticket.asunto, style: AppTextStyles.subtitle),
-                        Text(ticket.categoria, style: AppTextStyles.bodySmall),
+                        Text(
+                          ticket.categoriaVisible,
+                          style: AppTextStyles.bodySmall,
+                        ),
                         Text(
                           '${ticket.autorNombre} · ${ticket.autorRol} · ${_fecha(ticket.fecha)}',
                         ),
                         const SizedBox(height: AppSizes.space8),
                         Text(ticket.descripcion),
+                        if (ticket.estado == EstadoTicket.resuelto) ...[
+                          const SizedBox(height: AppSizes.space8),
+                          Text(
+                            '${AppStrings.adminRespuesta}: ${ticket.respuesta}',
+                          ),
+                          if (ticket.resueltoEn != null)
+                            Text(
+                              '${AppStrings.adminFecha}: ${_fecha(ticket.resueltoEn!)}',
+                            ),
+                        ],
                         if (ticket.estado == EstadoTicket.abierto)
                           TextButton(
                             onPressed: () => _responder(context, ticket),
@@ -84,26 +97,44 @@ class SoporteAdminView extends StatelessWidget {
     final respuesta = TextEditingController();
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(AppStrings.adminSolventar),
-        content: CampoTexto(
-          label: AppStrings.adminRespuesta,
-          controller: respuesta,
-        ),
-        actions: [
-          BotonSecundario(
-            texto: AppStrings.cancelar,
-            onPressed: () => Navigator.pop(dialogContext),
-          ),
-          BotonPrimario(
-            texto: AppStrings.guardar,
-            onPressed: () async {
-              final error = await soporte.responder(ticket, respuesta.text);
-              if (!dialogContext.mounted || error != null) return;
-              Navigator.pop(dialogContext);
-            },
-          ),
-        ],
+      builder: (dialogContext) => ListenableBuilder(
+        listenable: soporte,
+        builder: (context, _) {
+          final guardando = soporte.guardando;
+          return AlertDialog(
+            title: Text(AppStrings.adminSolventar),
+            content: CampoTexto(
+              label: AppStrings.adminRespuesta,
+              controller: respuesta,
+            ),
+            actions: [
+              if (soporte.error != null)
+                Text(
+                  soporte.error!,
+                  style: AppTextStyles.body.copyWith(color: AppColors.error),
+                ),
+              BotonSecundario(
+                texto: AppStrings.cancelar,
+                onPressed: guardando ? null : () => Navigator.pop(dialogContext),
+              ),
+              BotonPrimario(
+                texto: AppStrings.guardar,
+                cargando: guardando,
+                onPressed: guardando
+                    ? null
+                    : () async {
+                        if (soporte.guardando) return;
+                        final error = await soporte.responder(
+                          ticket,
+                          respuesta.text,
+                        );
+                        if (!dialogContext.mounted || error != null) return;
+                        Navigator.pop(dialogContext);
+                      },
+              ),
+            ],
+          );
+        },
       ),
     );
     respuesta.dispose();
