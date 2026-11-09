@@ -1,0 +1,261 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function rol() {
+      return userDoc().data.get('rol', '');
+    }
+
+    // Un documento sin `estado` se trata como activo. `inactivo` corta el acceso.
+    function activo() {
+      return isSignedIn() && userDoc().data.get('estado', 'activo') != 'inactivo';
+    }
+
+    function isAdmin() {
+      return activo() && rol() == 'administrador';
+    }
+
+    function isEntrenador() {
+      return activo() && rol() == 'entrenador';
+    }
+
+    function isEstudiante() {
+      return activo() && rol() == 'estudiante';
+    }
+
+    function soloCambia(campos) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
+    }
+
+    function noToca(campos) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(campos);
+    }
+
+    function deporteDe(deporteId) {
+      return get(/databases/$(database)/documents/deportes/$(deporteId)).data;
+    }
+
+    function esSuDeporte(deporteId) {
+      return isEntrenador() && deporteDe(deporteId).entrenadorUid == request.auth.uid;
+    }
+
+    match /usuarios/{userId} {
+      // El propio documento se puede leer aunque esté inactivo: el login
+      // necesita ver `estado`. El resto de lecturas privadas sí exigen activo().
+      // TEMPORAL: el entrenador lee alumnos para mostrar el nombre. Expone
+      // cédula y teléfono. Cerrar cuando el nombre viva en la inscripción.
+      allow get: if isAdmin()
+        || (isSignedIn() && request.auth.uid == userId)
+        || (isEntrenador() && resource.data.rol == 'estudiante');
+
+      allow list: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+
+      allow create: if (
+          isSignedIn()
+          && request.auth.uid == userId
+          && request.resource.data.rol == 'estudiante'
+          && request.resource.data.get('estado', 'activo') == 'activo'
+          && request.resource.data.get('solvente', false) == false
+        ) || (
+          isAdmin()
+          && request.resource.data.rol == 'entrenador'
+          && request.resource.data.estado == 'activo'
+        );
+
+      allow update: if isAdmin() || (
+          isSignedIn()
+          && activo()
+          && request.auth.uid == userId
+          && noToca(['rol', 'estado', 'solvente'])
+        );
+
+      allow delete: if false;
+    }
+
+    match /deportes/{deporteId} {
+      allow read: if resource.data.activo == true
+        || isAdmin()
+        || (isEntrenador() && resource.data.entrenadorUid == request.auth.uid);
+
+      allow create, delete: if isAdmin();
+
+      // El panel no escribe el documento raíz. Solo puede tocar `descripcion`
+      // y no puede reasignarse la disciplina ni cambiar cupos, estado o cancha.
+      allow update: if isAdmin() || (
+          isEntrenador()
+          && resource.data.entrenadorUid == request.auth.uid
+          && request.resource.data.entrenadorUid == request.auth.uid
+          && soloCambia(['descripcion'])
+        );
+
+      match /asistencias/{fecha} {
+        allow read: if isAdmin() || esSuDeporte(deporteId);
+
+        allow create: if esSuDeporte(deporteId)
+          && deporteDe(deporteId).activo == true
+          && request.resource.data.entrenadorUid == request.auth.uid
+          && request.resource.data.keys().hasOnly([
+            'fecha', 'entrenadorUid', 'estados', 'actualizadoEn'
+          ]);
+
+        allow update: if esSuDeporte(deporteId)
+          && deporteDe(deporteId).activo == true
+          && request.resource.data.entrenadorUid == request.auth.uid
+          && soloCambia(['fecha', 'entrenadorUid', 'estados', 'actualizadoEn']);
+
+        allow delete: if false;
+      }
+    }
+
+    match /entrenadores/{id} {
+      allow read: if resource.data.activo == true || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // El campo real es `activa`, no `activo`.
+    // TEMPORAL: el entrenador lista todas, también inactivas, para mostrar
+    // "cancha inactiva" en vez de un error de permisos. Cerrar con
+    // where activa == true en streamCanchasEntrenador.
+    match /canchas/{id} {
+      allow read: if resource.data.activa == true || isAdmin() || isEntrenador();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // `eventos` no tiene campo `activo`. La portada no los lista.
+    // El entrenador crea solicitudes pendientes de su disciplina y lee las suyas.
+    match /eventos/{id} {
+      allow read: if isAdmin()
+        || resource.data.get('activo', false) == true
+        || (isEntrenador() && resource.data.creadoPorUid == request.auth.uid);
+
+      allow create: if isAdmin() || (
+          isEntrenador()
+          && request.resource.data.creadoPorUid == request.auth.uid
+          && request.resource.data.estado == 'pendiente'
+          && request.resource.data.deporteId is string
+          && deporteDe(request.resource.data.deporteId).entrenadorUid == request.auth.uid
+          && deporteDe(request.resource.data.deporteId).activo == true
+        );
+
+      allow update, delete: if isAdmin();
+    }
+
+    match /resenas/{id} {
+      allow read: if resource.data.visible == true
+        || isAdmin()
+        || (activo() && resource.data.autorUid == request.auth.uid);
+
+      allow create: if isEstudiante()
+        && request.resource.data.autorUid == request.auth.uid
+        && request.resource.data.visible == true;
+
+      allow update: if (isAdmin() && soloCambia(['visible']))
+        || (
+          isEstudiante()
+          && resource.data.autorUid == request.auth.uid
+          && noToca(['visible', 'autorUid'])
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // No existe un uid de dueño en `reservas`. Las crea el admin.
+    // El entrenador lee las activas: su consulta filtra canchaId + activa.
+    match /reservas/{id} {
+      allow read: if isAdmin() || (isEntrenador() && resource.data.activa == true);
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /pagos/{id} {
+      allow read: if isAdmin()
+        || (isEstudiante() && resource.data.estudianteUid == request.auth.uid);
+
+      allow create: if isEstudiante()
+        && request.resource.data.estudianteUid == request.auth.uid
+        && request.resource.data.verificado == false
+        && request.resource.data.get('estado', 'pendiente') != 'realizado';
+
+      // TEMPORAL: quitar cuando exista la Cloud Function de PayPal.
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /inscripciones/{id} {
+      allow get: if isAdmin()
+        || (isEstudiante() && resource.data.estudianteUid == request.auth.uid)
+        || (
+          isEntrenador()
+          && resource.data.deporteId is string
+          && esSuDeporte(resource.data.deporteId)
+        );
+
+      // TEMPORAL: un list no puede comprobar el deporte padre. Cualquier
+      // entrenador activo puede listar por deporteId, no solo el asignado.
+      // Cerrar guardando entrenadorUid en la inscripción y filtrando por él.
+      allow list: if isAdmin()
+        || (isEstudiante() && resource.data.estudianteUid == request.auth.uid)
+        || (isEntrenador() && resource.data.deporteId is string);
+
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /transacciones/{id} {
+      allow read: if isAdmin()
+        || (activo() && resource.data.usuarioUid == request.auth.uid);
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /notificaciones/{id} {
+      allow read: if isAdmin()
+        || (activo() && resource.data.destinatarioUid == request.auth.uid);
+
+      allow create: if isAdmin();
+
+      allow update: if activo()
+        && resource.data.destinatarioUid == request.auth.uid
+        && soloCambia(['leida']);
+
+      allow delete: if false;
+    }
+
+    // La colección real de soporte es `tickets`, no `soporte`.
+    // Solo el admin cambia respuesta, estado y resueltoEn.
+    match /tickets/{id} {
+      allow read: if isAdmin()
+        || (
+          (isEstudiante() || isEntrenador())
+          && resource.data.autorUid == request.auth.uid
+        );
+
+      allow create: if (isEstudiante() || isEntrenador())
+        && request.resource.data.autorUid == request.auth.uid
+        && request.resource.data.autorRol == rol()
+        && request.resource.data.estado == 'abierto'
+        && request.resource.data.respuesta == ''
+        && request.resource.data.resueltoEn == null;
+
+      allow update: if isAdmin()
+        && soloCambia(['respuesta', 'estado', 'resueltoEn']);
+
+      allow delete: if false;
+    }
+
+    match /configuracion/{id} {
+      allow read: if isSignedIn() && activo();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
