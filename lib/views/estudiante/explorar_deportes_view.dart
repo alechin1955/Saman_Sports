@@ -88,7 +88,13 @@ class _Resultados extends StatelessWidget {
     if (c.cargando) {
       return const EtiquetaEjemplo(cargando: true);
     }
-
+    if (c.sinPublicar) {
+      return const EstadoVacio(
+        icono: Icons.sports_outlined,
+        titulo: AppStrings.sinDisciplinasPublicadas,
+        texto: AppStrings.sinDisciplinasPublicadasTexto,
+      );
+    }
     final lista = c.deportesFiltrados;
     if (lista.isEmpty) {
       return EstadoVacio(
@@ -103,18 +109,11 @@ class _Resultados extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: AppSizes.space12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              '${lista.length} ${AppStrings.disciplinasEncontradas}',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            if (c.usandoEjemplo) const EtiquetaEjemplo(),
-          ],
+        Text(
+          '${lista.length} ${AppStrings.disciplinasEncontradas}',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
         const SizedBox(height: AppSizes.space16),
         LayoutBuilder(

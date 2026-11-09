@@ -245,6 +245,10 @@ class AppStrings {
   static const String sinResultadosTexto =
       'Prueba con otra búsqueda o quita los filtros.';
   static const String limpiarFiltros = 'Limpiar filtros';
+    static const String sinDisciplinasPublicadas =
+      'Aún no hay disciplinas publicadas';
+  static const String sinDisciplinasPublicadasTexto =
+      'Cuando el administrador publique una disciplina aparecerá aquí.';
   static const String horario = 'Horario';
   static const String entrenador = 'Entrenador';
   static const String cuposDisponibles = 'Cupos disponibles';
