@@ -270,6 +270,8 @@ class AppStrings {
       'No encontramos esa inscripción.';
   static const String inscripcionYaCancelada =
       'Esa inscripción ya estaba cancelada.';
+  static const String debesEstarSolvente =
+      'Debes estar solvente para inscribirte';
   static const String estadoPendiente = 'Pendiente';
   static const String estadoConfirmada = 'Confirmada';
   static const String estadoCancelada = 'Cancelada';

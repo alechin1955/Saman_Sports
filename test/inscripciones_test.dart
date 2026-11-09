@@ -44,6 +44,7 @@ void main() {
     InscripcionesController crear({
       AuthResponse? respuesta,
       String? Function()? uid,
+      bool? solvente,
     }) {
       fuente = StreamController<List<Map<String, dynamic>>>();
       llamadas = [];
@@ -58,6 +59,7 @@ void main() {
           llamadas.add('cancelar $id');
           return respuesta ?? AuthResponse(isSuccess: true);
         },
+        leerSolvencia: solvente == null ? null : () async => solvente,
       );
     }
 
@@ -141,6 +143,19 @@ void main() {
 
       expect(await c.inscribirse(futbol), AppStrings.inscripcionCuentaInactiva);
       expect(c.procesando, isFalse);
+      c.dispose();
+    });
+
+    test('un estudiante no solvente no se inscribe y muestra el mensaje', () async {
+      final c = crear(solvente: false)..iniciar();
+      fuente.add([]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(c.solvente, isFalse);
+      expect(c.puedeInscribirse(futbol), isFalse);
+      expect(await c.inscribirse(futbol), AppStrings.debesEstarSolvente);
+      expect(c.error, AppStrings.debesEstarSolvente);
+      expect(llamadas, isEmpty);
       c.dispose();
     });
   });

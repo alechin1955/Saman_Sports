@@ -13,6 +13,9 @@ typedef OrigenInscripciones =
 /// Inscribir o cancelar: recibe el id del deporte o de la inscripción.
 typedef AccionInscripcion = Future<AuthResponse> Function(String id);
 
+/// Lee si el estudiante con sesión abierta tiene `solvente == true`.
+typedef LeerSolvencia = Future<bool> Function();
+
 /// Controlador de las inscripciones del estudiante (RF-04 y RF-05).
 ///
 /// Observer: escucha la colección inscripciones del estudiante y avisa a
@@ -25,6 +28,7 @@ class InscripcionesController extends ChangeNotifier {
     OrigenInscripciones? origen,
     AccionInscripcion? inscribir,
     AccionInscripcion? cancelar,
+    this._leerSolvencia,
   }) : _uidActual = uidActual ?? (() => FirebaseServices.currentUser?.uid),
        _origen =
            origen ??
@@ -35,17 +39,31 @@ class InscripcionesController extends ChangeNotifier {
            ((id) => FirebaseServices.inscribirseEnDeporte(deporteId: id)),
        _cancelar =
            cancelar ??
-           ((id) => FirebaseServices.cancelarInscripcion(inscripcionId: id));
+           ((id) => FirebaseServices.cancelarInscripcion(inscripcionId: id)) {
+    if (_leerSolvencia != null) {
+      solvente = false;
+      solvenciaConocida = false;
+    }
+  }
 
   final String? Function() _uidActual;
   final OrigenInscripciones _origen;
   final AccionInscripcion _inscribir;
   final AccionInscripcion _cancelar;
+  final LeerSolvencia? _leerSolvencia;
 
   List<Inscripcion> inscripciones = [];
   bool cargando = true;
   bool procesando = false;
   String? error;
+
+  /// True si el estudiante puede inscribirse. Sin lector queda en true
+  /// para no bloquear las pruebas que no hablan de solvencia.
+  bool solvente = true;
+
+  /// False mientras el lector inyectado no ha respondido.
+  bool solvenciaConocida = true;
+  bool _cerrado = false;
 
   StreamSubscription<List<Map<String, dynamic>>>? _sub;
   String? _uidEscuchado;
@@ -60,7 +78,7 @@ class InscripcionesController extends ChangeNotifier {
       inscripciones = [];
       cargando = false;
       error = AppStrings.sesionNoIniciada;
-      notifyListeners();
+      _avisar();
       return;
     }
     if (uid == _uidEscuchado && _sub != null) return;
@@ -69,7 +87,8 @@ class InscripcionesController extends ChangeNotifier {
     _uidEscuchado = uid;
     cargando = true;
     error = null;
-    notifyListeners();
+    _avisar();
+    unawaited(_asegurarSolvencia());
     try {
       _sub = _origen(uid).listen(_recibir, onError: (_) => _fallar());
     } catch (_) {
@@ -77,18 +96,34 @@ class InscripcionesController extends ChangeNotifier {
     }
   }
 
+  /// Consulta `solvente` una sola vez. Si el lector falla, no deja inscribir.
+  Future<void> _asegurarSolvencia() async {
+    final leer = _leerSolvencia;
+    if (leer == null || solvenciaConocida || _cerrado) return;
+    try {
+      final valor = await leer();
+      if (_cerrado) return;
+      solvente = valor;
+    } catch (_) {
+      if (_cerrado) return;
+      solvente = false;
+    }
+    solvenciaConocida = true;
+    _avisar();
+  }
+
   void _recibir(List<Map<String, dynamic>> lista) {
     inscripciones = lista.map(Inscripcion.fromMap).toList()
       ..sort((a, b) => b.fecha.compareTo(a.fecha));
     cargando = false;
     error = null;
-    notifyListeners();
+    _avisar();
   }
 
   void _fallar() {
     cargando = false;
     error = AppStrings.errorConexion;
-    notifyListeners();
+    _avisar();
   }
 
   /// Inscripciones que ocupan cupo (pendientes o confirmadas).
@@ -103,12 +138,18 @@ class InscripcionesController extends ChangeNotifier {
     return null;
   }
 
-  /// Se puede inscribir si no está inscrito y quedan cupos.
+  /// Se puede inscribir si está solvente, no está inscrito y quedan cupos.
   bool puedeInscribirse(Deporte deporte) =>
-      activaEn(deporte.id) == null && deporte.disponibles > 0;
+      solvente && activaEn(deporte.id) == null && deporte.disponibles > 0;
 
   /// Inscribe al estudiante. Devuelve null si salió bien o el mensaje de error.
   Future<String?> inscribirse(Deporte deporte) async {
+    await _asegurarSolvencia();
+    if (!solvente) {
+      error = AppStrings.debesEstarSolvente;
+      _avisar();
+      return error;
+    }
     if (activaEn(deporte.id) != null) return AppStrings.inscripcionYaExiste;
     if (deporte.disponibles <= 0) return AppStrings.inscripcionSinCupos;
     return _ejecutar(() => _inscribir(deporte.id));
@@ -122,7 +163,7 @@ class InscripcionesController extends ChangeNotifier {
   Future<String?> _ejecutar(Future<AuthResponse> Function() accion) async {
     if (procesando) return AppStrings.esperaUnMomento;
     procesando = true;
-    notifyListeners();
+    _avisar();
     try {
       final respuesta = await accion().timeout(const Duration(seconds: 15));
       if (respuesta.isSuccess) return null;
@@ -133,12 +174,17 @@ class InscripcionesController extends ChangeNotifier {
       return AppStrings.errorInesperado;
     } finally {
       procesando = false;
-      notifyListeners();
+      _avisar();
     }
+  }
+
+  void _avisar() {
+    if (!_cerrado) notifyListeners();
   }
 
   @override
   void dispose() {
+    _cerrado = true;
     _sub?.cancel();
     super.dispose();
   }
