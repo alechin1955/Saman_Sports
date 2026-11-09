@@ -864,6 +864,65 @@ class FirebaseServices {
     }
   }
   
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: pagos)
+  // ---------------------------------------------------------------------------
+
+  /// Pagos del estudiante, en vivo. Sin orderBy para no necesitar un
+  /// índice compuesto: PagosController los ordena por fecha.
+  static Stream<List<Map<String, dynamic>>> streamMisPagos({
+    required String estudianteUid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(pagosCollection)
+          .where('estudianteUid', isEqualTo: estudianteUid),
+    );
+  }
+
+  /// Registra el pago del período hecho con PayPal (simulado, RF-15).
+  ///
+  /// Queda 'pendiente' y sin verificar: el administrador lo verifica desde
+  /// su panel con el `paypalOrderId`. El estudiante nunca escribe
+  /// `verificado`, `verificadoPor` ni `fechaPago`.
+  static Future<AuthResponse> registrarPagoEstudiante({
+    required double monto,
+    required String periodo,
+    required String paypalOrderId,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      await _db.collection(pagosCollection).add({
+        'estudianteUid': uid,
+        'inscripcionId': '',
+        'monto': monto,
+        'periodo': periodo,
+        'paypalOrderId': paypalOrderId,
+        'idTransaccion': paypalOrderId,
+        'estado': 'pendiente',
+        'verificado': false,
+        'fecha': FieldValue.serverTimestamp(),
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+
   // ===== ADMINISTRADOR (Andrés): canchas, reservas y deportes =====
 
   static Stream<List<Map<String, dynamic>>> streamCanchas() {

@@ -285,6 +285,32 @@ class AppStrings {
   static const String irAPagos = 'Ir a pagos';
   static const String pendienteDePagoTexto =
       'Paga la cuota del período para que el administrador confirme tu inscripción.';
+
+  // Pagos del estudiante (RF-15, PayPal simulado)
+  static const String pagoDelPeriodo = 'Pago del período';
+  static const String periodo = 'Período';
+  static const String montoAPagar = 'Monto';
+  static const String fechaDeCorte = 'Fecha de corte';
+  static const String sinPeriodoPago =
+      'El administrador todavía no ha abierto el período de pago.';
+  static const String pagarConPaypal = 'Pagar con PayPal';
+  static const String pagoPayPalTitulo = 'Pago con PayPal';
+  static const String conceptoPago = 'Concepto';
+  static const String cuotaDeportiva = 'Cuota deportiva del período';
+  static const String pagoSimuladoNota =
+      'Esta es una simulación de PayPal: no se hace ningún cobro real.';
+  static const String conectandoPaypal = 'Conectando con PayPal…';
+  static const String pagoEnviado = 'Pago enviado';
+  static const String idTransaccion = 'ID de transacción';
+  static const String pagoEnviadoTexto =
+      'El administrador verificará tu pago. Mientras tanto aparecerá como pendiente de verificación.';
+  static const String pagoPendienteVerificacion = 'Pendiente de verificación';
+  static const String pagoVerificado = 'Verificado';
+  static const String pagoRechazado = 'Rechazado';
+  static const String pagoYaRegistrado =
+      'Ya registraste el pago de este período.';
+  static const String listo = 'Listo';
+  static const String pagadoEl = 'Pagado el';
   static const String horario = 'Horario';
   static const String entrenador = 'Entrenador';
   static const String cuposDisponibles = 'Cupos disponibles';
