@@ -73,30 +73,37 @@ class EntrenadoresAdminView extends StatelessWidget {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
+                  columnSpacing: AppSizes.space12,
+                  horizontalMargin: AppSizes.space12,
                   columns: [
-                    DataColumn(label: Text(AppStrings.nombre)),
-                    DataColumn(label: Text(AppStrings.adminEspecialidad)),
-                    DataColumn(label: Text(AppStrings.adminExperiencia)),
-                    DataColumn(label: Text(AppStrings.adminDisciplina)),
-                    DataColumn(label: Text(AppStrings.adminDeportesAsignados)),
-                    DataColumn(label: Text(AppStrings.correoInstitucional)),
-                    DataColumn(label: Text(AppStrings.adminEstado)),
-                    DataColumn(label: Text(AppStrings.editar)),
+                    DataColumn(label: _columna(AppStrings.nombre, 110)),
+                    DataColumn(label: _columna(AppStrings.adminEspecialidad, 96)),
+                    DataColumn(label: _columna(AppStrings.adminExperiencia, 72)),
+                    DataColumn(label: _columna(AppStrings.adminDisciplina, 88)),
+                    DataColumn(
+                      label: _columna(AppStrings.adminDeportesAsignados, 72),
+                    ),
+                    DataColumn(
+                      label: _columna(AppStrings.correoInstitucional, 150),
+                    ),
+                    DataColumn(label: _columna(AppStrings.adminEstado, 72)),
+                    DataColumn(label: _columna(AppStrings.editar, 168)),
                   ],
                   rows: [
                     for (final item in entrenadores.entrenadoresFiltrados)
                       DataRow(
                         cells: [
-                          DataCell(Text(item.nombreCompleto)),
-                          DataCell(Text(item.especialidad)),
+                          DataCell(_columna(item.nombreCompleto, 110)),
+                          DataCell(_columna(item.especialidad, 96)),
                           DataCell(
-                            Text(
+                            _columna(
                               '${item.anosExperiencia} ${AppStrings.adminAnos}',
+                              72,
                             ),
                           ),
-                          DataCell(Text(item.disciplina)),
-                          DataCell(Text('${_asignados(item, deportes)}')),
-                          DataCell(Text(item.correo)),
+                          DataCell(_columna(item.disciplina, 88)),
+                          DataCell(_columna('${_asignados(item, deportes)}', 72)),
+                          DataCell(_columna(item.correo, 150)),
                           DataCell(
                             Text(
                               item.activo
@@ -117,6 +124,13 @@ class EntrenadoresAdminView extends StatelessWidget {
       },
     );
   }
+}
+
+Widget _columna(String texto, double ancho) {
+  return SizedBox(
+    width: ancho,
+    child: Text(texto, overflow: TextOverflow.ellipsis),
+  );
 }
 
 class _Acciones extends StatelessWidget {

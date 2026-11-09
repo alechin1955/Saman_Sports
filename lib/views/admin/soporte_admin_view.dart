@@ -59,12 +59,25 @@ class SoporteAdminView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(ticket.asunto, style: AppTextStyles.subtitle),
-                        Text(ticket.categoria, style: AppTextStyles.bodySmall),
+                        Text(
+                          ticket.categoriaVisible,
+                          style: AppTextStyles.bodySmall,
+                        ),
                         Text(
                           '${ticket.autorNombre} · ${ticket.autorRol} · ${_fecha(ticket.fecha)}',
                         ),
                         const SizedBox(height: AppSizes.space8),
                         Text(ticket.descripcion),
+                        if (ticket.estado == EstadoTicket.resuelto) ...[
+                          const SizedBox(height: AppSizes.space8),
+                          Text(
+                            '${AppStrings.adminRespuesta}: ${ticket.respuesta}',
+                          ),
+                          if (ticket.resueltoEn != null)
+                            Text(
+                              '${AppStrings.adminFecha}: ${_fecha(ticket.resueltoEn!)}',
+                            ),
+                        ],
                         if (ticket.estado == EstadoTicket.abierto)
                           TextButton(
                             onPressed: () => _responder(context, ticket),

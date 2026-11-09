@@ -149,17 +149,6 @@ class FirebaseServices {
     }
   }
 
-  /// Devuelve el rol guardado en usuarios/{uid}
-  /// ('estudiante', 'entrenador' o 'administrador'), o null si no hay rol.
-  static Future<String?> getUserRole({required String uid}) async {
-    final data = await getUserData(uid: uid);
-    final rol = data?['rol'];
-    return rol is String ? rol : null;
-  }
-
-  /// Borra la cuenta recién creada en Auth. Se usa en el registro si la cuenta
-  /// se creó pero no se pudieron guardar sus datos en Firestore, para no dejar
-  /// cuentas a medias.
   static Future<({bool error, bool existe, String? rol, String estado})>
   consultarRol({required String uid}) async {
     try {
@@ -181,6 +170,9 @@ class FirebaseServices {
     }
   }
 
+  /// Borra la cuenta recién creada en Auth. Se usa en el registro si la cuenta
+  /// se creó pero no se pudieron guardar sus datos en Firestore, para no dejar
+  /// cuentas a medias.
   static Future<void> deleteCurrentUser() async {
     try {
       await _auth.currentUser?.delete();
@@ -858,45 +850,6 @@ class FirebaseServices {
             .compareTo(_enteroAdmin(b['horaInicio']));
       });
     });
-  }
-
-  static Future<Map<String, dynamic>?> hayChoqueHorario({
-    required String canchaId,
-    required List<Map<String, dynamic>> franjas,
-    String? fecha,
-    String? ignorarRefId,
-  }) async {
-    final snapshot = await _db
-        .collection(reservasCollection)
-        .where('canchaId', isEqualTo: canchaId)
-        .where('activa', isEqualTo: true)
-        .get();
-    final existentes = snapshot.docs
-        .map((doc) => ReservaHorario.fromMap(doc.id, doc.data()))
-        .toList();
-    final nuevas = franjas.map((franja) {
-      final modelo = FranjaHorario.fromMap(franja);
-      return ReservaHorario(
-        id: '',
-        canchaId: canchaId,
-        canchaNombre: '',
-        dia: modelo.dia,
-        horaInicio: modelo.horaInicio,
-        horaFin: modelo.horaFin,
-        fecha: fecha,
-        tipo: fecha == null ? TipoReserva.deporte : TipoReserva.evento,
-        refId: '',
-        refNombre: '',
-        activa: true,
-      );
-    }).toList();
-    final choque = buscarChoque(
-      nuevas: nuevas,
-      existentes: existentes,
-      ignorarRefId: ignorarRefId,
-    );
-    if (choque == null) return null;
-    return {'id': choque.id, ...choque.toMap()};
   }
 
   static Stream<List<Map<String, dynamic>>> streamDeportesAdmin() {

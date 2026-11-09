@@ -258,7 +258,14 @@ class _AccionesDeporte extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppStrings.adminConfirmarDesactivar),
+        title: Text(
+          deporte.activo ? 'Desactivar deporte' : 'Reactivar deporte',
+        ),
+        content: Text(
+          deporte.activo
+              ? 'El deporte dejará de mostrarse en el catálogo.'
+              : 'El deporte volverá a mostrarse en el catálogo.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

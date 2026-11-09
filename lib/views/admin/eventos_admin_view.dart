@@ -44,6 +44,7 @@ class EventosAdminView extends StatelessWidget {
                   EstadoEvento.pendiente,
                   EstadoEvento.aprobado,
                   EstadoEvento.rechazado,
+                  EstadoEvento.cancelado,
                 ])
                   ChoiceChip(
                     label: Text(_estado(estado)),
