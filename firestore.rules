@@ -46,6 +46,34 @@ service cloud.firestore {
       return isEntrenador() && deporteDe(deporteId).entrenadorUid == request.auth.uid;
     }
 
+    function pathInscripcion(deporteId) {
+      return /databases/$(database)/documents/inscripciones/$(request.auth.uid + '_' + deporteId);
+    }
+
+    function pathDeporte(deporteId) {
+      return /databases/$(database)/documents/deportes/$(deporteId);
+    }
+
+    // El administrador marca `solvente`. Si falta el campo, no está solvente.
+    function esSolvente() {
+      return userDoc().data.solvente == true;
+    }
+
+    function deporteActivo(deporteId) {
+      return exists(pathDeporte(deporteId))
+        && get(pathDeporte(deporteId)).data.activo == true;
+    }
+
+    function subeUnInscrito(deporteId) {
+      return getAfter(pathDeporte(deporteId)).data.inscritos
+        == get(pathDeporte(deporteId)).data.inscritos + 1;
+    }
+
+    function bajaUnInscrito(deporteId) {
+      return getAfter(pathDeporte(deporteId)).data.inscritos
+        == get(pathDeporte(deporteId)).data.inscritos - 1;
+    }
+
     match /usuarios/{userId} {
       // El propio documento se puede leer aunque esté inactivo: el login
       // necesita ver `estado`. El resto de lecturas privadas sí exigen activo().
@@ -88,15 +116,41 @@ service cloud.firestore {
 
       // El panel no escribe el documento raíz. Solo puede tocar `descripcion`
       // y no puede reasignarse la disciplina ni cambiar cupos, estado o cancha.
+      // El estudiante solo mueve `inscritos` en 1, y solo en la misma
+      // transacción en que crea o cancela su propia inscripción.
       allow update: if isAdmin() || (
           isEntrenador()
           && resource.data.entrenadorUid == request.auth.uid
           && request.resource.data.entrenadorUid == request.auth.uid
           && soloCambia(['descripcion'])
+        ) || (
+          isEstudiante()
+          && soloCambia(['inscritos'])
+          && request.resource.data.inscritos is int
+          && (
+            (
+              request.resource.data.inscritos == resource.data.get('inscritos', 0) + 1
+              && request.resource.data.inscritos <= resource.data.cupos
+              && (!exists(pathInscripcion(deporteId))
+                || get(pathInscripcion(deporteId)).data.estado == 'cancelada')
+              && getAfter(pathInscripcion(deporteId)).data.estado == 'pendiente'
+            ) || (
+              request.resource.data.inscritos == resource.data.get('inscritos', 0) - 1
+              && request.resource.data.inscritos >= 0
+              && get(pathInscripcion(deporteId)).data.estado in ['pendiente', 'confirmada']
+              && getAfter(pathInscripcion(deporteId)).data.estado == 'cancelada'
+            )
+          )
         );
 
       match /asistencias/{fecha} {
-        allow read: if isAdmin() || esSuDeporte(deporteId);
+
+        // El estudiante lee la asistencia solo si su inscripción sigue
+        // pendiente o confirmada, para ver su porcentaje en el Historial (RF-14).
+        allow read: if isAdmin() || esSuDeporte(deporteId) || (
+          isEstudiante()
+          && get(pathInscripcion(deporteId)).data.estado in ['pendiente', 'confirmada']
+        );
 
         allow create: if esSuDeporte(deporteId)
           && deporteDe(deporteId).activo == true
@@ -188,8 +242,15 @@ service cloud.firestore {
     }
 
     match /inscripciones/{id} {
+      // La transacción de inscripción del estudiante lee {uid}_{deporteId}
+      // antes de que exista (resource == null).
       allow get: if isAdmin()
         || (isEstudiante() && resource.data.estudianteUid == request.auth.uid)
+        || (
+          isEstudiante()
+          && resource == null
+          && id.matches(request.auth.uid + '_.+')
+        )
         || (
           isEntrenador()
           && resource.data.deporteId is string
@@ -203,9 +264,50 @@ service cloud.firestore {
         || (isEstudiante() && resource.data.estudianteUid == request.auth.uid)
         || (isEntrenador() && resource.data.deporteId is string);
 
-      allow create, update, delete: if isAdmin();
-    }
+      // El estudiante crea su inscripción pendiente con id {uid}_{deporteId}
+      // (RF-04). No puede confirmarla: eso lo hace el administrador.
+      allow create: if isAdmin() || (
+          isEstudiante()
+          && id == request.auth.uid + '_' + request.resource.data.deporteId
+          && request.resource.data.estudianteUid == request.auth.uid
+          && request.resource.data.estado == 'pendiente'
+          && request.resource.data.fecha == request.time
+          && request.resource.data.keys().hasOnly([
+            'estudianteUid', 'deporteId', 'deporteNombre', 'estado', 'fecha'
+          ])
+          && deporteActivo(request.resource.data.deporteId)
+          && esSolvente()
+          && subeUnInscrito(request.resource.data.deporteId)
+        );
 
+      // El estudiante solo cancela la suya (RF-05) o, si estaba cancelada,
+      // vuelve a pedirla como pendiente.
+      allow update: if isAdmin() || (
+          isEstudiante()
+          && resource.data.estudianteUid == request.auth.uid
+          && request.resource.data.estudianteUid == request.auth.uid
+          && request.resource.data.deporteId == resource.data.deporteId
+          && (
+            (
+              resource.data.estado in ['pendiente', 'confirmada']
+              && request.resource.data.estado == 'cancelada'
+              && soloCambia(['estado'])
+              && bajaUnInscrito(resource.data.deporteId)
+            ) || (
+              resource.data.estado == 'cancelada'
+              && request.resource.data.estado == 'pendiente'
+              && request.resource.data.fecha == request.time
+              && soloCambia(['estado', 'fecha', 'deporteNombre'])
+              && deporteActivo(resource.data.deporteId)
+              && esSolvente()
+              && subeUnInscrito(resource.data.deporteId)
+            )
+          )
+        );
+
+      allow delete: if isAdmin();
+    }
+    
     match /transacciones/{id} {
       allow read: if isAdmin()
         || (activo() && resource.data.usuarioUid == request.auth.uid);

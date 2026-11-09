@@ -37,7 +37,7 @@ firebase.cmd emulators:exec --only firestore --project demo-saman "npm --prefix 
 ## Qué cubre
 
 - Sin sesión: `usuarios` denegado; deportes, entrenadores y canchas activos permitidos; reseñas visibles permitidas; inactivos y listados sin filtro denegados.
-- Estudiante: lee solo su usuario; edita nombre y teléfono; no cambia `rol`, `estado` ni `solvente`; el registro solo acepta `rol == estudiante`; crea reseñas con su `autorUid`; no verifica pagos; lee sus notificaciones y solo cambia `leida`.
+- Estudiante: lee solo su usuario; edita nombre y teléfono; no cambia `rol`, `estado` ni `solvente`; el registro solo acepta `rol == estudiante`; crea reseñas con su `autorUid`; no verifica pagos; lee sus notificaciones y solo cambia `leida`. Solo se inscribe si está solvente, el deporte está activo y la misma escritura mueve `inscritos` en ±1. Lee asistencia solo con inscripción pendiente o confirmada.
 - Usuario inactivo: puede leer su propio `usuarios/{uid}` para que el login vea `estado`. Cualquier otra lectura privada queda denegada.
 - Entrenador: actualiza solo `descripcion` de su deporte; no toca el deporte de otro ni `cupos` o `entrenadorUid`; guarda asistencia de su disciplina; lee reservas activas por cancha; crea su ticket y no lo responde.
 - Admin: cambia `estado` y `solvente`, crea deportes, cambia `visible` de una reseña y, de forma temporal, actualiza pagos.

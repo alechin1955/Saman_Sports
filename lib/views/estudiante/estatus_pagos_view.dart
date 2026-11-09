@@ -1,30 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
+import 'package:saman_sports/controllers/pagos_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
+import 'package:saman_sports/core/utils/formato_fecha.dart';
+import 'package:saman_sports/core/utils/formato_monto.dart';
 import 'package:saman_sports/models/estudiante.dart';
+import 'package:saman_sports/models/pago.dart';
 import 'package:saman_sports/views/estudiante/opciones_estudiante.dart';
 import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
+import 'package:saman_sports/views/estudiante/widgets/paypal_checkout_dialog.dart';
 import 'package:saman_sports/views/home/widgets/etiqueta_ejemplo.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
 
 /// Estado de la cuenta del estudiante y de sus pagos (RF-06 y RF-15).
-/// La lista de pagos se conecta a la colección pagos en el Hito 3.
+/// Muestra el período que abrió el administrador, permite pagarlo con
+/// PayPal (simulado) y lista los pagos con su estado de verificación.
 class EstatusPagosView extends StatefulWidget {
   const EstatusPagosView({
     super.key,
     required this.auth,
     required this.controller,
+    required this.pagos,
   });
 
   final AuthController auth;
   final EstudianteController controller;
+  final PagosController pagos;
 
   @override
   State<EstatusPagosView> createState() => _EstatusPagosViewState();
@@ -35,7 +43,9 @@ class _EstatusPagosViewState extends State<EstatusPagosView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.controller.cargarPerfil();
+      if (!mounted) return;
+      widget.controller.cargarPerfil();
+      widget.pagos.iniciar();
     });
   }
 
@@ -76,16 +86,42 @@ class _EstatusPagosViewState extends State<EstatusPagosView> {
             },
           ),
           const SizedBox(height: AppSizes.space32),
+          Text(AppStrings.pagoDelPeriodo, style: AppTextStyles.title),
+          const SizedBox(height: AppSizes.space16),
+          ListenableBuilder(
+            listenable: widget.pagos,
+            builder: (context, _) => _PagoPeriodo(pagos: widget.pagos),
+          ),
+          const SizedBox(height: AppSizes.space32),
           Text(AppStrings.comoFuncionaInscripcion, style: AppTextStyles.title),
           const SizedBox(height: AppSizes.space16),
           const _PasosInscripcion(),
           const SizedBox(height: AppSizes.space32),
           Text(AppStrings.pagos, style: AppTextStyles.title),
           const SizedBox(height: AppSizes.space16),
-          const EstadoVacio(
-            icono: Icons.receipt_long_outlined,
-            titulo: AppStrings.sinPagos,
-            texto: AppStrings.sinPagosTexto,
+          ListenableBuilder(
+            listenable: widget.pagos,
+            builder: (context, _) {
+              if (widget.pagos.cargando) {
+                return const EtiquetaEjemplo(cargando: true);
+              }
+              if (widget.pagos.pagos.isEmpty) {
+                return const EstadoVacio(
+                  icono: Icons.receipt_long_outlined,
+                  titulo: AppStrings.sinPagos,
+                  texto: AppStrings.sinPagosTexto,
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final pago in widget.pagos.pagos) ...[
+                    _FilaPago(pago: pago),
+                    const SizedBox(height: AppSizes.space8),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -212,6 +248,167 @@ class _PasosInscripcion extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Período abierto por el administrador y el botón para pagarlo.
+class _PagoPeriodo extends StatelessWidget {
+  const _PagoPeriodo({required this.pagos});
+
+  final PagosController pagos;
+
+  @override
+  Widget build(BuildContext context) {
+    if (pagos.error != null) return MensajeError(texto: pagos.error!);
+    if (pagos.cargando) return const EtiquetaEjemplo(cargando: true);
+    if (!pagos.hayPeriodo) {
+      return Container(
+        padding: const EdgeInsets.all(AppSizes.space24),
+        decoration: _tarjeta(),
+        child: Text(AppStrings.sinPeriodoPago, style: AppTextStyles.body),
+      );
+    }
+    final config = pagos.configuracion!;
+    final pagado = pagos.pagoDelPeriodo;
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.space24),
+      decoration: _tarjeta(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSizes.space32,
+            runSpacing: AppSizes.space12,
+            children: [
+              _Dato(etiqueta: AppStrings.periodo, valor: config.periodo),
+              _Dato(
+                etiqueta: AppStrings.montoAPagar,
+                valor: montoUsd(config.monto),
+              ),
+              _Dato(
+                etiqueta: AppStrings.fechaDeCorte,
+                valor: fechaCorta(config.fechaCorte),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.space16),
+          if (pagado != null)
+            Wrap(
+              spacing: AppSizes.space12,
+              runSpacing: AppSizes.space8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _EstadoPago(pago: pagado),
+                Text(
+                  '${AppStrings.idTransaccion}: ${pagado.paypalOrderId}',
+                  style: AppTextStyles.bodySmall,
+                ),
+              ],
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: pagos.puedePagar
+                  ? () => mostrarCheckoutPaypal(context, pagos)
+                  : null,
+              icon: const Icon(Icons.account_balance_wallet_outlined),
+              label: const Text(AppStrings.pagarConPaypal),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Dato extends StatelessWidget {
+  const _Dato({required this.etiqueta, required this.valor});
+
+  final String etiqueta;
+  final String valor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          etiqueta,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Text(valor, style: AppTextStyles.subtitle),
+      ],
+    );
+  }
+}
+
+/// Un pago del historial: período, monto, fecha, ID y estado.
+class _FilaPago extends StatelessWidget {
+  const _FilaPago({required this.pago});
+
+  final Pago pago;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.space16),
+      decoration: _tarjeta(),
+      child: Wrap(
+        spacing: AppSizes.space16,
+        runSpacing: AppSizes.space8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            '${AppStrings.periodo} ${pago.periodo ?? '—'}',
+            style: AppTextStyles.label,
+          ),
+          Text(montoUsd(pago.monto), style: AppTextStyles.body),
+          Text(
+            '${AppStrings.pagadoEl} ${fechaCorta(pago.fecha)}',
+            style: AppTextStyles.bodySmall,
+          ),
+          Text(
+            pago.paypalOrderId.isEmpty
+                ? pago.idTransaccion
+                : pago.paypalOrderId,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          _EstadoPago(pago: pago),
+        ],
+      ),
+    );
+  }
+}
+
+class _EstadoPago extends StatelessWidget {
+  const _EstadoPago({required this.pago});
+
+  final Pago pago;
+
+  @override
+  Widget build(BuildContext context) {
+    final (texto, color) = switch (pago.estado) {
+      EstadoPago.realizado when pago.verificado => (
+        AppStrings.pagoVerificado,
+        AppColors.success,
+      ),
+      EstadoPago.rechazado => (AppStrings.pagoRechazado, AppColors.error),
+      _ => (AppStrings.pagoPendienteVerificacion, AppColors.primary),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.space12,
+        vertical: AppSizes.space4,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSizes.radius),
+      ),
+      child: Text(texto, style: AppTextStyles.label.copyWith(color: color)),
     );
   }
 }

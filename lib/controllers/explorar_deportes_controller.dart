@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
-import 'package:saman_sports/core/constants/datos_ejemplo.dart';
 import 'package:saman_sports/models/deporte.dart';
 
 /// Origen de los deportes en vivo (por defecto, FirebaseServices.streamDeportes).
@@ -17,14 +16,22 @@ class ExplorarDeportesController extends ChangeNotifier {
   ExplorarDeportesController({OrigenDeportes? origen})
     : _origen = origen ?? FirebaseServices.streamDeportes;
 
-  /// Días que se pueden filtrar (tal como aparecen en el horario).
-  static const List<String> dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  /// Días que se pueden filtrar. La posición + 1 es el número de día que
+  /// guarda el administrador en `horarios` (1 = lunes … 7 = domingo).
+  static const List<String> dias = [
+    'Lun',
+    'Mar',
+    'Mié',
+    'Jue',
+    'Vie',
+    'Sáb',
+    'Dom',
+  ];
 
   final OrigenDeportes _origen;
 
   List<Deporte> deportes = [];
   bool cargando = true;
-  bool usandoEjemplo = false;
   String? error;
 
   String busqueda = '';
@@ -50,41 +57,54 @@ class ExplorarDeportesController extends ChangeNotifier {
     });
 
     try {
-      _sub = _origen().listen(_recibir, onError: (_) => _recibir(const []));
+      _sub = _origen().listen(_recibir, onError: (_) => _fallar());
     } catch (_) {
-      _recibir(const []);
+      _fallar();
     }
   }
 
+  /// Solo se muestran los deportes que publicó el administrador.
+  /// Si todavía no hay ninguno, la lista queda vacía (sin datos inventados).
   void _recibir(List<Map<String, dynamic>> lista) {
     _espera?.cancel();
-    if (lista.isEmpty) {
-      // Igual que el Home: si la colección está vacía se muestran ejemplos.
-      deportes = DatosEjemplo.deportes;
-      usandoEjemplo = true;
-    } else {
-      deportes = lista.map(Deporte.fromMap).toList();
-      usandoEjemplo = false;
-    }
+    deportes = lista.map(Deporte.fromMap).toList();
     cargando = false;
     error = null;
     notifyListeners();
   }
 
+  void _fallar() {
+    _espera?.cancel();
+    cargando = false;
+    error = AppStrings.errorConexion;
+    notifyListeners();
+  }
+
+  /// true cuando el administrador todavía no ha publicado disciplinas.
+  bool get sinPublicar => !cargando && error == null && deportes.isEmpty;
+
   /// Deportes que cumplen la búsqueda y los filtros activos.
   List<Deporte> get deportesFiltrados {
     final texto = _normalizar(busqueda.trim());
-    final diaElegido = dia == null ? null : _normalizar(dia!);
     return deportes.where((d) {
       final coincideTexto =
           texto.isEmpty ||
           _normalizar('${d.nombre} ${d.entrenadorNombre} ${d.descripcion}')
               .contains(texto);
       final hayCupo = !soloConCupos || d.estadoCupos != EstadoCupos.completo;
-      final coincideDia =
-          diaElegido == null || _normalizar(d.horario).contains(diaElegido);
+      final coincideDia = dia == null || tieneClaseEl(d, dia!);
       return coincideTexto && hayCupo && coincideDia;
     }).toList();
+  }
+
+  /// El deporte tiene clase ese día. Usa las franjas del administrador
+  /// (`horarios`); si un deporte viejo no las tiene, revisa el texto.
+  static bool tieneClaseEl(Deporte deporte, String dia) {
+    final numero = dias.indexOf(dia) + 1;
+    if (deporte.horarios.isNotEmpty) {
+      return deporte.horarios.any((franja) => franja.dia == numero);
+    }
+    return _normalizar(deporte.horario).contains(_normalizar(dia));
   }
 
   bool get hayFiltros =>
