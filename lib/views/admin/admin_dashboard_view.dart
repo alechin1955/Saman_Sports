@@ -63,6 +63,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         panel.pagos.iniciar();
       case SeccionAdmin.inscripciones:
         panel.inscripciones.iniciar();
+        panel.estudiantes.iniciar();
       case SeccionAdmin.eventos:
         panel.eventos.iniciar();
       case SeccionAdmin.soporte:
@@ -187,6 +188,7 @@ Widget _cuerpo(SeccionAdmin seccion, AdminControladores controladores) {
     ),
     SeccionAdmin.inscripciones => InscripcionesAdminView(
       inscripciones: controladores.inscripciones,
+      estudiantes: controladores.estudiantes,
     ),
     SeccionAdmin.pagos => PagosAdminView(pagos: controladores.pagos),
     SeccionAdmin.eventos => EventosAdminView(eventos: controladores.eventos),

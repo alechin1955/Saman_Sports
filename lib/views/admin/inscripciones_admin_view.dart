@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saman_sports/controllers/admin/admin_estudiante_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_inscripcion_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
@@ -7,17 +8,26 @@ import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/inscripcion.dart';
 
 class InscripcionesAdminView extends StatelessWidget {
-  const InscripcionesAdminView({super.key, required this.inscripciones});
+  const InscripcionesAdminView({
+    super.key,
+    required this.inscripciones,
+    required this.estudiantes,
+  });
 
   final AdminInscripcionController inscripciones;
+  final AdminEstudianteController estudiantes;
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: inscripciones,
+      listenable: Listenable.merge([inscripciones, estudiantes]),
       builder: (context, _) {
         final movil = MediaQuery.sizeOf(context).width < AppSizes.mobile;
         final lista = inscripciones.inscripcionesFiltradas;
+        final nombresEstudiantes = {
+          for (final estudiante in estudiantes.estudiantes)
+            estudiante.uid: estudiante.nombreCompleto,
+        };
         final deportes = <String, String>{
           for (final item in inscripciones.inscripciones)
             item.deporteId: item.deporteNombre,
@@ -92,7 +102,10 @@ class InscripcionesAdminView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.estudianteUid, style: AppTextStyles.subtitle),
+                        Text(
+                          _nombreEstudiante(item, nombresEstudiantes),
+                          style: AppTextStyles.subtitle,
+                        ),
                         Text(item.deporteNombre),
                         Text('${_fecha(item.fecha)} · ${_estado(item.estado)}'),
                         Text(item.pagoId ?? AppStrings.adminSinDato),
@@ -117,7 +130,9 @@ class InscripcionesAdminView extends StatelessWidget {
                     for (final item in lista)
                       DataRow(
                         cells: [
-                          DataCell(Text(item.estudianteUid)),
+                          DataCell(
+                            Text(_nombreEstudiante(item, nombresEstudiantes)),
+                          ),
                           DataCell(Text(item.deporteNombre)),
                           DataCell(Text(_fecha(item.fecha))),
                           DataCell(Text(_estado(item.estado))),
@@ -135,6 +150,11 @@ class InscripcionesAdminView extends StatelessWidget {
       },
     );
   }
+}
+
+String _nombreEstudiante(Inscripcion inscripcion, Map<String, String> nombres) {
+  final nombre = nombres[inscripcion.estudianteUid]?.trim();
+  return nombre == null || nombre.isEmpty ? inscripcion.estudianteUid : nombre;
 }
 
 class _Acciones extends StatelessWidget {

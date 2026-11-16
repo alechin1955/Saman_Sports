@@ -41,6 +41,7 @@ dependencies:
   google_fonts: 8.2.1
   cloud_firestore: ^7.0.0
   web: ^1.1.1
+  flutter_paypal_payment_plus: ^1.1.0
 
 dev_dependencies:
   flutter_test:
