@@ -6,7 +6,7 @@ import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/core/utils/formato_monto.dart';
 
-/// Abre la ventana de pago con PayPal (simulado, RF-15).
+/// Abre la ventana de pago con PayPal (Sandbox, RF-15).
 Future<void> mostrarCheckoutPaypal(
   BuildContext context,
   PagosController pagos,
@@ -20,8 +20,8 @@ Future<void> mostrarCheckoutPaypal(
 
 enum _Fase { resumen, procesando, listo, error }
 
-/// Simula el recorrido de PayPal en tres momentos: resumen del cobro,
-/// conexión con PayPal y comprobante con el ID de transacción.
+/// Gestiona el recorrido de PayPal en tres momentos: resumen del cobro,
+/// conexión con PayPal (WebView Sandbox) y comprobante con el ID de transacción.
 class _CheckoutPaypal extends StatefulWidget {
   const _CheckoutPaypal({required this.pagos});
 
@@ -39,7 +39,7 @@ class _CheckoutPaypalState extends State<_CheckoutPaypal> {
   Future<void> _pagar() async {
     setState(() => _fase = _Fase.procesando);
     try {
-      final orden = await widget.pagos.pagarConPaypal();
+      final orden = await widget.pagos.pagarConPaypal(context);
       if (!mounted) return;
       setState(() {
         _orden = orden;
@@ -47,6 +47,10 @@ class _CheckoutPaypalState extends State<_CheckoutPaypal> {
       });
     } on StateError catch (e) {
       if (!mounted) return;
+      if (e.message == 'CANCELADO_POR_USUARIO') {
+        setState(() => _fase = _Fase.resumen);
+        return;
+      }
       setState(() {
         _error = e.message;
         _fase = _Fase.error;

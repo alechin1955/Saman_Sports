@@ -1,36 +1,36 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/material.dart';
 import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/models/configuracion_pagos.dart';
 import 'package:saman_sports/models/pago.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Configuración del período (configuracion/pagos), en vivo.
-typedef OrigenConfiguracionPagos = Stream<Map<String, dynamic>?> Function();
+typedef OrigenConfiguracionPagos = Stream? Function();
 
 /// Pagos de un estudiante, en vivo.
-typedef OrigenPagos = Stream<List<Map<String, dynamic>>> Function(String uid);
+typedef OrigenPagos = Stream<List> Function(String uid);
 
 /// Guarda el pago del período con su id de orden de PayPal.
 typedef RegistrarPago =
     Future<AuthResponse> Function(double monto, String periodo, String orden);
 
-/// Controlador de "Estatus y pagos" (RF-15, PayPal simulado).
-///
-/// Observer: escucha la configuración del período que guarda el
-/// administrador y los pagos del estudiante. Simula el cobro de PayPal:
-/// genera un id de orden, espera unos segundos y registra el pago como
-/// pendiente para que el administrador lo verifique.
+/// Ejecuta el flujo de cobro en PayPal y devuelve el orderId real.
+typedef CobrarPaypal =
+    Future<String> Function(BuildContext context, double monto);
+
+/// Controlador de "Estatus y pagos" (RF-15, PayPal Sandbox).
 class PagosController extends ChangeNotifier {
   PagosController({
     String? Function()? uidActual,
     OrigenConfiguracionPagos? origenConfiguracion,
     OrigenPagos? origenPagos,
     RegistrarPago? registrar,
-    String Function()? generarOrden,
-    this.esperaPaypal = const Duration(seconds: 2),
+    CobrarPaypal? cobrarPaypal,
   }) : _uidActual = uidActual ?? (() => FirebaseServices.currentUser?.uid),
        _origenConfiguracion =
            origenConfiguracion ?? FirebaseServices.streamConfiguracionPagos,
@@ -45,16 +45,13 @@ class PagosController extends ChangeNotifier {
                  periodo: periodo,
                  paypalOrderId: orden,
                )),
-       _generarOrden = generarOrden ?? ordenSimulada;
+       _cobrarPaypal = cobrarPaypal ?? _cobroPaypalReal;
 
   final String? Function() _uidActual;
   final OrigenConfiguracionPagos _origenConfiguracion;
   final OrigenPagos _origenPagos;
   final RegistrarPago _registrar;
-  final String Function() _generarOrden;
-
-  /// Lo que tarda la "conexión" simulada con PayPal.
-  final Duration esperaPaypal;
+  final CobrarPaypal _cobrarPaypal;
 
   ConfiguracionPagos? configuracion;
   List<Pago> pagos = [];
@@ -62,13 +59,90 @@ class PagosController extends ChangeNotifier {
   bool procesando = false;
   String? error;
 
-  StreamSubscription<Map<String, dynamic>?>? _subConfig;
-  StreamSubscription<List<Map<String, dynamic>>>? _subPagos;
+  StreamSubscription? _subConfig;
+  StreamSubscription<List>? _subPagos;
   String? _uidEscuchado;
   bool _configLista = false;
   bool _pagosListos = false;
 
-  /// Id de orden con el formato de PayPal, marcado como simulado: SIM-XXXXXXXXXX.
+  /// Flujo real con Firebase Cloud Functions + navegador externo (url_launcher).
+  static Future<String> _cobroPaypalReal(
+    BuildContext context,
+    double monto,
+  ) async {
+    final functions = FirebaseFunctions.instance;
+
+    // 1. Crear la orden en Firebase Functions
+    final createCallable = functions.httpsCallable('createPaypalOrder');
+    final createRes = await createCallable
+        .call({
+          'amount': monto.toStringAsFixed(2),
+          'currency': 'USD',
+        })
+        .timeout(const Duration(seconds: 20));
+
+    final String orderId = createRes.data['orderId'] as String;
+    final String approvalUrl = createRes.data['approvalUrl'] as String;
+
+    // 2. Abrir PayPal Sandbox en una nueva pestaña / navegador externo
+    final uri = Uri.parse(approvalUrl);
+    final lanzado = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!lanzado) {
+      throw StateError('No se pudo abrir la ventana de PayPal.');
+    }
+
+    if (!context.mounted) {
+      throw StateError('Operación cancelada.');
+    }
+
+    // 3. Esperar a que el usuario apruebe en la pestaña de PayPal y vuelva a la app
+    final confirmo = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Completar pago en PayPal'),
+        content: const Text(
+          'Se abrió PayPal en una nueva ventana.\n\n'
+          '1. Inicia sesión con tu cuenta Sandbox y aprueba el pago.\n'
+          '2. Regresa aquí y presiona "Ya aprobé el pago".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Ya aprobé el pago'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmo != true) {
+      throw StateError('CANCELADO_POR_USUARIO');
+    }
+
+    // 4. Capturar el cobro en Firebase Functions usando el orderId creado arriba
+    final captureCallable = functions.httpsCallable('capturePaypalOrder');
+    final captureRes = await captureCallable
+        .call({'orderId': orderId})
+        .timeout(const Duration(seconds: 20));
+
+    if (captureRes.data['success'] != true) {
+      throw StateError(
+        'PayPal aún no reporta el pago como aprobado. Intenta de nuevo.',
+      );
+    }
+
+    return orderId;
+  }
+
+  /// Id de orden simulado (conservado por compatibilidad con tests).
   static String ordenSimulada() {
     const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final azar = Random.secure();
@@ -100,13 +174,17 @@ class PagosController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      _subConfig = _origenConfiguracion().listen((datos) {
-        configuracion = datos == null ? null : ConfiguracionPagos.fromMap(datos);
+      _subConfig = _origenConfiguracion()?.listen((datos) {
+        configuracion = datos == null
+            ? null
+            : ConfiguracionPagos.fromMap(Map<String, dynamic>.from(datos as Map));
         _configLista = true;
         _actualizar();
       }, onError: (_) => _fallar());
       _subPagos = _origenPagos(uid).listen((lista) {
-        pagos = lista.map(Pago.fromMap).toList()
+        pagos = lista
+            .map<Pago>((item) => Pago.fromMap(Map<String, dynamic>.from(item as Map)))
+            .toList()
           ..sort((a, b) => b.fecha.compareTo(a.fecha));
         _pagosListos = true;
         _actualizar();
@@ -148,9 +226,9 @@ class PagosController extends ChangeNotifier {
 
   bool get puedePagar => hayPeriodo && pagoDelPeriodo == null && !procesando;
 
-  /// Simula el pago con PayPal. Devuelve el id de la orden si salió bien;
-  /// si falla lanza un [StateError] con el mensaje para el estudiante.
-  Future<String> pagarConPaypal() async {
+  /// Ejecuta el cobro con PayPal y registra el pago en Firestore.
+  /// Devuelve el id de la orden real de PayPal si salió bien.
+  Future<String> pagarConPaypal(BuildContext context) async {
     if (procesando) throw StateError(AppStrings.esperaUnMomento);
     if (!hayPeriodo) throw StateError(AppStrings.sinPeriodoPago);
     if (pagoDelPeriodo != null) throw StateError(AppStrings.pagoYaRegistrado);
@@ -158,19 +236,27 @@ class PagosController extends ChangeNotifier {
     procesando = true;
     notifyListeners();
     try {
-      final orden = _generarOrden();
-      await Future<void>.delayed(esperaPaypal);
+      final monto = configuracion!.monto;
+      final periodo = configuracion!.periodo;
+
+      // 1. Cobrar en PayPal (abre navegador y captura la orden)
+      final orden = await _cobrarPaypal(context, monto);
+
+      // 2. Guardar en Firestore usando tu FirebaseServices existente
       final respuesta = await _registrar(
-        configuracion!.monto,
-        configuracion!.periodo,
+        monto,
+        periodo,
         orden,
       ).timeout(const Duration(seconds: 15));
+
       if (!respuesta.isSuccess) {
         throw StateError(respuesta.errorMessage ?? AppStrings.errorInesperado);
       }
       return orden;
     } on TimeoutException {
       throw StateError(AppStrings.errorConexion);
+    } on FirebaseFunctionsException catch (e) {
+      throw StateError(e.message ?? AppStrings.errorConexion);
     } finally {
       procesando = false;
       notifyListeners();
