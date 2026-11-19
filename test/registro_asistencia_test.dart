@@ -50,7 +50,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Presente'));
+      final tabla = ancho >= RegistroAsistencia.anchoTabla + 40;
+      expect(find.text('Estudiante'), tabla ? findsOneWidget : findsNothing);
+      expect(
+        find.text('Ana Pérez (Carnet: 20261001)', findRichText: true),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('asistencia-i1-presente')));
       await tester.pumpAndSettle();
       expect(c.cambios, isTrue);
       await tester.ensureVisible(find.text('Guardar asistencia'));
@@ -61,4 +67,79 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets(
+    'Sin registrar quita la marca y bloquea guardar hasta completar',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 1100));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final repo = _Repo();
+      final c = AsistenciaController(repository: repo);
+      addTearDown(c.dispose);
+      await c.abrir('d1', DateTime.now(), [
+        for (final (id, nombre) in [('i1', 'Ana Pérez'), ('i2', 'Luis Díaz')])
+          AlumnoInscrito(
+            inscripcionId: id,
+            uid: 'u$id',
+            nombre: nombre,
+            carnet: '2026$id',
+            correo: '',
+          ),
+      ]);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: RegistroAsistencia(controller: c),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      Future<void> tocar(String clave) async {
+        await tester.tap(find.byKey(ValueKey('asistencia-$clave')));
+        await tester.pumpAndSettle();
+      }
+
+      bool puedeGuardar() => tester
+          .widget<FilledButton>(
+            find.ancestor(
+              of: find.text('Guardar asistencia'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            ),
+          )
+          .enabled;
+
+      await tocar('i1-presente');
+      expect(
+        find.text('Falta 1 estudiante por marcar para poder guardar.'),
+        findsOneWidget,
+      );
+      expect(puedeGuardar(), isFalse);
+
+      await tocar('i2-ausente');
+      expect(
+        find.text('1 presentes · 1 ausentes · 0 sin registrar'),
+        findsOneWidget,
+      );
+      expect(puedeGuardar(), isTrue);
+
+      await tocar('i2-sin');
+      expect(c.estados.containsKey('i2'), isFalse);
+      expect(
+        find.text('1 presentes · 0 ausentes · 1 sin registrar'),
+        findsOneWidget,
+      );
+      expect(puedeGuardar(), isFalse);
+
+      await tocar('i2-ausente');
+      await tester.tap(find.text('Guardar asistencia'));
+      await tester.pumpAndSettle();
+      expect(repo.datos, {
+        'i1': EstadoAsistencia.presente,
+        'i2': EstadoAsistencia.ausente,
+      });
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

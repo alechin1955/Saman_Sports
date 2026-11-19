@@ -77,14 +77,17 @@ class AsistenciaController extends ChangeNotifier {
     }
   }
 
-  void marcar(String inscripcionId, EstadoAsistencia estado) {
+  /// `null` deja al alumno sin registrar.
+  void marcar(String inscripcionId, EstadoAsistencia? estado) {
     if (cargando ||
         guardando ||
         error != null ||
         !alumnos.any((a) => a.inscripcionId == inscripcionId)) {
       return;
     }
-    estados = {...estados, inscripcionId: estado};
+    estados = estado == null
+        ? ({...estados}..remove(inscripcionId))
+        : {...estados, inscripcionId: estado};
     mensaje = null;
     _avisar();
   }

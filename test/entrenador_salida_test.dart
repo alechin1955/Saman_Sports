@@ -274,8 +274,14 @@ void main() {
       expect(nomina.seleccionId, 'd1');
       expect(selector.initialValue, 'd1');
       expect(estadoSelector.value, 'd1');
-      expect(find.text('Ana Pérez'), findsOneWidget);
-      expect(find.text('Luis Gómez'), findsNothing);
+      expect(
+        find.textContaining('Ana Pérez', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Luis Gómez', findRichText: true),
+        findsNothing,
+      );
       expect(asistencia.deporteId, 'd1');
       expect(asistencia.estados['i1'], EstadoAsistencia.presente);
       expect(tester.takeException(), isNull);
