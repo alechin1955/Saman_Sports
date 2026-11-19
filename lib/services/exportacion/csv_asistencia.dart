@@ -1,6 +1,11 @@
 import 'package:saman_sports/models/alumno_inscrito.dart';
 import 'package:saman_sports/models/asistencia.dart';
 
+/// Excel en español (Venezuela y la mayoría de Latinoamérica) separa las
+/// columnas con punto y coma y usa coma decimal; con coma como separador
+/// metía cada fila completa en la columna A.
+const separadorCsv = ';';
+
 /// Los porcentajes solo incluyen sesiones con estado explícito para el alumno.
 /// No considera sesiones previas a su inscripción ni pendientes como ausencias.
 String generarCsvAsistencia({
@@ -50,10 +55,10 @@ String generarCsvAsistencia({
       '$presentes',
       registros.isEmpty
           ? 'Sin registros'
-          : '${(100 * presentes / registros.length).toStringAsFixed(1)}%',
+          : '${(100 * presentes / registros.length).toStringAsFixed(1).replaceAll('.', ',')}%',
     ]);
   }
-  return '\uFEFF${filas.map((f) => f.map(_celdaSegura).join(',')).join('\r\n')}\r\n';
+  return '\uFEFF${filas.map((f) => f.map(_celdaSegura).join(separadorCsv)).join('\r\n')}\r\n';
 }
 
 String _celdaSegura(String valor) {
