@@ -19,7 +19,7 @@ class RegistroAsistencia extends StatelessWidget {
   final String disciplina;
 
   /// Por debajo de este ancho la tabla pasa a una fila por alumno.
-  static const double anchoTabla = 720;
+  static const double anchoTabla = 800;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -203,6 +203,7 @@ class _TablaAsistencia extends StatelessWidget {
   final AsistenciaController controller;
 
   static const double _anchoOpcion = 150;
+  static const double _anchoCarnet = 140;
 
   @override
   Widget build(BuildContext context) {
@@ -235,6 +236,7 @@ class _TablaAsistencia extends StatelessWidget {
                       ),
                     ),
                   ),
+                  _celdaCarnet(Text('Carnet', style: encabezado)),
                   Container(
                     width: _anchoOpcion * _opciones.length,
                     decoration: const BoxDecoration(
@@ -297,7 +299,18 @@ class _TablaAsistencia extends StatelessWidget {
                         ),
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: _NombreAlumno(alumno: alumno),
+                          child: Text(
+                            alumno.nombre,
+                            style: AppTextStyles.label,
+                          ),
+                        ),
+                      ),
+                    ),
+                    _celdaCarnet(
+                      Text(
+                        alumno.carnet,
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -321,6 +334,14 @@ class _TablaAsistencia extends StatelessWidget {
       ),
     );
   }
+
+  Widget _celdaCarnet(Widget child) => Container(
+    width: _anchoCarnet,
+    padding: const EdgeInsets.symmetric(horizontal: AppSizes.space16),
+    decoration: const BoxDecoration(border: Border(left: _borde)),
+    alignment: Alignment.centerLeft,
+    child: child,
+  );
 }
 
 class _ListaCompacta extends StatelessWidget {
@@ -379,19 +400,15 @@ class _NombreAlumno extends StatelessWidget {
   final AlumnoInscrito alumno;
 
   @override
-  Widget build(BuildContext context) => Text.rich(
-    TextSpan(
-      text: alumno.nombre,
-      style: AppTextStyles.label,
-      children: [
-        TextSpan(
-          text: ' (Carnet: ${alumno.carnet})',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    ),
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(alumno.nombre, style: AppTextStyles.label),
+      Text(
+        'Carnet: ${alumno.carnet}',
+        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+      ),
+    ],
   );
 }
 

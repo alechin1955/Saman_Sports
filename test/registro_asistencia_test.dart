@@ -52,8 +52,10 @@ void main() {
       await tester.pumpAndSettle();
       final tabla = ancho >= RegistroAsistencia.anchoTabla + 40;
       expect(find.text('Estudiante'), tabla ? findsOneWidget : findsNothing);
+      expect(find.text('Ana Pérez'), findsOneWidget);
+      expect(find.text('Carnet'), tabla ? findsOneWidget : findsNothing);
       expect(
-        find.text('Ana Pérez (Carnet: 20261001)', findRichText: true),
+        find.text(tabla ? '20261001' : 'Carnet: 20261001'),
         findsOneWidget,
       );
       await tester.tap(find.byKey(const ValueKey('asistencia-i1-presente')));
