@@ -19,7 +19,7 @@ class RegistroAsistencia extends StatelessWidget {
   final String disciplina;
 
   /// Por debajo de este ancho la tabla pasa a una fila por alumno.
-  static const double anchoTabla = 800;
+  static const double anchoTabla = 680;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -183,17 +183,13 @@ class RegistroAsistencia extends StatelessWidget {
   }
 }
 
-/// Las tres columnas de la tabla. `null` es «Sin registrar».
-const List<EstadoAsistencia?> _opciones = [
-  EstadoAsistencia.presente,
-  EstadoAsistencia.ausente,
-  null,
-];
+/// Columnas de la tabla. Tocar la opción ya marcada la quita y el alumno
+/// vuelve a quedar sin registrar.
+const List<EstadoAsistencia> _opciones = EstadoAsistencia.values;
 
-String _etiqueta(EstadoAsistencia? estado) => switch (estado) {
+String _etiqueta(EstadoAsistencia estado) => switch (estado) {
   EstadoAsistencia.presente => 'Presente',
   EstadoAsistencia.ausente => 'Ausente',
-  null => 'Sin registrar',
 };
 
 const _borde = BorderSide(color: AppColors.border);
@@ -421,7 +417,7 @@ class _OpcionAsistencia extends StatelessWidget {
   });
   final AsistenciaController controller;
   final AlumnoInscrito alumno;
-  final EstadoAsistencia? opcion;
+  final EstadoAsistencia opcion;
   final bool compacta;
 
   @override
@@ -434,12 +430,9 @@ class _OpcionAsistencia extends StatelessWidget {
         Icons.check_circle,
       ),
       (EstadoAsistencia.ausente, true) => (AppColors.error, Icons.cancel),
-      (null, true) => (AppColors.navy, Icons.radio_button_checked),
       _ => (AppColors.textSecondary, Icons.radio_button_unchecked),
     };
-    final fondo = seleccionada && opcion != null
-        ? color.withValues(alpha: 0.12)
-        : null;
+    final fondo = seleccionada ? color.withValues(alpha: 0.12) : null;
     final texto = Text(
       _etiqueta(opcion),
       textAlign: TextAlign.center,
@@ -466,9 +459,7 @@ class _OpcionAsistencia extends StatelessWidget {
             ],
           );
     return Semantics(
-      key: ValueKey(
-        'asistencia-${alumno.inscripcionId}-${opcion?.name ?? 'sin'}',
-      ),
+      key: ValueKey('asistencia-${alumno.inscripcionId}-${opcion.name}'),
       button: true,
       selected: seleccionada,
       label: '${alumno.nombre}: ${_etiqueta(opcion)}',
@@ -487,7 +478,10 @@ class _OpcionAsistencia extends StatelessWidget {
         child: InkWell(
           onTap: c.guardando
               ? null
-              : () => c.marcar(alumno.inscripcionId, opcion),
+              : () => c.marcar(
+                  alumno.inscripcionId,
+                  seleccionada ? null : opcion,
+                ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSizes.space8,

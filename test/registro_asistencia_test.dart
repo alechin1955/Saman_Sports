@@ -52,6 +52,7 @@ void main() {
       await tester.pumpAndSettle();
       final tabla = ancho >= RegistroAsistencia.anchoTabla + 40;
       expect(find.text('Estudiante'), tabla ? findsOneWidget : findsNothing);
+      expect(find.text('Sin registrar'), findsNothing);
       expect(find.text('Ana Pérez'), findsOneWidget);
       expect(find.text('Carnet'), tabla ? findsOneWidget : findsNothing);
       expect(
@@ -71,7 +72,7 @@ void main() {
   }
 
   testWidgets(
-    'Sin registrar quita la marca y bloquea guardar hasta completar',
+    'tocar la opción marcada la quita y bloquea guardar hasta completar',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1440, 1100));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -126,7 +127,7 @@ void main() {
       );
       expect(puedeGuardar(), isTrue);
 
-      await tocar('i2-sin');
+      await tocar('i2-ausente');
       expect(c.estados.containsKey('i2'), isFalse);
       expect(
         find.text('1 presentes · 0 ausentes · 1 sin registrar'),

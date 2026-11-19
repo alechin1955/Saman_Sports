@@ -175,7 +175,7 @@ void main() {
     await tester.tap(find.text('Continuar editando'));
     await tester.pumpAndSettle();
     expect(asistencia.cambios, isTrue);
-    expect(find.text('Asistencia'), findsOneWidget);
+    expect(find.text('Registro de asistencia'), findsOneWidget);
     navigator.currentState!.maybePop();
     await tester.pumpAndSettle();
     await tester.tap(find.text('Descartar y salir'));
