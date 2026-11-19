@@ -84,25 +84,29 @@ class _EstudiantesAdminViewState extends State<EstudiantesAdminView> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
+                  columnSpacing: AppSizes.space12,
+                  horizontalMargin: AppSizes.space12,
                   dataRowMinHeight: 64,
                   dataRowMaxHeight: 72,
                   columns: [
-                    DataColumn(label: Text(AppStrings.nombre)),
-                    DataColumn(label: Text(AppStrings.adminCarnet)),
-                    DataColumn(label: Text(AppStrings.correoInstitucional)),
-                    DataColumn(label: Text(AppStrings.telefono)),
-                    DataColumn(label: Text(AppStrings.solvente)),
-                    DataColumn(label: Text(AppStrings.adminEstado)),
-                    DataColumn(label: Text(AppStrings.editar)),
+                    DataColumn(label: _columna(AppStrings.nombre, 140)),
+                    DataColumn(label: _columna(AppStrings.adminCarnet, 88)),
+                    DataColumn(
+                      label: _columna(AppStrings.correoInstitucional, 160),
+                    ),
+                    DataColumn(label: _columna(AppStrings.telefono, 108)),
+                    DataColumn(label: _columna(AppStrings.solvente, 72)),
+                    DataColumn(label: _columna(AppStrings.adminEstado, 72)),
+                    DataColumn(label: _columna(AppStrings.editar, 168)),
                   ],
                   rows: [
                     for (final item in lista)
                       DataRow(
                         cells: [
-                          DataCell(Text(item.nombreCompleto)),
-                          DataCell(Text(item.carnet)),
-                          DataCell(Text(item.correo)),
-                          DataCell(Text(item.telefono)),
+                          DataCell(_columna(item.nombreCompleto, 140)),
+                          DataCell(_columna(item.carnet, 88)),
+                          DataCell(_columna(item.correo, 160)),
+                          DataCell(_columna(item.telefono, 108)),
                           DataCell(_Solvencia(solvente: item.solvente)),
                           DataCell(Text(_activo(item.activo))),
                           DataCell(
@@ -176,6 +180,13 @@ class _EstudiantesAdminViewState extends State<EstudiantesAdminView> {
     );
     if (ok == true) await widget.estudiantes.cambiarEstado(item, !item.activo);
   }
+}
+
+Widget _columna(String texto, double ancho) {
+  return SizedBox(
+    width: ancho,
+    child: Text(texto, overflow: TextOverflow.ellipsis),
+  );
 }
 
 class _Tarjeta extends StatelessWidget {

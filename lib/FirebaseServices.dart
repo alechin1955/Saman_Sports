@@ -8,6 +8,7 @@ import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/core/utils/solicitud_evento_entrenador.dart';
 import 'package:saman_sports/core/utils/ticket_soporte_entrenador.dart';
+import 'package:saman_sports/core/utils/ticket_soporte_estudiante.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 
@@ -149,32 +150,30 @@ class FirebaseServices {
     }
   }
 
-  /// Devuelve el rol guardado en usuarios/{uid}
-  /// ('estudiante', 'entrenador' o 'administrador'), o null si no hay rol.
-  static Future<String?> getUserRole({required String uid}) async {
-    final data = await getUserData(uid: uid);
-    final rol = data?['rol'];
-    return rol is String ? rol : null;
+  static Future<({bool error, bool existe, String? rol, String estado})>
+  consultarRol({required String uid}) async {
+    try {
+      final doc = await _db.collection(usuariosCollection).doc(uid).get();
+      if (!doc.exists) {
+        return (error: false, existe: false, rol: null, estado: 'activo');
+      }
+      final datos = doc.data();
+      final rol = datos?['rol'];
+      final estado = datos?['estado'];
+      return (
+        error: false,
+        existe: true,
+        rol: rol is String ? rol : null,
+        estado: estado is String && estado.isNotEmpty ? estado : 'activo',
+      );
+    } catch (_) {
+      return (error: true, existe: false, rol: null, estado: 'activo');
+    }
   }
 
   /// Borra la cuenta recién creada en Auth. Se usa en el registro si la cuenta
   /// se creó pero no se pudieron guardar sus datos en Firestore, para no dejar
   /// cuentas a medias.
-  static Future<({bool error, bool existe, String? rol})> consultarRol({
-    required String uid,
-  }) async {
-    try {
-      final doc = await _db.collection(usuariosCollection).doc(uid).get();
-      if (!doc.exists) {
-        return (error: false, existe: false, rol: null);
-      }
-      final rol = doc.data()?['rol'];
-      return (error: false, existe: true, rol: rol is String ? rol : null);
-    } catch (_) {
-      return (error: true, existe: false, rol: null);
-    }
-  }
-
   static Future<void> deleteCurrentUser() async {
     try {
       await _auth.currentUser?.delete();
@@ -232,30 +231,43 @@ class FirebaseServices {
 
   static Stream<List<Map<String, dynamic>>> streamDeportes() {
     return _streamConsulta(
-      _db
-          .collection(deportesCollection)
-          .where('activo', isEqualTo: true)
-          .orderBy('nombre'),
-    );
+      _db.collection(deportesCollection).where('activo', isEqualTo: true),
+    ).map((lista) => _ordenarPorTexto(lista, 'nombre'));
   }
 
   static Stream<List<Map<String, dynamic>>> streamEntrenadores() {
     return _streamConsulta(
-      _db
-          .collection(entrenadoresCollection)
-          .where('activo', isEqualTo: true)
-          .orderBy('nombre'),
-    );
+      _db.collection(entrenadoresCollection).where('activo', isEqualTo: true),
+    ).map((lista) => _ordenarPorTexto(lista, 'nombre'));
   }
 
   static Stream<List<Map<String, dynamic>>> streamResenas({int limite = 6}) {
     return _streamConsulta(
-      _db
-          .collection(resenasCollection)
-          .where('visible', isEqualTo: true)
-          .orderBy('fecha', descending: true)
-          .limit(limite),
-    );
+      _db.collection(resenasCollection).where('visible', isEqualTo: true),
+    ).map((lista) {
+      final ordenada = [...lista]
+        ..sort((a, b) => _milis(b['fecha']).compareTo(_milis(a['fecha'])));
+      return ordenada.take(limite).toList();
+    });
+  }
+
+  static List<Map<String, dynamic>> _ordenarPorTexto(
+    List<Map<String, dynamic>> lista,
+    String campo,
+  ) {
+    return [...lista]
+      ..sort((a, b) => '${a[campo] ?? ''}'
+          .toLowerCase()
+          .compareTo('${b[campo] ?? ''}'.toLowerCase()));
+  }
+
+  static int _milis(dynamic valor) {
+    if (valor is Timestamp) return valor.millisecondsSinceEpoch;
+    if (valor is DateTime) return valor.millisecondsSinceEpoch;
+    if (valor is String) {
+      return DateTime.tryParse(valor)?.millisecondsSinceEpoch ?? 0;
+    }
+    return 0;
   }
 
   static Stream<List<Map<String, dynamic>>> _streamConsulta(
@@ -291,6 +303,30 @@ class FirebaseServices {
       return snapshot.docs
           .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
           .toList();
+    });
+  }
+
+  /// Avisos del usuario actual. Sin orderBy: el controlador ordena en Dart.
+  static Stream<List<Map<String, dynamic>>> streamNotificacionesEntrenador(
+    String uid,
+  ) {
+    return _streamConsultaEntrenador(
+      _db
+          .collection(notificacionesCollection)
+          .where('destinatarioUid', isEqualTo: uid),
+    );
+  }
+
+  static Future<AuthResponse> marcarNotificacionLeida({required String id}) {
+    return _ejecutarAdmin(() async {
+      final uid = _auth.currentUser?.uid ?? '';
+      final ref = _db.collection(notificacionesCollection).doc(id);
+      final doc = await ref.get();
+      if (!doc.exists) throw StateError('La notificación no existe.');
+      if ('${doc.data()?['destinatarioUid'] ?? ''}' != uid) {
+        throw StateError('No puedes marcar esta notificación.');
+      }
+      await ref.update({'leida': true});
     });
   }
 
@@ -726,6 +762,280 @@ class FirebaseServices {
       );
     }
   }
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: inscripciones)
+  // ---------------------------------------------------------------------------
+
+  /// Inscripciones del estudiante, en vivo. Sin orderBy para no necesitar
+  /// un índice compuesto: el controlador las ordena por fecha.
+  /// La usa InscripcionesController.
+  static Stream<List<Map<String, dynamic>>> streamMisInscripciones({
+    required String estudianteUid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(inscripcionesCollection)
+          .where('estudianteUid', isEqualTo: estudianteUid),
+    );
+  }
+
+  /// Inscribe al estudiante con sesión abierta en un deporte (RF-04).
+  ///
+  /// En una transacción: revisa que la cuenta esté activa, que el deporte
+  /// esté activo y tenga cupo, que no esté ya inscrito, suma 1 a
+  /// `inscritos` y deja la inscripción en 'pendiente'. El id es
+  /// `{uid}_{deporteId}` para que no se pueda inscribir dos veces.
+  static Future<AuthResponse> inscribirseEnDeporte({
+    required String deporteId,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      final usuario = await _db.collection(usuariosCollection).doc(uid).get();
+      if (usuario.data()?['estado'] == 'inactivo') {
+        throw StateError(AppStrings.inscripcionCuentaInactiva);
+      }
+      final usuarioRef = _db.collection(usuariosCollection).doc(uid);
+      final deporteRef = _db.collection(deportesCollection).doc(deporteId);
+      final inscripcionRef = _db
+          .collection(inscripcionesCollection)
+          .doc('${uid}_$deporteId');
+      await _db.runTransaction((tx) async {
+        final usuarioTx = await tx.get(usuarioRef);
+        final deporte = await tx.get(deporteRef);
+        final inscripcion = await tx.get(inscripcionRef);
+        if (usuarioTx.data()?['solvente'] != true) {
+          throw StateError(AppStrings.debesEstarSolvente);
+        }
+        final datos = deporte.data();
+        if (!deporte.exists || datos == null || datos['activo'] == false) {
+          throw StateError(AppStrings.inscripcionDeporteNoDisponible);
+        }
+        final estadoActual = inscripcion.data()?['estado'];
+        if (inscripcion.exists && estadoActual != 'cancelada') {
+          throw StateError(AppStrings.inscripcionYaExiste);
+        }
+        final cupos = _enteroAdmin(datos['cupos']);
+        final inscritos = _enteroAdmin(datos['inscritos']);
+        if (inscritos >= cupos) {
+          throw StateError(AppStrings.inscripcionSinCupos);
+        }
+        tx.update(deporteRef, {'inscritos': inscritos + 1});
+        tx.set(inscripcionRef, {
+          'estudianteUid': uid,
+          'deporteId': deporteId,
+          'deporteNombre': '${datos['nombre'] ?? ''}',
+          'estado': 'pendiente',
+          'fecha': FieldValue.serverTimestamp(),
+        });
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Cancela una inscripción del estudiante con sesión abierta (RF-05).
+  /// En una transacción la marca 'cancelada' y libera el cupo (inscritos - 1).
+  static Future<AuthResponse> cancelarInscripcion({
+    required String inscripcionId,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      final inscripcionRef = _db
+          .collection(inscripcionesCollection)
+          .doc(inscripcionId);
+      await _db.runTransaction((tx) async {
+        final inscripcion = await tx.get(inscripcionRef);
+        final datos = inscripcion.data();
+        if (!inscripcion.exists ||
+            datos == null ||
+            datos['estudianteUid'] != uid) {
+          throw StateError(AppStrings.inscripcionNoEncontrada);
+        }
+        if (datos['estado'] == 'cancelada') {
+          throw StateError(AppStrings.inscripcionYaCancelada);
+        }
+        final deporteRef = _db
+            .collection(deportesCollection)
+            .doc('${datos['deporteId'] ?? ''}');
+        final deporte = await tx.get(deporteRef);
+        if (deporte.exists) {
+          final inscritos = _enteroAdmin(deporte.data()?['inscritos']);
+          if (inscritos > 0) {
+            tx.update(deporteRef, {'inscritos': inscritos - 1});
+          }
+        }
+        tx.update(inscripcionRef, {'estado': 'cancelada'});
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+  
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: pagos)
+  // ---------------------------------------------------------------------------
+
+  /// Pagos del estudiante, en vivo. Sin orderBy para no necesitar un
+  /// índice compuesto: PagosController los ordena por fecha.
+  static Stream<List<Map<String, dynamic>>> streamMisPagos({
+    required String estudianteUid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(pagosCollection)
+          .where('estudianteUid', isEqualTo: estudianteUid),
+    );
+  }
+
+  /// Registra el pago del período hecho con PayPal (simulado, RF-15).
+  ///
+  /// Queda 'pendiente' y sin verificar: el administrador lo verifica desde
+  /// su panel con el `paypalOrderId`. El estudiante nunca escribe
+  /// `verificado`, `verificadoPor` ni `fechaPago`.
+  static Future<AuthResponse> registrarPagoEstudiante({
+    required double monto,
+    required String periodo,
+    required String paypalOrderId,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      await _db.collection(pagosCollection).add({
+        'estudianteUid': uid,
+        'inscripcionId': '',
+        'monto': monto,
+        'periodo': periodo,
+        'paypalOrderId': paypalOrderId,
+        'idTransaccion': paypalOrderId,
+        'estado': 'pendiente',
+        'verificado': false,
+        'fecha': FieldValue.serverTimestamp(),
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: recordatorios)
+  // ---------------------------------------------------------------------------
+
+  /// Avisos del estudiante (pago pendiente, eventos de sus disciplinas), en
+  /// vivo. Para marcarlos como leídos se usa marcarNotificacionLeida.
+  static Stream<List<Map<String, dynamic>>> streamMisNotificaciones({
+    required String uid,
+  }) {
+    return _streamConsulta(
+      _db
+          .collection(notificacionesCollection)
+          .where('destinatarioUid', isEqualTo: uid),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Funciones agregadas por Gonzalo (panel del estudiante: soporte)
+  // ---------------------------------------------------------------------------
+
+  /// Tickets que creó el estudiante, en vivo, con la respuesta del admin.
+  static Stream<List<Map<String, dynamic>>> streamMisTickets({
+    required String uid,
+  }) {
+    return _streamConsulta(
+      _db.collection(ticketsCollection).where('autorUid', isEqualTo: uid),
+    );
+  }
+
+  /// Crea un ticket abierto del estudiante con la sesión actual. El nombre
+  /// y el rol salen de su perfil, no de lo que escribe en el formulario.
+  static Future<AuthResponse> crearTicketEstudiante({
+    required String categoria,
+    required String asunto,
+    required String descripcion,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      return AuthResponse(
+        errorMessage: AppStrings.sesionNoIniciada,
+        isSuccess: false,
+      );
+    }
+    try {
+      final perfil = await getUserData(uid: uid);
+      await _db
+          .collection(ticketsCollection)
+          .add(
+            construirTicketEstudiante(
+              estudianteUid: uid,
+              perfil: perfil,
+              categoria: categoria,
+              asunto: asunto,
+              descripcion: descripcion,
+              fechaServidor: FieldValue.serverTimestamp(),
+            ),
+          );
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
 
   // ===== ADMINISTRADOR (Andrés): canchas, reservas y deportes =====
 
@@ -798,7 +1108,7 @@ class FirebaseServices {
     });
   }
 
-  /// Requiere índice compuesto canchaId + activa + dia + horaInicio.
+  /// Sin orderBy para no exigir índice compuesto; se ordena en Dart.
   static Stream<List<Map<String, dynamic>>> streamReservasCancha(
     String canchaId,
   ) {
@@ -806,49 +1116,15 @@ class FirebaseServices {
       _db
           .collection(reservasCollection)
           .where('canchaId', isEqualTo: canchaId)
-          .where('activa', isEqualTo: true)
-          .orderBy('dia')
-          .orderBy('horaInicio'),
-    );
-  }
-
-  static Future<Map<String, dynamic>?> hayChoqueHorario({
-    required String canchaId,
-    required List<Map<String, dynamic>> franjas,
-    String? fecha,
-    String? ignorarRefId,
-  }) async {
-    final snapshot = await _db
-        .collection(reservasCollection)
-        .where('canchaId', isEqualTo: canchaId)
-        .where('activa', isEqualTo: true)
-        .get();
-    final existentes = snapshot.docs
-        .map((doc) => ReservaHorario.fromMap(doc.id, doc.data()))
-        .toList();
-    final nuevas = franjas.map((franja) {
-      final modelo = FranjaHorario.fromMap(franja);
-      return ReservaHorario(
-        id: '',
-        canchaId: canchaId,
-        canchaNombre: '',
-        dia: modelo.dia,
-        horaInicio: modelo.horaInicio,
-        horaFin: modelo.horaFin,
-        fecha: fecha,
-        tipo: fecha == null ? TipoReserva.deporte : TipoReserva.evento,
-        refId: '',
-        refNombre: '',
-        activa: true,
-      );
-    }).toList();
-    final choque = buscarChoque(
-      nuevas: nuevas,
-      existentes: existentes,
-      ignorarRefId: ignorarRefId,
-    );
-    if (choque == null) return null;
-    return {'id': choque.id, ...choque.toMap()};
+          .where('activa', isEqualTo: true),
+    ).map((lista) {
+      return [...lista]..sort((a, b) {
+        final dia = _enteroAdmin(a['dia']).compareTo(_enteroAdmin(b['dia']));
+        if (dia != 0) return dia;
+        return _enteroAdmin(a['horaInicio'])
+            .compareTo(_enteroAdmin(b['horaInicio']));
+      });
+    });
   }
 
   static Stream<List<Map<String, dynamic>>> streamDeportesAdmin() {
@@ -2200,7 +2476,7 @@ class FirebaseServices {
         final usuario = await tx.get(userRef);
         if (!usuario.exists) throw StateError('El estudiante no existe.');
         final datosUsuario = usuario.data() ?? {};
-        final activo = datosUsuario['estado'] == 'activo';
+        final activo = '${datosUsuario['estado'] ?? 'activo'}' != 'inactivo';
         if (!activo) return;
         final aviso = await tx.get(avisoRef);
         var valido = false;
@@ -2571,14 +2847,18 @@ class FirebaseServices {
     }
   }
 
+  /// Suma en Dart: sum('monto') con filtro exige un índice compuesto.
   static Future<num> _sumarIngresos() async {
     try {
       final snapshot = await _db
           .collection(pagosCollection)
           .where('estado', isEqualTo: 'realizado')
-          .aggregate(sum('monto'))
           .get();
-      return snapshot.getSum('monto') ?? 0;
+      var total = 0.0;
+      for (final doc in snapshot.docs) {
+        total += _numeroAdmin(doc.data()['monto']);
+      }
+      return total;
     } catch (_) {
       return 0;
     }

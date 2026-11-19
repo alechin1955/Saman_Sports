@@ -7,6 +7,7 @@ import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/controllers/admin/admin_controladores.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/comunidad_controller.dart';
+import 'package:saman_sports/controllers/estudiante_controladores.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/controllers/home_controller.dart';
@@ -34,6 +35,7 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
   final ExplorarDeportesController _explorar = ExplorarDeportesController();
   final ComunidadController _comunidad = ComunidadController();
   final AdminControladores _admin = AdminControladores();
+    final EstudianteControladores _panelEstudiante = EstudianteControladores();
   late final Stream<Object?> _sesion = _abrirSesion();
 
   @override
@@ -44,6 +46,7 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
     _explorar.dispose();
     _comunidad.dispose();
     _admin.dispose();
+        _panelEstudiante.dispose();
     super.dispose();
   }
 
@@ -62,7 +65,14 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
           admin: _admin,
           sesion: _sesion,
         ),
-        ...AppRoutes.routes(_auth, _estudiante, _explorar, _comunidad, _admin),
+        ...AppRoutes.routes(
+          _auth,
+          _estudiante,
+          _explorar,
+          _comunidad,
+          _admin,
+          _panelEstudiante,
+        ),
       },
     );
   }

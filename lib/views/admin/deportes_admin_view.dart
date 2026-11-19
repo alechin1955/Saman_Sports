@@ -207,23 +207,30 @@ class _AccionesDeporte extends StatelessWidget {
   }
 
   Future<void> _asignar(BuildContext context) async {
-    String? uid;
+    final actual = deporte.entrenadorUid.isEmpty ? null : deporte.entrenadorUid;
+    final activos = entrenadores.entrenadoresActivos;
+    String? uid = actual;
     final elegido = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text(AppStrings.adminAsignarEntrenador),
           content: DropdownButtonFormField<String?>(
-            initialValue: null,
+            initialValue: actual,
             items: [
               DropdownMenuItem(
                 value: null,
                 child: Text(AppStrings.adminSinAsignar),
               ),
-              for (final item in entrenadores.entrenadoresActivos)
+              for (final item in activos)
                 DropdownMenuItem(
                   value: item.uid,
                   child: Text(item.nombreCompleto),
+                ),
+              if (actual != null && !activos.any((item) => item.uid == actual))
+                DropdownMenuItem(
+                  value: actual,
+                  child: Text(deporte.entrenadorNombre),
                 ),
             ],
             onChanged: (valor) => uid = valor,
@@ -241,22 +248,24 @@ class _AccionesDeporte extends StatelessWidget {
         );
       },
     );
-    if (elegido != true) return;
-    await deportes.asignarEntrenador(
-      deporte,
-      uid == null
-          ? null
-          : entrenadores.entrenadoresActivos.firstWhere(
-              (item) => item.uid == uid,
-            ),
-    );
+    if (elegido != true || uid == actual) return;
+    final nuevo = activos.where((item) => item.uid == uid).firstOrNull;
+    if (uid != null && nuevo == null) return;
+    await deportes.asignarEntrenador(deporte, nuevo);
   }
 
   Future<void> _cambiarEstado(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppStrings.adminConfirmarDesactivar),
+        title: Text(
+          deporte.activo ? 'Desactivar deporte' : 'Reactivar deporte',
+        ),
+        content: Text(
+          deporte.activo
+              ? 'El deporte dejará de mostrarse en el catálogo.'
+              : 'El deporte volverá a mostrarse en el catálogo.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

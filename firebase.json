@@ -1,1 +1,47 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"saman-sports","configurations":{"web":"1:995061509637:web:b998b439f632ee2bb9f66c"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "saman-sports",
+          "configurations": {
+            "web": "1:995061509637:web:b998b439f632ee2bb9f66c"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "nam5",
+    "rules": "firestore.rules",
+    "indexes": "n"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    }
+  },
+  "functions": [
+    {
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "source": "functions"
+    }
+  ],
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

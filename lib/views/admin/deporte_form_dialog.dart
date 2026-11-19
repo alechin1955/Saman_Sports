@@ -84,12 +84,11 @@ class _DeporteFormDialogState extends State<DeporteFormDialog> {
 
   Future<void> _guardar() async {
     final cupos = int.tryParse(_cupos.text.trim()) ?? 0;
-    final nombreEntrenador = _entrenadorUid == null
-        ? ''
-        : widget.entrenadores.entrenadoresActivos
-              .firstWhere((item) => item.uid == _entrenadorUid)
-              .nombreCompleto;
-    final error = widget.deporte == null
+    final elegido = widget.entrenadores.entrenadoresActivos
+        .where((item) => item.uid == _entrenadorUid)
+        .firstOrNull;
+    final original = widget.deporte;
+    final error = original == null
         ? await widget.deportes.crearDeporte(
             nombre: _nombre.text,
             descripcion: _descripcion.text,
@@ -97,11 +96,11 @@ class _DeporteFormDialogState extends State<DeporteFormDialog> {
             cupos: cupos,
             canchaId: _canchaId!,
             franjas: _franjas,
-            entrenadorUid: _entrenadorUid ?? '',
-            entrenadorNombre: nombreEntrenador,
+            entrenadorUid: elegido?.uid ?? '',
+            entrenadorNombre: elegido?.nombreCompleto ?? '',
           )
         : await widget.deportes.actualizarDeporte(
-            deporte: widget.deporte!,
+            deporte: original,
             nombre: _nombre.text,
             descripcion: _descripcion.text,
             icono: _icono,
@@ -110,6 +109,17 @@ class _DeporteFormDialogState extends State<DeporteFormDialog> {
             franjas: _franjas,
           );
     if (!mounted || error != null) return;
+    final cambioEntrenador =
+        original != null &&
+        (_entrenadorUid ?? '') != original.entrenadorUid &&
+        (_entrenadorUid == null || elegido != null);
+    if (cambioEntrenador) {
+      final errorAsignar = await widget.deportes.asignarEntrenador(
+        original,
+        elegido,
+      );
+      if (!mounted || errorAsignar != null) return;
+    }
     Navigator.pop(context);
   }
 
@@ -190,6 +200,16 @@ class _DeporteFormDialogState extends State<DeporteFormDialog> {
                         DropdownMenuItem(
                           value: item.uid,
                           child: Text(item.nombreCompleto),
+                        ),
+                      if (_entrenadorUid != null &&
+                          !widget.entrenadores.entrenadoresActivos.any(
+                            (item) => item.uid == _entrenadorUid,
+                          ))
+                        DropdownMenuItem(
+                          value: _entrenadorUid,
+                          child: Text(
+                            widget.deporte?.entrenadorNombre ?? _entrenadorUid!,
+                          ),
                         ),
                     ],
                     onChanged: (valor) =>
