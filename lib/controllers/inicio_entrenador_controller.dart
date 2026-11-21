@@ -6,6 +6,7 @@ import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/repositories/entrenador_repository.dart';
 import 'package:saman_sports/repositories/historial_asistencia_repository.dart';
 import 'package:saman_sports/repositories/perfil_entrenador_repository.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class AsistenciaRecienteEntrenador {
   const AsistenciaRecienteEntrenador({
@@ -115,7 +116,7 @@ class InicioEntrenadorController extends ChangeNotifier {
       asistenciasRecientes = await _cargarAsistencias(disciplinas);
     } catch (_) {
       if (!_cerrado) {
-        error = 'No se pudo cargar tu resumen. Revisa la conexión y reintenta.';
+        error = AppStrings.entResumenCarga;
       }
     } finally {
       if (!_cerrado) {
@@ -149,7 +150,7 @@ class InicioEntrenadorController extends ChangeNotifier {
       ..sort((a, b) => b.sesion.fecha.compareTo(a.sesion.fecha));
     if (fallos > 0) {
       advertenciaAsistencias =
-          'No se pudo cargar parte del historial de asistencia. Reintenta.';
+          AppStrings.entHistorialCarga;
     }
     return todas.take(5).toList(growable: false);
   }

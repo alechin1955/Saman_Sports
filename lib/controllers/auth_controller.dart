@@ -6,6 +6,7 @@ import 'package:saman_sports/controllers/datos_registro.dart';
 import 'package:saman_sports/controllers/resultado_login.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/validators.dart';
+import 'package:saman_sports/repositories/identificador_estudiante_repository.dart';
 
 class AuthController extends ChangeNotifier {
   AuthController({
@@ -14,6 +15,10 @@ class AuthController extends ChangeNotifier {
     this.salir,
     this.entrar,
     this.uidSesion,
+    this.crearPerfil,
+    this.crearCuenta,
+    this.borrarCuenta,
+    this.asegurarIdentificadores,
   });
 
   static const String cuentaDesactivada =
@@ -29,6 +34,17 @@ class AuthController extends ChangeNotifier {
   final Future<void> Function()? salir;
   final Future<String?> Function(String correo, String clave)? entrar;
   final String? Function()? uidSesion;
+  final Future<AuthResponse> Function({
+    required String uid,
+    required Map<String, dynamic> datos,
+  })?
+  crearPerfil;
+  final Future<({bool isSuccess, String? uid, String? error})> Function(
+    DatosRegistro datos,
+  )?
+  crearCuenta;
+  final Future<void> Function()? borrarCuenta;
+  final Future<void> Function(String uid)? asegurarIdentificadores;
 
   bool cargando = false;
   bool registrando = false;
@@ -78,6 +94,7 @@ class AuthController extends ChangeNotifier {
       }
       final destino = resultado.destino!;
       destinoActual = destino;
+      await _asegurarSiEstudiante(uid, destino);
       return destino;
     } catch (_) {
       error = AppStrings.errorInesperado;
@@ -101,29 +118,29 @@ class AuthController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final respuesta = await FirebaseServices.register(
-        email: datos.correo.trim(),
-        password: datos.clave,
-      );
-      final uid = respuesta.credential?.user?.uid;
-      if (!respuesta.isSuccess || uid == null) {
-        error = _traducirRegistro(respuesta.errorMessage);
+      final cuenta = crearCuenta == null
+          ? await _crearCuentaFirebase(datos)
+          : await crearCuenta!(datos);
+      final uid = cuenta.uid;
+      if (!cuenta.isSuccess || uid == null) {
+        error = _traducirRegistro(cuenta.error);
         return false;
       }
 
       final AuthResponse guardado;
       try {
-        guardado = await FirebaseServices.saveUserData(
+        final perfil = crearPerfil ?? FirebaseServices.crearPerfilEstudiante;
+        guardado = await perfil(
           uid: uid,
-          data: datos.toMap(),
+          datos: datos.toMap(),
         ).timeout(const Duration(seconds: 10));
       } on TimeoutException {
-        await FirebaseServices.deleteCurrentUser();
+        await _borrarCuenta();
         error = AppStrings.errorConexion;
         return false;
       }
       if (!guardado.isSuccess) {
-        await FirebaseServices.deleteCurrentUser();
+        await _borrarCuenta();
         error = guardado.errorMessage ?? AppStrings.errorInesperado;
         return false;
       }
@@ -136,6 +153,28 @@ class AuthController extends ChangeNotifier {
       registrando = false;
       cargando = false;
       notifyListeners();
+    }
+  }
+
+  Future<({bool isSuccess, String? uid, String? error})> _crearCuentaFirebase(
+    DatosRegistro datos,
+  ) async {
+    final respuesta = await FirebaseServices.register(
+      email: datos.correo.trim(),
+      password: datos.clave,
+    );
+    return (
+      isSuccess: respuesta.isSuccess,
+      uid: respuesta.credential?.user?.uid,
+      error: respuesta.errorMessage,
+    );
+  }
+
+  Future<void> _borrarCuenta() async {
+    if (borrarCuenta == null) {
+      await FirebaseServices.deleteCurrentUser();
+    } else {
+      await borrarCuenta!();
     }
   }
 
@@ -213,7 +252,20 @@ class AuthController extends ChangeNotifier {
     }
     final resultado = await _consultarRol(uid);
     destinoActual = resultado.destino;
+    await _asegurarSiEstudiante(uid, resultado.destino);
     return resultado;
+  }
+
+  Future<void> _asegurarSiEstudiante(String uid, DestinoLogin? destino) async {
+    if (destino != DestinoLogin.estudiante) return;
+    try {
+      final accion =
+          asegurarIdentificadores ??
+          FirebaseIdentificadorEstudianteAdapter().asegurar;
+      await accion(uid);
+    } catch (_) {
+      // El índice no puede impedir entrar.
+    }
   }
 
   void reiniciarEstado() {

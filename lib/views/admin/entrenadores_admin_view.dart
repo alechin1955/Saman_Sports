@@ -6,6 +6,7 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/models/entrenador_admin.dart';
 import 'package:saman_sports/views/admin/entrenador_form_dialog.dart';
+import 'package:saman_sports/views/admin/widgets/tabla_desplazable.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
 import 'package:saman_sports/views/widgets/campo_texto.dart';
 
@@ -70,8 +71,7 @@ class EntrenadoresAdminView extends StatelessWidget {
                   trailing: _Acciones(item: item, entrenadores: entrenadores),
                 )
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              TablaDesplazable(
                 child: DataTable(
                   columnSpacing: AppSizes.space12,
                   horizontalMargin: AppSizes.space12,

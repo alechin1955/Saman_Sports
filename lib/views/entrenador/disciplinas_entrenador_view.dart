@@ -11,6 +11,7 @@ import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class DisciplinasEntrenadorView extends StatefulWidget {
   const DisciplinasEntrenadorView({
@@ -52,9 +53,9 @@ class _DisciplinasEntrenadorViewState extends State<DisciplinasEntrenadorView> {
       auth: widget.auth,
       opciones: OpcionesEntrenador.menu,
       rutaActiva: AppRoutes.entrenadorDisciplinas,
-      subtituloPanel: 'Panel del entrenador',
-      titulo: 'Disciplinas',
-      descripcion: 'Consulta tus equipos, horarios, cupos y canchas.',
+      subtituloPanel: AppStrings.entPanel,
+      titulo: AppStrings.disciplinas,
+      descripcion: AppStrings.entDisciplinasDescripcion,
       child: ListenableBuilder(
         listenable: controller,
         builder: (context, _) {
@@ -68,7 +69,7 @@ class _DisciplinasEntrenadorViewState extends State<DisciplinasEntrenadorView> {
                 MensajeError(texto: controller.error!),
                 const SizedBox(height: AppSizes.space16),
                 BotonSecundario(
-                  texto: 'Reintentar',
+                  texto: AppStrings.reintentar,
                   onPressed: () =>
                       controller.cargar(cargarNominaInicial: false),
                 ),
@@ -78,8 +79,8 @@ class _DisciplinasEntrenadorViewState extends State<DisciplinasEntrenadorView> {
           if (controller.disciplinas.isEmpty) {
             return const EstadoVacio(
               icono: Icons.sports_outlined,
-              titulo: 'No tienes disciplinas asignadas',
-              texto: 'Cuando la coordinación te asigne una disciplina activa, aparecerá aquí.',
+              titulo: AppStrings.entSinDisciplinas,
+              texto: AppStrings.entSinDisciplinasTexto,
             );
           }
           return LayoutBuilder(
@@ -140,7 +141,9 @@ class _DisciplinaCard extends StatelessWidget {
                 ),
               ),
               Chip(
-                label: Text(disciplina.activo ? 'Activa' : 'Inactiva'),
+                label: Text(
+                  disciplina.activo ? AppStrings.entActiva : AppStrings.entInactiva,
+                ),
                 side: BorderSide.none,
                 backgroundColor:
                     (disciplina.activo ? AppColors.success : AppColors.error)
@@ -154,13 +157,16 @@ class _DisciplinaCard extends StatelessWidget {
           _Dato(
             icono: Icons.place_outlined,
             texto: disciplina.canchaNombre.isEmpty
-                ? 'Cancha por confirmar'
+                ? AppStrings.entCanchaPorConfirmar
                 : disciplina.canchaNombre,
           ),
           const SizedBox(height: AppSizes.space8),
           _Dato(
             icono: Icons.groups_outlined,
-            texto: '${disciplina.inscritos} inscritos de ${disciplina.cupos}',
+            texto: AppStrings.entInscritosDe(
+              disciplina.inscritos,
+              disciplina.cupos,
+            ),
           ),
           const SizedBox(height: AppSizes.space24),
           SizedBox(
@@ -172,7 +178,7 @@ class _DisciplinaCard extends StatelessWidget {
                 arguments: disciplina.id,
               ),
               icon: const Icon(Icons.fact_check_outlined),
-              label: const Text('Abrir registro de asistencia'),
+              label: const Text(AppStrings.entAbrirAsistencia),
             ),
           ),
         ],
@@ -195,7 +201,7 @@ class _Dato extends StatelessWidget {
         const SizedBox(width: AppSizes.space8),
         Expanded(
           child: Text(
-            texto.isEmpty ? 'Por confirmar' : texto,
+            texto.isEmpty ? AppStrings.entPorConfirmar : texto,
             style: AppTextStyles.bodySmall,
           ),
         ),

@@ -12,6 +12,7 @@ import 'package:saman_sports/views/entrenador/widgets/registro_asistencia.dart';
 import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class AsistenciaEntrenadorView extends StatefulWidget {
   const AsistenciaEntrenadorView({
@@ -61,18 +62,18 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
     final salir = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Tienes asistencia sin guardar'),
+        title: const Text(AppStrings.entAsistenciaSinGuardar),
         content: const Text(
-          'Puedes continuar editando o salir y descartar los cambios.',
+          AppStrings.entAsistenciaSinGuardarTexto,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Continuar editando'),
+            child: const Text(AppStrings.entContinuarEditando),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Descartar y salir'),
+            child: const Text(AppStrings.entDescartarSalir),
           ),
         ],
       ),
@@ -113,9 +114,9 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
           auth: widget.auth,
           opciones: OpcionesEntrenador.menu,
           rutaActiva: AppRoutes.entrenadorAsistencia,
-          subtituloPanel: 'Panel del entrenador',
-          titulo: 'Asistencia',
-          descripcion: 'Selecciona una disciplina y una fecha, marca a cada estudiante en la lista y guarda la asistencia.',
+          subtituloPanel: AppStrings.entPanel,
+          titulo: AppStrings.asistencia,
+          descripcion: AppStrings.entAsistenciaDescripcion,
           child: _contenido(),
         ),
       ),
@@ -134,9 +135,9 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
     if (entrenador.disciplinas.isEmpty) {
       return EstadoVacio(
         icono: Icons.fact_check_outlined,
-        titulo: 'No hay una disciplina para registrar',
-        texto: 'Primero necesitas una disciplina activa asignada.',
-        textoAccion: 'Volver a disciplinas',
+        titulo: AppStrings.entSinDisciplinaRegistro,
+        texto: AppStrings.entSinDisciplinaRegistroTexto,
+        textoAccion: AppStrings.entVolverDisciplinas,
         onAccion: _volverADisciplinas,
       );
     }
@@ -164,7 +165,7 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
                   key: ValueKey('${entrenador.seleccionId}-$_revisionSelector'),
                   initialValue: entrenador.seleccionId,
                   decoration: const InputDecoration(
-                    labelText: 'Disciplina',
+                    labelText: AppStrings.adminDisciplina,
                     border: OutlineInputBorder(),
                   ),
                   items: [
@@ -182,7 +183,7 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
               TextButton.icon(
                 onPressed: _volverADisciplinas,
                 icon: const Icon(Icons.arrow_back),
-                label: const Text('Volver a disciplinas'),
+                label: const Text(AppStrings.entVolverDisciplinas),
               ),
             ],
           ),
@@ -195,19 +196,21 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
         else if (entrenador.alumnos.isEmpty)
           const EstadoVacio(
             icono: Icons.groups_outlined,
-            titulo: 'No hay estudiantes confirmados',
-            texto:
-                'La lista aparecerá cuando existan inscripciones confirmadas.',
+            titulo: AppStrings.entSinConfirmados,
+            texto: AppStrings.entListaConfirmados,
           )
         else ...[
           Text(
-            '${seleccionada?.nombre ?? ''} · ${entrenador.alumnos.length} estudiantes',
+            AppStrings.entDisciplinaEstudiantes(
+              seleccionada?.nombre ?? '',
+              entrenador.alumnos.length,
+            ),
             style: AppTextStyles.title,
           ),
           const SizedBox(height: AppSizes.space16),
           RegistroAsistencia(
             controller: asistencia,
-            disciplina: seleccionada?.nombre ?? 'disciplina',
+            disciplina: seleccionada?.nombre ?? AppStrings.entDisciplinaMinuscula,
           ),
         ],
       ],

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:saman_sports/models/alumno_inscrito.dart';
 import 'package:saman_sports/models/asistencia.dart';
 import 'package:saman_sports/repositories/asistencia_repository.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class AsistenciaController extends ChangeNotifier {
   AsistenciaController({AsistenciaRepository? repository})
@@ -66,7 +67,7 @@ class AsistenciaController extends ChangeNotifier {
     } catch (_) {
       if (!_cerrado && consulta == _consulta) {
         error =
-            'No se pudo cargar la asistencia. Reintenta antes de registrar.';
+            AppStrings.entAsistenciaCarga;
       }
       return false;
     } finally {
@@ -103,12 +104,12 @@ class AsistenciaController extends ChangeNotifier {
       await _repository.guardar(deporteId!, fecha, Map.of(estados));
       if (_cerrado) return false;
       _guardados = Map.of(estados);
-      mensaje = 'Asistencia guardada correctamente.';
+      mensaje = AppStrings.entAsistenciaGuardada;
       return true;
     } catch (_) {
       if (!_cerrado) {
         mensaje =
-            'No se pudo guardar. Tus cambios siguen aquí; intenta nuevamente.';
+            AppStrings.entAsistenciaNoGuardada;
       }
       return false;
     } finally {

@@ -320,7 +320,10 @@ class _Actividad extends StatelessWidget {
         for (final item in recientes)
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(item.descripcion, style: AppTextStyles.body),
+            title: Text(
+              transacciones.descripcionVisible(item),
+              style: AppTextStyles.body,
+            ),
             subtitle: Text(
               '${item.modulo} · ${item.rol}',
               style: AppTextStyles.bodySmall,

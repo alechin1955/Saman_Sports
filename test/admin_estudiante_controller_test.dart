@@ -38,6 +38,22 @@ void main() {
     expect(repo.solvencias, [('1', true)]);
     controller.dispose();
   });
+
+  test('revisar identificadores devuelve repetidos o lista vacía', () async {
+    final conRepetidos = AdminEstudianteController(
+      repository: _FalsoEstudiantes(),
+      indexarIdentificadores: () async => ['cedula V-1: a, b'],
+    );
+    expect(await conRepetidos.revisarIdentificadores(), ['cedula V-1: a, b']);
+    conRepetidos.dispose();
+
+    final vacio = AdminEstudianteController(
+      repository: _FalsoEstudiantes(),
+      indexarIdentificadores: () async => const [],
+    );
+    expect(await vacio.revisarIdentificadores(), isEmpty);
+    vacio.dispose();
+  });
 }
 
 Estudiante _estudiante(
@@ -83,4 +99,7 @@ class _FalsoEstudiantes implements AdminEstudianteRepository {
     solvencias.add((uid, solvente));
     return null;
   }
+
+  @override
+  Future<List<String>> revisarIdentificadores() async => const [];
 }

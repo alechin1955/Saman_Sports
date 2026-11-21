@@ -166,6 +166,13 @@ describe('estudiante', () => {
   });
 
   it('crea una reseña con su uid y no con otro', async () => {
+    await entorno.withSecurityRulesDisabled(async (contexto) => {
+      await setDoc(doc(contexto.firestore(), 'inscripciones', 'est1_dep1'), {
+        estudianteUid: 'est1',
+        deporteId: 'dep1',
+        estado: 'confirmada',
+      });
+    });
     const db = dbDe('est1');
     await assertSucceeds(addDoc(collection(db, 'resenas'), {
       autorUid: 'est1', visible: true, deporteId: 'dep1', comentario: 'Nueva', estrellas: 4,

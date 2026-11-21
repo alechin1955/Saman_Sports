@@ -5,6 +5,38 @@ abstract interface class PerfilEntrenadorRepository {
   Future<PerfilEntrenador> cargar();
 }
 
+abstract interface class PerfilEntrenadorEdicionRepository {
+  Future<String?> guardar({
+    required String uid,
+    required String telefono,
+    required String biografia,
+    required int anosExperiencia,
+    required List<String> certificaciones,
+  });
+}
+
+class FirebasePerfilEntrenadorEdicionAdapter
+    implements PerfilEntrenadorEdicionRepository {
+  @override
+  Future<String?> guardar({
+    required String uid,
+    required String telefono,
+    required String biografia,
+    required int anosExperiencia,
+    required List<String> certificaciones,
+  }) async {
+    final respuesta = await FirebaseServices.actualizarPerfilEntrenador(
+      uid: uid,
+      telefono: telefono,
+      biografia: biografia,
+      anosExperiencia: anosExperiencia,
+      certificaciones: certificaciones,
+    );
+    if (respuesta.isSuccess) return null;
+    return respuesta.errorMessage ?? 'No se pudo guardar el perfil.';
+  }
+}
+
 class FirebasePerfilEntrenadorAdapter implements PerfilEntrenadorRepository {
   @override
   Future<PerfilEntrenador> cargar() async {

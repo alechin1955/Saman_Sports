@@ -16,6 +16,7 @@ import 'package:saman_sports/views/admin/soporte_admin_view.dart';
 import 'package:saman_sports/views/admin/transacciones_admin_view.dart';
 import 'package:saman_sports/views/admin/widgets/admin_sidebar.dart';
 import 'package:saman_sports/views/widgets/app_logo.dart';
+import 'package:saman_sports/views/widgets/campana_notificaciones.dart';
 
 class AdminDashboardView extends StatefulWidget {
   const AdminDashboardView({
@@ -155,7 +156,14 @@ class _Contenido extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(seccion.titulo, style: AppTextStyles.titleLarge),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(seccion.titulo, style: AppTextStyles.titleLarge),
+                  ),
+                  const CampanaNotificaciones(),
+                ],
+              ),
               const SizedBox(height: AppSizes.space8),
               Text(seccion.descripcion, style: AppTextStyles.body),
               const SizedBox(height: AppSizes.space24),

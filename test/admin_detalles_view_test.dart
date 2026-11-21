@@ -322,6 +322,7 @@ class _Eventos implements AdminEventoRepository {
     required int horaFin,
     required String canchaNombre,
     required bool reemplazaPractica,
+    String eventoId = '',
   }) async => null;
 }
 
@@ -391,4 +392,6 @@ class _Estudiantes implements AdminEstudianteRepository {
   @override
   Future<String?> cambiarEstado({required String uid, required bool activo}) async =>
       null;
+  @override
+  Future<List<String>> revisarIdentificadores() async => const [];
 }

@@ -36,6 +36,7 @@ abstract interface class AdminEventoRepository {
     required int horaFin,
     required String canchaNombre,
     required bool reemplazaPractica,
+    String eventoId = '',
   });
 }
 
@@ -131,9 +132,11 @@ class FirebaseAdminEventoAdapter implements AdminEventoRepository {
     required int horaFin,
     required String canchaNombre,
     required bool reemplazaPractica,
+    String eventoId = '',
   }) {
     return _texto(
       FirebaseServices.notificarInscritosEvento(
+        eventoId: eventoId,
         deporteId: deporteId,
         titulo: titulo,
         fecha: fecha,

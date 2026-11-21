@@ -6,6 +6,7 @@ import 'package:saman_sports/models/asistencia.dart';
 import 'package:saman_sports/repositories/historial_asistencia_repository.dart';
 import 'package:saman_sports/services/exportacion/csv_asistencia.dart';
 import 'package:saman_sports/services/exportacion/descarga.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class BotonExportarAsistencia extends StatefulWidget {
   const BotonExportarAsistencia({
@@ -66,13 +67,13 @@ class _BotonExportarAsistenciaState extends State<BotonExportarAsistencia> {
       if (!mounted) return;
       setState(
         () => _mensaje = kIsWeb
-            ? 'Descarga CSV solicitada al navegador.'
-            : 'CSV copiado al portapapeles.',
+            ? AppStrings.entCsvNavegador
+            : AppStrings.entCsvPortapapeles,
       );
     } catch (_) {
       if (!mounted) return;
       setState(
-        () => _mensaje = 'No se pudo exportar el listado. Intenta nuevamente.',
+        () => _mensaje = AppStrings.entCsvError,
       );
     } finally {
       if (mounted) setState(() => _exportando = false);
@@ -100,15 +101,15 @@ class _BotonExportarAsistenciaState extends State<BotonExportarAsistencia> {
             icon: const Icon(Icons.download_outlined),
             label: Text(
               _exportando
-                  ? 'Preparando listado…'
+                  ? AppStrings.entCsvPreparando
                   : kIsWeb
-                  ? 'Descargar listado CSV'
-                  : 'Copiar listado CSV',
+                  ? AppStrings.entCsvDescargar
+                  : AppStrings.entCsvCopiar,
             ),
           ),
           const SizedBox(height: 4),
           const Text(
-            'Incluye toda la nómina y el porcentaje acumulado hasta la fecha seleccionada. Guarda tus cambios antes de exportar.',
+            AppStrings.entCsvAyuda,
           ),
           if (_mensaje != null)
             Padding(

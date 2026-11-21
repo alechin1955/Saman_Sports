@@ -144,6 +144,8 @@ class _Estudiantes implements AdminEstudianteRepository {
     required String uid,
     required bool solvente,
   }) async => null;
+  @override
+  Future<List<String>> revisarIdentificadores() async => const [];
 }
 
 class _Resenas implements AdminResenaRepository {
@@ -256,6 +258,7 @@ class _Eventos implements AdminEventoRepository {
     required int horaFin,
     required String canchaNombre,
     required bool reemplazaPractica,
+    String eventoId = '',
   }) async => null;
 }
 

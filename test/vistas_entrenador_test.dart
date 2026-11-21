@@ -262,6 +262,13 @@ class _EventosRepo implements EventosEntrenadorRepository {
 
   @override
   Future<String?> solicitar(Map<String, dynamic> datos) async => errorSolicitud;
+
+  @override
+  Future<String?> cancelar(String eventoId) async => null;
+
+  @override
+  Future<String?> editar(String eventoId, Map<String, dynamic> datos) async =>
+      null;
 }
 
 Finder _campo(String etiqueta) => find.byWidgetPredicate(

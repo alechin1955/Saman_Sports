@@ -5,6 +5,7 @@ import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/comunidad_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/constants/datos_ejemplo.dart';
+import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/resena.dart';
 import 'package:saman_sports/views/estudiante/comunidad_view.dart';
 
@@ -33,16 +34,23 @@ class _FachadaFalsa {
       : AuthResponse(isSuccess: true);
 }
 
+Map<String, dynamic> _mapaDeporte(Deporte deporte) {
+  return {'id': deporte.id, ...deporte.toMap(), 'activo': deporte.activo};
+}
+
 ComunidadController _controlador(
   _FachadaFalsa fachada, {
   List<Map<String, dynamic>> resenas = const [],
+  List<Map<String, dynamic>> deportes = const [],
+  List<Map<String, dynamic>> inscripciones = const [],
   String? uid = 'abc',
 }) {
   return ComunidadController(
     uidActual: () => uid,
     leerPerfil: (uid) async => _perfil,
     misResenasOrigen: (uid) => Stream.value(resenas),
-    deportesOrigen: () => Stream.value(const []),
+    misInscripcionesOrigen: (uid) => Stream.value(inscripciones),
+    deportesOrigen: () => Stream.value(deportes),
     crear: (data) async {
       fachada.creada = data;
       return fachada._respuesta();
@@ -76,7 +84,8 @@ void main() {
 
         expect(c.cargando, isFalse);
         expect(c.misResenas.single.comentario, 'Las clases son muy ordenadas.');
-        expect(c.deportes.length, DatosEjemplo.deportes.length);
+        expect(c.deportes, isEmpty);
+        expect(c.deportesResenables, isEmpty);
         expect(c.autorNombre, 'María G.');
         c.dispose();
       },
@@ -112,13 +121,56 @@ void main() {
       c.dispose();
     });
 
-    test('publica la reseña con los datos correctos', () async {
+    test('solo reseña deportes con inscripción confirmada', () async {
+      final tenis = DatosEjemplo.deportes[2];
+      final baloncesto = DatosEjemplo.deportes[1];
+      final voleibol = DatosEjemplo.deportes[3];
       final fachada = _FachadaFalsa();
-      final c = _controlador(fachada);
+      final c = _controlador(
+        fachada,
+        deportes: [
+          _mapaDeporte(tenis),
+          _mapaDeporte(baloncesto),
+          _mapaDeporte(voleibol),
+        ],
+        inscripciones: [
+          {'deporteId': tenis.id, 'estado': 'confirmada'},
+          {'deporteId': baloncesto.id, 'estado': 'pendiente'},
+          {'deporteId': voleibol.id, 'estado': 'cancelada'},
+        ],
+      );
       await c.iniciar();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(c.deportesResenables.map((d) => d.id), [tenis.id]);
+      expect(
+        await c.publicar(
+          deporte: baloncesto,
+          estrellas: 5,
+          comentario: 'Muy buenas clases',
+        ),
+        isFalse,
+      );
+      expect(c.errorFormulario, AppStrings.resenaSoloConfirmadas);
+      expect(fachada.creada, isNull);
+      c.dispose();
+    });
+
+    test('publica la reseña con los datos correctos', () async {
+      final tenis = DatosEjemplo.deportes[2];
+      final fachada = _FachadaFalsa();
+      final c = _controlador(
+        fachada,
+        deportes: [_mapaDeporte(tenis)],
+        inscripciones: [
+          {'deporteId': tenis.id, 'estado': 'confirmada'},
+        ],
+      );
+      await c.iniciar();
+      await Future<void>.delayed(Duration.zero);
 
       final ok = await c.publicar(
-        deporte: DatosEjemplo.deportes[2],
+        deporte: tenis,
         estrellas: 5,
         comentario: '  Muy buenas clases de tenis  ',
       );
@@ -191,6 +243,8 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text(AppStrings.escribeResena), findsOneWidget);
         expect(find.text(AppStrings.sinMisResenas), findsOneWidget);
+        expect(find.text(DatosEjemplo.deportes.first.nombre), findsNothing);
+        expect(find.text(AppStrings.comunidadSinConfirmadas), findsOneWidget);
         await tester.binding.setSurfaceSize(null);
       });
     }
@@ -198,7 +252,18 @@ void main() {
     testWidgets('publica una reseña desde el formulario', (tester) async {
       await tester.binding.setSurfaceSize(const Size(1440, 900));
       final fachada = _FachadaFalsa();
-      await tester.pumpWidget(pantalla(_controlador(fachada)));
+      final tenis = DatosEjemplo.deportes[2];
+      await tester.pumpWidget(
+        pantalla(
+          _controlador(
+            fachada,
+            deportes: [_mapaDeporte(tenis)],
+            inscripciones: [
+              {'deporteId': tenis.id, 'estado': 'confirmada'},
+            ],
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tocar(tester, find.text('Tenis'));

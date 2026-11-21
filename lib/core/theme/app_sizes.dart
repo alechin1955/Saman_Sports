@@ -27,4 +27,7 @@ class AppSizes {
   static const double panelMenuAncho = 260;
   static const double panelContenidoMax = 1200;
   static const double perfilDosColumnas = 840;
+  static const double botonTablaAlto = 32;
+  static const double columnaAccionesInscripcion = 200;
+  static const double columnaNombreTabla = 220;
 }

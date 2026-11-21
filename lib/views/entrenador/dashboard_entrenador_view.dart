@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
-import 'package:saman_sports/controllers/entrenador/entrenador_notificacion_controller.dart';
 import 'package:saman_sports/controllers/inicio_entrenador_controller.dart';
+import 'package:saman_sports/controllers/proximos_eventos_controller.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
-import 'package:saman_sports/views/entrenador/notificaciones_entrenador_view.dart';
 import 'package:saman_sports/views/entrenador/opciones_entrenador.dart';
+import 'package:saman_sports/views/widgets/proximos_eventos_card.dart';
 import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class DashboardEntrenadorView extends StatefulWidget {
   const DashboardEntrenadorView({
     super.key,
     required this.auth,
     this.controller,
-    this.notificaciones,
+    this.proximos,
   });
 
   final AuthController auth;
   final InicioEntrenadorController? controller;
-  final EntrenadorNotificacionController? notificaciones;
+  final ProximosEventosController? proximos;
 
   @override
   State<DashboardEntrenadorView> createState() =>
@@ -34,10 +35,10 @@ class DashboardEntrenadorView extends StatefulWidget {
 class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
   late final InicioEntrenadorController controller =
       widget.controller ?? InicioEntrenadorController();
-  late final EntrenadorNotificacionController notificaciones =
-      widget.notificaciones ?? EntrenadorNotificacionController();
+  late final ProximosEventosController proximos =
+      widget.proximos ?? ProximosEventosController(modo: ModoEventos.entrenador);
   late final bool _propio = widget.controller == null;
-  late final bool _avisosPropios = widget.notificaciones == null;
+  late final bool _eventosPropios = widget.proximos == null;
 
   @override
   void initState() {
@@ -45,14 +46,17 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       controller.cargar();
-      notificaciones.iniciar();
+      proximos.iniciar();
+      proximos.filtrarPorDeportes({
+        for (final deporte in controller.disciplinas) deporte.id,
+      });
     });
   }
 
   @override
   void dispose() {
     if (_propio) controller.dispose();
-    if (_avisosPropios) notificaciones.dispose();
+    if (_eventosPropios) proximos.dispose();
     super.dispose();
   }
 
@@ -62,9 +66,9 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
       auth: widget.auth,
       opciones: OpcionesEntrenador.menu,
       rutaActiva: AppRoutes.dashboardEntrenador,
-      subtituloPanel: 'Panel del entrenador',
-      titulo: 'Inicio',
-      descripcion: 'Tu resumen deportivo y los próximos pasos de tu equipo.',
+      subtituloPanel: AppStrings.entPanel,
+      titulo: AppStrings.inicio,
+      descripcion: AppStrings.entInicioDescripcion,
       child: ListenableBuilder(
         listenable: controller,
         builder: (context, _) {
@@ -78,7 +82,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                 MensajeError(texto: controller.error!),
                 const SizedBox(height: AppSizes.space16),
                 BotonSecundario(
-                  texto: 'Reintentar',
+                  texto: AppStrings.reintentar,
                   onPressed: controller.cargar,
                 ),
               ],
@@ -88,12 +92,8 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: CampanaEntrenador(controller: notificaciones),
-              ),
               _BienvenidaEntrenador(
-                nombre: perfil?.nombre ?? 'Entrenador',
+                nombre: perfil?.nombre ?? AppStrings.entNombreFallback,
                 disciplina: perfil?.disciplina ?? '',
                 iniciales: perfil?.iniciales ?? 'E',
               ),
@@ -112,7 +112,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                         child: _ResumenCard(
                           icono: Icons.sports_outlined,
                           valor: '${controller.disciplinas.length}',
-                          etiqueta: 'Disciplinas asignadas',
+                          etiqueta: AppStrings.entDisciplinasAsignadas,
                         ),
                       ),
                       SizedBox(
@@ -120,7 +120,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                         child: _ResumenCard(
                           icono: Icons.groups_outlined,
                           valor: '${controller.totalEstudiantes}',
-                          etiqueta: 'Estudiantes inscritos',
+                          etiqueta: AppStrings.entEstudiantesInscritosEtiqueta,
                         ),
                       ),
                     ],
@@ -129,12 +129,14 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
               ),
               const SizedBox(height: AppSizes.space24),
               _ProximaClase(controller: controller),
+              const SizedBox(height: AppSizes.space24),
+              ProximosEventosCard(controller: proximos),
               const SizedBox(height: AppSizes.space32),
-              Text('Accesos rápidos', style: AppTextStyles.title),
+              Text(AppStrings.entAccesosRapidos, style: AppTextStyles.title),
               const SizedBox(height: AppSizes.space16),
               const _AccesosEntrenador(),
               const SizedBox(height: AppSizes.space32),
-              Text('Asistencia reciente', style: AppTextStyles.title),
+              Text(AppStrings.entAsistenciaReciente, style: AppTextStyles.title),
               const SizedBox(height: AppSizes.space16),
               if (controller.advertenciaAsistencias != null) ...[
                 MensajeError(texto: controller.advertenciaAsistencias!),
@@ -142,7 +144,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: BotonSecundario(
-                    texto: 'Reintentar',
+                    texto: AppStrings.reintentar,
                     onPressed: controller.cargar,
                   ),
                 ),
@@ -152,8 +154,8 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                   controller.advertenciaAsistencias == null)
                 const EstadoVacio(
                   icono: Icons.fact_check_outlined,
-                  titulo: 'Aún no hay asistencias registradas',
-                  texto: 'Cuando pases lista, las sesiones más recientes aparecerán aquí.',
+                  titulo: AppStrings.entSinAsistencias,
+                  texto: AppStrings.entSinAsistenciasTexto,
                 )
               else if (controller.asistenciasRecientes.isNotEmpty)
                 for (final registro in controller.asistenciasRecientes)
@@ -198,12 +200,12 @@ class _BienvenidaEntrenador extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Hola, $nombre', style: AppTextStyles.title),
+                Text(AppStrings.entHola(nombre), style: AppTextStyles.title),
                 const SizedBox(height: AppSizes.space4),
                 Text(
                   disciplina.isEmpty
-                      ? 'Gestiona tus equipos desde un solo lugar.'
-                      : 'Entrenador de $disciplina',
+                      ? AppStrings.entGestionaEquipos
+                      : AppStrings.entEntrenadorDe(disciplina),
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -279,11 +281,11 @@ class _ProximaClase extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Próxima clase', style: AppTextStyles.subtitle),
+                Text(AppStrings.entProximaClase, style: AppTextStyles.subtitle),
                 const SizedBox(height: AppSizes.space8),
                 Text(
                   disciplina == null
-                      ? 'No tienes una clase programada.'
+                      ? AppStrings.entSinClase
                       : '${disciplina.nombre} · ${_horario(clase!)}',
                   style: AppTextStyles.body,
                 ),
@@ -306,15 +308,7 @@ class _ProximaClase extends StatelessWidget {
     final inicio = clase.inicio;
     final franja = clase.franja;
     if (inicio == null || franja == null) return clase.disciplina.horario;
-    const dias = [
-      'lunes',
-      'martes',
-      'miércoles',
-      'jueves',
-      'viernes',
-      'sábado',
-      'domingo',
-    ];
+    const dias = AppStrings.entDiasSemana;
     return '${dias[inicio.weekday - 1]} ${minutosATexto(franja.horaInicio)}–${minutosATexto(franja.horaFin)}';
   }
 }
@@ -323,10 +317,10 @@ class _AccesosEntrenador extends StatelessWidget {
   const _AccesosEntrenador();
 
   static const accesos = [
-    (Icons.sports_outlined, 'Disciplinas', AppRoutes.entrenadorDisciplinas),
-    (Icons.fact_check_outlined, 'Pasar lista', AppRoutes.entrenadorAsistencia),
-    (Icons.event_outlined, 'Solicitar evento', AppRoutes.entrenadorEventos),
-    (Icons.person_outline, 'Mi perfil', AppRoutes.entrenadorPerfil),
+    (Icons.sports_outlined, AppStrings.disciplinas, AppRoutes.entrenadorDisciplinas),
+    (Icons.fact_check_outlined, AppStrings.entPasarLista, AppRoutes.entrenadorAsistencia),
+    (Icons.event_outlined, AppStrings.entSolicitarEvento, AppRoutes.entrenadorEventos),
+    (Icons.person_outline, AppStrings.miPerfil, AppRoutes.entrenadorPerfil),
   ];
 
   @override
@@ -407,7 +401,10 @@ class _AsistenciaCard extends StatelessWidget {
             ),
           ),
           Text(
-            '${registro.presentes} presentes · ${registro.ausentes} ausentes',
+            AppStrings.entPresentesAusentes(
+              registro.presentes,
+              registro.ausentes,
+            ),
             style: AppTextStyles.bodySmall,
           ),
         ],

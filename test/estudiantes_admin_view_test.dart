@@ -81,4 +81,7 @@ class _Estudiantes implements AdminEstudianteRepository {
     required String uid,
     required bool solvente,
   }) async => null;
+
+  @override
+  Future<List<String>> revisarIdentificadores() async => const [];
 }

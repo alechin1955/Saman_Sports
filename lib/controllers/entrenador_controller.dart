@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:saman_sports/models/alumno_inscrito.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/repositories/entrenador_repository.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class EntrenadorController extends ChangeNotifier {
   EntrenadorController({EntrenadorRepository? repository})
@@ -56,7 +57,7 @@ class EntrenadorController extends ChangeNotifier {
       if (_cerrado || consulta != _consulta) return;
       disciplinas = [];
       seleccionId = null;
-      error = 'No se pudieron cargar tus disciplinas. Revisa la conexión y vuelve a intentar.';
+      error = AppStrings.entDisciplinasCarga;
     } finally {
       if (!_cerrado && consulta == _consulta) {
         cargando = false;
@@ -82,7 +83,7 @@ class EntrenadorController extends ChangeNotifier {
       alumnos = lista;
     } catch (_) {
       if (_cerrado || consulta != _consulta) return;
-      error = 'No se pudo cargar la nómina. Vuelve a intentar.';
+      error = AppStrings.entNominaCarga;
     } finally {
       if (!_cerrado && consulta == _consulta) {
         cargandoNomina = false;

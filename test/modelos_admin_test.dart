@@ -104,6 +104,14 @@ void main() {
       Transaccion.fromMap(transaccion.id, transaccion.toMap()).modulo,
       'canchas',
     );
+    expect(transaccion.legible, isFalse);
+    expect(
+      Transaccion.fromMap(transaccion.id, {
+        ...transaccion.toMap(),
+        'legible': true,
+      }).legible,
+      isTrue,
+    );
 
     final aviso = Notificacion(
       id: 'n1',

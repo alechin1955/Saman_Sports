@@ -9,6 +9,7 @@ import 'package:saman_sports/models/pago.dart';
 import 'package:saman_sports/repositories/admin/admin_pago_repository.dart';
 import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 import 'package:saman_sports/views/admin/pagos_admin_view.dart';
+import 'package:saman_sports/views/admin/widgets/tabla_desplazable.dart';
 
 void main() {
   setUp(() => GoogleFonts.config.allowRuntimeFetching = false);
@@ -42,6 +43,29 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('la tabla de pagos se desplaza en horizontal', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final panel = AdminPagoController(repository: _Pagos());
+    addTearDown(panel.dispose);
+    panel.iniciar();
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: PagosAdminView(pagos: panel))),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TablaDesplazable), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(TablaDesplazable),
+        matching: find.byType(DataTable),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(AppStrings.editar), findsOneWidget);
+  });
 }
 
 class _Pagos implements AdminPagoRepository {

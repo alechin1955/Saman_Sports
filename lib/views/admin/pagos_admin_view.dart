@@ -8,6 +8,7 @@ import 'package:saman_sports/models/configuracion_pagos.dart';
 import 'package:saman_sports/models/pago.dart';
 import 'package:saman_sports/repositories/admin/admin_solvencia.dart';
 import 'package:saman_sports/views/admin/widgets/grafico_barras.dart';
+import 'package:saman_sports/views/admin/widgets/tabla_desplazable.dart';
 import 'package:saman_sports/views/admin/widgets/tarjeta_resumen.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
 import 'package:saman_sports/views/widgets/campo_texto.dart';
@@ -222,8 +223,7 @@ class _PagosAdminViewState extends State<PagosAdminView> {
               for (final pago in widget.pagos.pagosFiltrados)
                 _PagoTile(pago: pago, panel: widget.pagos)
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              TablaDesplazable(
                 child: DataTable(
                   columns: [
                     DataColumn(label: Text(AppStrings.adminEstudiante)),

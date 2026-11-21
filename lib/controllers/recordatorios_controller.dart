@@ -21,17 +21,27 @@ class RecordatoriosController extends ChangeNotifier {
     String? Function()? uidActual,
     OrigenNotificaciones? origen,
     MarcarLeida? marcar,
+    Future<AuthResponse> Function(String eventoId, bool asistira, String notificacionId)?
+    responder,
   }) : _uidActual = uidActual ?? (() => FirebaseServices.currentUser?.uid),
        _origen =
            origen ??
            ((uid) => FirebaseServices.streamMisNotificaciones(uid: uid)),
        _marcar =
            marcar ??
-           ((id) => FirebaseServices.marcarNotificacionLeida(id: id));
+           ((id) => FirebaseServices.marcarNotificacionLeida(id: id)) {
+    _responder = responder;
+  }
 
   final String? Function() _uidActual;
   final OrigenNotificaciones _origen;
   final MarcarLeida _marcar;
+  late final Future<AuthResponse> Function(
+    String eventoId,
+    bool asistira,
+    String notificacionId,
+  )?
+  _responder;
 
   List<Notificacion> avisos = [];
   bool cargando = true;
@@ -87,6 +97,25 @@ class RecordatoriosController extends ChangeNotifier {
   }
 
   /// Marca un aviso como leído. Devuelve null si salió bien.
+  Future<String?> responderEvento(Notificacion aviso, bool asistira) async {
+    final responder = _responder;
+    if (responder == null) {
+      try {
+        await FirebaseServices.responderParticipacionEvento(
+          eventoId: aviso.eventoId,
+          asistira: asistira,
+          notificacionId: aviso.id,
+        );
+        return null;
+      } catch (e) {
+        return '$e';
+      }
+    }
+    final respuesta = await responder(aviso.eventoId, asistira, aviso.id);
+    if (respuesta.isSuccess) return null;
+    return respuesta.errorMessage ?? AppStrings.errorInesperado;
+  }
+
   Future<String?> marcarLeido(Notificacion aviso) async {
     if (aviso.leida) return null;
     final respuesta = await _marcar(aviso.id);

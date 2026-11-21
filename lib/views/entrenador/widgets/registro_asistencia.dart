@@ -6,6 +6,7 @@ import 'package:saman_sports/models/asistencia.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 /// Lista de la nómina con una columna por estado: el entrenador marca a todos
 /// y guarda la sesión completa de una sola vez.
@@ -38,7 +39,7 @@ class RegistroAsistencia extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Registro de asistencia', style: AppTextStyles.title),
+            Text(AppStrings.entRegistroAsistencia, style: AppTextStyles.title),
             const SizedBox(height: AppSizes.space12),
             BotonExportarAsistencia(
               key: ValueKey(c.deporteId),
@@ -53,7 +54,7 @@ class RegistroAsistencia extends StatelessWidget {
               children: [
                 OutlinedButton.icon(
                   icon: const Icon(Icons.calendar_today_outlined),
-                  label: Text('Fecha: ${claveFecha(c.fecha)}'),
+                  label: Text(AppStrings.entFechaEtiqueta(claveFecha(c.fecha))),
                   onPressed: c.guardando || c.cargando || c.cambios
                       ? null
                       : () async {
@@ -70,7 +71,11 @@ class RegistroAsistencia extends StatelessWidget {
                         },
                 ),
                 Text(
-                  '${c.presentes} presentes · ${c.ausentes} ausentes · $sinRegistrar sin registrar',
+                  AppStrings.entResumenAsistencia(
+                    c.presentes,
+                    c.ausentes,
+                    sinRegistrar,
+                  ),
                   style: AppTextStyles.body,
                 ),
               ],
@@ -85,13 +90,11 @@ class RegistroAsistencia extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: OutlinedButton(
                   onPressed: () => c.abrir(c.deporteId!, c.fecha, c.alumnos),
-                  child: const Text('Reintentar asistencia'),
+                  child: const Text(AppStrings.entReintentarAsistencia),
                 ),
               ),
             ] else if (c.alumnos.isEmpty)
-              const Text(
-                'No hay estudiantes confirmados para registrar asistencia.',
-              )
+              const Text(AppStrings.entSinConfirmadosRegistro)
             else ...[
               LayoutBuilder(
                 builder: (context, restricciones) =>
@@ -110,8 +113,8 @@ class RegistroAsistencia extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: AppSizes.space12),
                   child: Text(
                     sinRegistrar == 1
-                        ? 'Falta 1 estudiante por marcar para poder guardar.'
-                        : 'Faltan $sinRegistrar estudiantes por marcar para poder guardar.',
+                        ? AppStrings.entFaltaUno
+                        : AppStrings.entFaltanMarcar(sinRegistrar),
                     style: AppTextStyles.bodySmall,
                   ),
                 )
@@ -119,7 +122,7 @@ class RegistroAsistencia extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSizes.space12),
                   child: Text(
-                    'Tienes cambios sin guardar. Guarda o descarta antes de cambiar de disciplina o fecha.',
+                    AppStrings.entCambiosSinGuardar,
                     style: AppTextStyles.bodySmall,
                   ),
                 ),
@@ -133,7 +136,9 @@ class RegistroAsistencia extends StatelessWidget {
                         : null,
                     icon: const Icon(Icons.save_outlined),
                     label: Text(
-                      c.guardando ? 'Guardando…' : 'Guardar asistencia',
+                      c.guardando
+                          ? AppStrings.entGuardando
+                          : AppStrings.entGuardarAsistencia,
                     ),
                   ),
                   if (c.cambios)
@@ -141,7 +146,7 @@ class RegistroAsistencia extends StatelessWidget {
                       onPressed: c.guardando
                           ? null
                           : () => _confirmarDescarte(context),
-                      child: const Text('Descartar cambios'),
+                      child: const Text(AppStrings.entDescartarCambios),
                     ),
                 ],
               ),
@@ -156,18 +161,16 @@ class RegistroAsistencia extends StatelessWidget {
     final descartar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('¿Descartar cambios?'),
-        content: const Text(
-          'Se recuperará la última asistencia guardada de esta fecha.',
-        ),
+        title: const Text(AppStrings.entConfirmarDescartar),
+        content: const Text(AppStrings.entRecuperarAsistencia),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Continuar editando'),
+            child: const Text(AppStrings.entContinuarEditando),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Descartar'),
+            child: const Text(AppStrings.entDescartar),
           ),
         ],
       ),
@@ -188,8 +191,8 @@ class RegistroAsistencia extends StatelessWidget {
 const List<EstadoAsistencia> _opciones = EstadoAsistencia.values;
 
 String _etiqueta(EstadoAsistencia estado) => switch (estado) {
-  EstadoAsistencia.presente => 'Presente',
-  EstadoAsistencia.ausente => 'Ausente',
+  EstadoAsistencia.presente => AppStrings.entPresente,
+  EstadoAsistencia.ausente => AppStrings.entAusente,
 };
 
 const _borde = BorderSide(color: AppColors.border);
@@ -228,11 +231,11 @@ class _TablaAsistencia extends StatelessWidget {
                       ),
                       child: Align(
                         alignment: Alignment.centerLeft,
-                        child: Text('Estudiante', style: encabezado),
+                        child: Text(AppStrings.entEstudiante, style: encabezado),
                       ),
                     ),
                   ),
-                  _celdaCarnet(Text('Carnet', style: encabezado)),
+                  _celdaCarnet(Text(AppStrings.adminCarnet, style: encabezado)),
                   Container(
                     width: _anchoOpcion * _opciones.length,
                     decoration: const BoxDecoration(
@@ -242,7 +245,7 @@ class _TablaAsistencia extends StatelessWidget {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(AppSizes.space8),
-                          child: Text('Asistencia', style: encabezado),
+                          child: Text(AppStrings.asistencia, style: encabezado),
                         ),
                         Container(
                           decoration: const BoxDecoration(
@@ -401,7 +404,7 @@ class _NombreAlumno extends StatelessWidget {
     children: [
       Text(alumno.nombre, style: AppTextStyles.label),
       Text(
-        'Carnet: ${alumno.carnet}',
+        AppStrings.entCarnetEtiqueta(alumno.carnet),
         style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
       ),
     ],
@@ -462,7 +465,7 @@ class _OpcionAsistencia extends StatelessWidget {
       key: ValueKey('asistencia-${alumno.inscripcionId}-${opcion.name}'),
       button: true,
       selected: seleccionada,
-      label: '${alumno.nombre}: ${_etiqueta(opcion)}',
+      label: AppStrings.entAlumnoEstado(alumno.nombre, _etiqueta(opcion)),
       excludeSemantics: true,
       child: Material(
         color: fondo ?? Colors.transparent,

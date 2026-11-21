@@ -1,16 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/models/estudiante.dart';
 import 'package:saman_sports/repositories/admin/admin_estudiante_repository.dart';
 
 enum FiltroEstudiante { todos, activos, inactivos, solventes, pendientes }
 
 class AdminEstudianteController extends ChangeNotifier {
-  AdminEstudianteController({AdminEstudianteRepository? repository})
-    : _repository = repository ?? FirebaseAdminEstudianteAdapter();
+  AdminEstudianteController({
+    AdminEstudianteRepository? repository,
+    Future<List<String>> Function()? indexarIdentificadores,
+  }) : _repository = repository ?? FirebaseAdminEstudianteAdapter(),
+       _indexar = indexarIdentificadores;
 
   final AdminEstudianteRepository _repository;
+  final Future<List<String>> Function()? _indexar;
+  List<String> repetidos = [];
   List<Estudiante> estudiantes = [];
   FiltroEstudiante filtro = FiltroEstudiante.todos;
   String busqueda = '';
@@ -65,6 +71,25 @@ class AdminEstudianteController extends ChangeNotifier {
   void buscar(String texto) {
     busqueda = texto;
     _avisar();
+  }
+
+  Future<List<String>> revisarIdentificadores() async {
+    guardando = true;
+    error = null;
+    _avisar();
+    try {
+      final indexar = _indexar ?? _repository.revisarIdentificadores;
+      repetidos = await indexar();
+      return repetidos;
+    } catch (_) {
+      error = AppStrings.adminRevisionIdentificadoresError;
+      return const [];
+    } finally {
+      if (!_cerrado) {
+        guardando = false;
+        _avisar();
+      }
+    }
   }
 
   Future<String?> cambiarEstado(Estudiante estudiante, bool activo) {

@@ -5,6 +5,7 @@ import 'package:saman_sports/controllers/entrenador_controller.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class DisciplinasNomina extends StatelessWidget {
   const DisciplinasNomina({
@@ -29,7 +30,7 @@ class DisciplinasNomina extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 16,
             children: [
-              Text('Mis disciplinas', style: AppTextStyles.title),
+              Text(AppStrings.entMisDisciplinas, style: AppTextStyles.title),
               TextButton.icon(
                 onPressed:
                     c.cargandoNomina ||
@@ -38,7 +39,7 @@ class DisciplinasNomina extends StatelessWidget {
                     ? null
                     : c.cargar,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Actualizar'),
+                label: const Text(AppStrings.adminActualizar),
               ),
             ],
           ),
@@ -54,15 +55,15 @@ class DisciplinasNomina extends StatelessWidget {
                 onPressed: () => c.seleccionId == null
                     ? c.cargar()
                     : c.seleccionar(c.seleccionId!),
-                child: const Text('Reintentar'),
+                child: const Text(AppStrings.reintentar),
               ),
             ),
           ],
           if (c.disciplinas.isEmpty && c.error == null)
             const _Estado(
               icono: Icons.sports_outlined,
-              titulo: 'Aún no tienes disciplinas asignadas',
-              mensaje: 'La coordinación deportiva debe asignarte una disciplina para consultar sus inscritos.',
+              titulo: AppStrings.entSinDisciplinasAsignadas,
+              mensaje: AppStrings.entSinDisciplinasAsignadasTexto,
             ),
           if (c.disciplinas.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -106,18 +107,21 @@ class DisciplinasNomina extends StatelessWidget {
                               const SizedBox(height: 8),
                               Text(
                                 d.horario.isEmpty
-                                    ? 'Horario por definir'
+                                    ? AppStrings.entHorarioPorDefinir
                                     : d.horario,
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '${d.inscritos} inscritos · ${d.cupos} cupos',
+                                AppStrings.entInscritosCupos(
+                                  d.inscritos,
+                                  d.cupos,
+                                ),
                               ),
                               if (c.seleccionId == d.id)
                                 const Padding(
                                   padding: EdgeInsets.only(top: 8),
                                   child: Text(
-                                    'Disciplina seleccionada',
+                                    AppStrings.entDisciplinaSeleccionada,
                                     style: TextStyle(color: AppColors.primary),
                                   ),
                                 ),
@@ -139,11 +143,9 @@ class DisciplinasNomina extends StatelessWidget {
               ),
               const SizedBox(height: 24),
             ],
-            Text('Nómina de inscritos', style: AppTextStyles.subtitle),
+            Text(AppStrings.entNominaInscritos, style: AppTextStyles.subtitle),
             const SizedBox(height: 8),
-            const Text(
-              'Estudiantes con inscripción confirmada en la disciplina seleccionada.',
-            ),
+            const Text(AppStrings.entNominaConfirmados),
             const SizedBox(height: 16),
             if (c.cargandoNomina)
               const Center(child: CircularProgressIndicator())
@@ -153,23 +155,25 @@ class DisciplinasNomina extends StatelessWidget {
                 onChanged: c.buscar,
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.search),
-                  labelText: 'Buscar por nombre, carnet o correo',
+                  labelText: AppStrings.entBuscarNomina,
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
-              Text('${c.filtrados.length} de ${c.alumnos.length} estudiantes'),
+              Text(
+                AppStrings.entFiltradosDe(c.filtrados.length, c.alumnos.length),
+              ),
               if (c.alumnos.isEmpty)
                 const _Estado(
                   icono: Icons.groups_outlined,
-                  titulo: 'Todavía no hay inscritos confirmados',
-                  mensaje: 'Las inscripciones pendientes o canceladas no aparecen en esta nómina.',
+                  titulo: AppStrings.entSinInscritos,
+                  mensaje: AppStrings.entSinInscritosTexto,
                 )
               else if (c.filtrados.isEmpty)
                 const _Estado(
                   icono: Icons.search_off,
-                  titulo: 'No encontramos coincidencias',
-                  mensaje: 'Prueba con otro nombre, carnet o correo.',
+                  titulo: AppStrings.entSinCoincidencias,
+                  mensaje: AppStrings.entSinCoincidenciasTexto,
                 )
               else ...[
                 const SizedBox(height: 12),
@@ -198,7 +202,11 @@ class DisciplinasNomina extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Carnet: ${alumno.carnet.isEmpty ? 'No disponible' : alumno.carnet}',
+                                  AppStrings.entCarnetEtiqueta(
+                                    alumno.carnet.isEmpty
+                                        ? AppStrings.entNoDisponible
+                                        : alumno.carnet,
+                                  ),
                                 ),
                                 if (alumno.correo.isNotEmpty)
                                   Text(alumno.correo),

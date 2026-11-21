@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/cancha.dart';
 import 'package:saman_sports/models/deporte.dart';
@@ -12,8 +13,11 @@ class AdminEventoController extends ChangeNotifier {
   AdminEventoController({
     AdminEventoRepository? repository,
     DateTime Function()? reloj,
+    Future<void> Function()? sincronizarPublicos,
   }) : _repository = repository ?? FirebaseAdminEventoAdapter(),
-       _reloj = reloj ?? DateTime.now;
+       _reloj = reloj ?? DateTime.now,
+       _sincronizar = sincronizarPublicos,
+       _repoInyectado = repository != null;
 
   static const String tituloObligatorio = 'El título es obligatorio.';
   static const String canchaObligatoria = 'Elige una cancha.';
@@ -23,6 +27,8 @@ class AdminEventoController extends ChangeNotifier {
 
   final AdminEventoRepository _repository;
   final DateTime Function() _reloj;
+  final Future<void> Function()? _sincronizar;
+  final bool _repoInyectado;
   List<Evento> eventos = [];
   List<Deporte> deportes = [];
   List<Cancha> canchas = [];
@@ -55,6 +61,14 @@ class AdminEventoController extends ChangeNotifier {
     if (_iniciado || _cerrado) return;
     _iniciado = true;
     _escuchas++;
+    if (!_repoInyectado) {
+      final sincronizar =
+          _sincronizar ?? FirebaseServices.sincronizarEventosPublicos;
+      sincronizar().then((_) {}, onError: (Object fallo) {
+        error = '$fallo';
+        _avisar();
+      });
+    }
     cargando = true;
     _avisar();
     _eventosSub = _repository.eventos().listen((lista) {
@@ -281,6 +295,7 @@ class AdminEventoController extends ChangeNotifier {
         horaFin: evento.horaFin,
         canchaNombre: _nombreCancha(evento.canchaId),
         reemplazaPractica: evento.reemplazaPractica,
+        eventoId: evento.id,
       );
     }, 'Estado del evento actualizado.');
   }

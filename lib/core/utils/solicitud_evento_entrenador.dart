@@ -1,5 +1,6 @@
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/reserva_horario.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 /// Construye la única forma de evento que puede solicitar un entrenador.
 /// Los campos de autorización se derivan de la sesión y de la disciplina,
@@ -21,14 +22,14 @@ Map<String, dynamic> construirSolicitudEventoEntrenador({
   final capacidad = _entero(datos['capacidad']);
   final descripcion = '${datos['descripcion'] ?? ''}'.trim();
 
-  if (titulo.isEmpty) throw StateError('El nombre es obligatorio.');
-  if (deporteId.isEmpty) throw StateError('Elige una disciplina.');
-  if (canchaId.isEmpty) throw StateError('Elige una cancha.');
+  if (titulo.isEmpty) throw StateError(AppStrings.entNombreEventoObligatorio);
+  if (deporteId.isEmpty) throw StateError(AppStrings.entEligeDisciplina);
+  if (canchaId.isEmpty) throw StateError(AppStrings.entEligeCancha);
   if (capacidad <= 0) {
-    throw StateError('La capacidad debe ser mayor que cero.');
+    throw StateError(AppStrings.entCapacidadInvalida);
   }
   if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(fecha)) {
-    throw StateError('La fecha del evento no es válida.');
+    throw StateError(AppStrings.entFechaInvalida);
   }
   final dia = DateTime.tryParse(fecha);
   final fechaNormalizada = dia == null
@@ -37,12 +38,12 @@ Map<String, dynamic> construirSolicitudEventoEntrenador({
             '${dia.month.toString().padLeft(2, '0')}-'
             '${dia.day.toString().padLeft(2, '0')}';
   if (dia == null || fechaNormalizada != fecha) {
-    throw StateError('La fecha del evento no es válida.');
+    throw StateError(AppStrings.entFechaInvalida);
   }
   final hoy = DateTime(ahora.year, ahora.month, ahora.day);
   final normalizada = DateTime(dia.year, dia.month, dia.day);
   if (normalizada.isBefore(hoy)) {
-    throw StateError('La fecha del evento no puede estar en el pasado.');
+    throw StateError(AppStrings.entFechaPasadoEvento);
   }
   final errorFranja = validarFranja(
     FranjaHorario(
@@ -55,13 +56,13 @@ Map<String, dynamic> construirSolicitudEventoEntrenador({
   if ('${deporte['id'] ?? ''}' != deporteId ||
       deporte['entrenadorUid'] != entrenadorUid ||
       deporte['activo'] != true) {
-    throw StateError('La disciplina no está asignada al entrenador.');
+    throw StateError(AppStrings.entDisciplinaNoAsignada);
   }
   final canchaNombre = '${cancha['nombre'] ?? ''}'.trim();
   if ('${cancha['id'] ?? ''}' != canchaId ||
       cancha['activa'] != true ||
       canchaNombre.isEmpty) {
-    throw StateError('La cancha no existe o está inactiva.');
+    throw StateError(AppStrings.entCanchaInactiva);
   }
   final nueva = ReservaHorario(
     id: '',

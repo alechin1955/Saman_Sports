@@ -7,6 +7,7 @@ import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/views/admin/cancha_form_dialog.dart';
+import 'package:saman_sports/views/admin/widgets/tabla_desplazable.dart';
 import 'package:saman_sports/views/admin/deporte_form_dialog.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
 import 'package:saman_sports/views/widgets/campo_texto.dart';
@@ -122,8 +123,7 @@ class _Deportes extends StatelessWidget {
               entrenadores: entrenadores,
             )
         else
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          TablaDesplazable(
             child: DataTable(
               columns: [
                 DataColumn(label: Text(AppStrings.deportes)),

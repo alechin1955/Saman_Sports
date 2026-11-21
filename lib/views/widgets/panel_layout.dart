@@ -6,6 +6,7 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/views/widgets/app_logo.dart';
+import 'package:saman_sports/views/widgets/campana_notificaciones.dart';
 import 'package:saman_sports/views/widgets/opcion_panel.dart';
 
 /// Estructura común de los paneles por rol (estudiante, entrenador y admin).
@@ -304,9 +305,16 @@ class _ContenidoPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                titulo,
-                style: movil ? AppTextStyles.title : AppTextStyles.titleLarge,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      titulo,
+                      style: movil ? AppTextStyles.title : AppTextStyles.titleLarge,
+                    ),
+                  ),
+                  const CampanaNotificaciones(),
+                ],
               ),
               const SizedBox(height: AppSizes.space4),
               Text(
