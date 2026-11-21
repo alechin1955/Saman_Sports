@@ -177,6 +177,17 @@ class FirebaseServices {
           'tipo': 'carnet',
           'creadoEn': FieldValue.serverTimestamp(),
         });
+        tx.set(
+          _db.collection(notificacionesCollection).doc(),
+          _aviso(
+            destinatarioUid: '',
+            destinatarioRol: 'administrador',
+            origenUid: uid,
+            tipo: 'registro_estudiante',
+            titulo: AppStrings.tituloAvisoRegistro,
+            mensaje: AppStrings.avisoRegistroEstudiante(_nombrePersona(datos)),
+          ),
+        );
       });
       return AuthResponse(isSuccess: true);
     } on FirebaseException catch (e) {
@@ -565,9 +576,7 @@ class FirebaseServices {
   }
 
   /// Avisos del usuario actual. Sin orderBy: el controlador ordena en Dart.
-  static Stream<List<Map<String, dynamic>>> streamNotificacionesEntrenador(
-    String uid,
-  ) {
+  static Stream<List<Map<String, dynamic>>> streamNotificacionesDe(String uid) {
     return _streamConsultaEntrenador(
       _db
           .collection(notificacionesCollection)
@@ -848,10 +857,26 @@ class FirebaseServices {
         reservasCancha: await _ocupadas(canchaId),
         ahora: DateTime.now(),
       );
-      await _db.collection(eventosCollection).add({
+      final eventoRef = _db.collection(eventosCollection).doc();
+      final batch = _db.batch();
+      batch.set(eventoRef, {
         ...solicitud,
         'creadoEn': FieldValue.serverTimestamp(),
       });
+      batch.set(
+        _db.collection(notificacionesCollection).doc(),
+        _aviso(
+          destinatarioUid: '',
+          destinatarioRol: 'administrador',
+          origenUid: entrenadorUid,
+          tipo: 'solicitud_evento',
+          titulo: AppStrings.tituloAvisoEvento,
+          mensaje: AppStrings.avisoSolicitudEvento('${solicitud['titulo'] ?? ''}'),
+          eventoId: eventoRef.id,
+          deporteId: deporteId,
+        ),
+      );
+      await batch.commit();
       return AuthResponse(isSuccess: true);
     } on FirebaseException catch (e) {
       return AuthResponse(
@@ -1002,18 +1027,32 @@ class FirebaseServices {
         throw StateError('Sesión de entrenador requerida');
       }
       final perfil = await getUserData(uid: entrenadorUid);
-      await _db
-          .collection(ticketsCollection)
-          .add(
-            construirTicketSoporteEntrenador(
-              entrenadorUid: entrenadorUid,
-              perfil: perfil,
-              categoria: categoria,
-              asunto: asunto,
-              descripcion: descripcion,
-              fechaServidor: FieldValue.serverTimestamp(),
-            ),
-          );
+      final ticketRef = _db.collection(ticketsCollection).doc();
+      final batch = _db.batch();
+      batch.set(
+        ticketRef,
+        construirTicketSoporteEntrenador(
+          entrenadorUid: entrenadorUid,
+          perfil: perfil,
+          categoria: categoria,
+          asunto: asunto,
+          descripcion: descripcion,
+          fechaServidor: FieldValue.serverTimestamp(),
+        ),
+      );
+      batch.set(
+        _db.collection(notificacionesCollection).doc(),
+        _aviso(
+          destinatarioUid: '',
+          destinatarioRol: 'administrador',
+          origenUid: entrenadorUid,
+          tipo: 'ticket_nuevo',
+          titulo: AppStrings.tituloAvisoTicket,
+          mensaje: AppStrings.avisoTicketNuevo(asunto),
+          ticketId: ticketRef.id,
+        ),
+      );
+      await batch.commit();
       return AuthResponse(isSuccess: true);
     } on FirebaseException catch (e) {
       return AuthResponse(
@@ -1188,13 +1227,43 @@ class FirebaseServices {
           throw StateError(AppStrings.inscripcionSinCupos);
         }
         tx.update(deporteRef, {'inscritos': inscritos + 1});
+        final deporteNombre = '${datos['nombre'] ?? ''}';
         tx.set(inscripcionRef, {
           'estudianteUid': uid,
           'deporteId': deporteId,
-          'deporteNombre': '${datos['nombre'] ?? ''}',
+          'deporteNombre': deporteNombre,
           'estado': 'pendiente',
           'fecha': FieldValue.serverTimestamp(),
         });
+        tx.set(
+          _db.collection(notificacionesCollection).doc(),
+          _aviso(
+            destinatarioUid: uid,
+            destinatarioRol: 'estudiante',
+            origenUid: uid,
+            tipo: 'inscripcion_creada',
+            titulo: AppStrings.tituloAvisoInscripcion,
+            mensaje: AppStrings.avisoInscripcionCreada(deporteNombre),
+            inscripcionId: '${uid}_$deporteId',
+            deporteId: deporteId,
+          ),
+        );
+        tx.set(
+          _db.collection(notificacionesCollection).doc(),
+          _aviso(
+            destinatarioUid: '',
+            destinatarioRol: 'administrador',
+            origenUid: uid,
+            tipo: 'inscripcion_pendiente',
+            titulo: AppStrings.tituloAvisoInscripcion,
+            mensaje: AppStrings.avisoInscripcionPendienteAdmin(
+              _nombrePersona(usuarioTx.data()),
+              deporteNombre,
+            ),
+            inscripcionId: '${uid}_$deporteId',
+            deporteId: deporteId,
+          ),
+        );
       });
       return AuthResponse(isSuccess: true);
     } on FirebaseException catch (e) {
@@ -1251,6 +1320,21 @@ class FirebaseServices {
           }
         }
         tx.update(inscripcionRef, {'estado': 'cancelada'});
+        tx.set(
+          _db.collection(notificacionesCollection).doc(),
+          _aviso(
+            destinatarioUid: uid,
+            destinatarioRol: 'estudiante',
+            origenUid: uid,
+            tipo: 'inscripcion_cancelada',
+            titulo: AppStrings.tituloAvisoInscripcion,
+            mensaje: AppStrings.avisoInscripcionCancelada(
+              '${datos['deporteNombre'] ?? ''}',
+            ),
+            inscripcionId: inscripcionId,
+            deporteId: '${datos['deporteId'] ?? ''}',
+          ),
+        );
       });
       return AuthResponse(isSuccess: true);
     } on FirebaseException catch (e) {
@@ -1302,7 +1386,9 @@ class FirebaseServices {
       );
     }
     try {
-      await _db.collection(pagosCollection).add({
+      final pagoRef = _db.collection(pagosCollection).doc();
+      final batch = _db.batch();
+      batch.set(pagoRef, {
         'estudianteUid': uid,
         'inscripcionId': '',
         'monto': monto,
@@ -1313,6 +1399,19 @@ class FirebaseServices {
         'verificado': false,
         'fecha': FieldValue.serverTimestamp(),
       });
+      batch.set(
+        _db.collection(notificacionesCollection).doc(),
+        _aviso(
+          destinatarioUid: '',
+          destinatarioRol: 'administrador',
+          origenUid: uid,
+          tipo: 'pago_enviado',
+          titulo: AppStrings.tituloAvisoPago,
+          mensaje: AppStrings.avisoPagoEnviado(periodo),
+          pagoId: pagoRef.id,
+        ),
+      );
+      await batch.commit();
       return AuthResponse(isSuccess: true);
     } on FirebaseException catch (e) {
       return AuthResponse(
@@ -1372,18 +1471,32 @@ class FirebaseServices {
     }
     try {
       final perfil = await getUserData(uid: uid);
-      await _db
-          .collection(ticketsCollection)
-          .add(
-            construirTicketEstudiante(
-              estudianteUid: uid,
-              perfil: perfil,
-              categoria: categoria,
-              asunto: asunto,
-              descripcion: descripcion,
-              fechaServidor: FieldValue.serverTimestamp(),
-            ),
-          );
+      final ticketRef = _db.collection(ticketsCollection).doc();
+      final batch = _db.batch();
+      batch.set(
+        ticketRef,
+        construirTicketEstudiante(
+          estudianteUid: uid,
+          perfil: perfil,
+          categoria: categoria,
+          asunto: asunto,
+          descripcion: descripcion,
+          fechaServidor: FieldValue.serverTimestamp(),
+        ),
+      );
+      batch.set(
+        _db.collection(notificacionesCollection).doc(),
+        _aviso(
+          destinatarioUid: '',
+          destinatarioRol: 'administrador',
+          origenUid: uid,
+          tipo: 'ticket_nuevo',
+          titulo: AppStrings.tituloAvisoTicket,
+          mensaje: AppStrings.avisoTicketNuevo(asunto),
+          ticketId: ticketRef.id,
+        ),
+      );
+      await batch.commit();
       return AuthResponse(isSuccess: true);
     } on FirebaseException catch (e) {
       return AuthResponse(
@@ -2332,18 +2445,29 @@ class FirebaseServices {
             descripcion: AppStrings.txEventoCreado(titulo),
           ),
         );
-      });
-      if (deporteId.isNotEmpty) {
-        await _escribirNotificacionesEvento(
-          deporteId: deporteId,
-          titulo: titulo,
-          fecha: fecha,
-          horaInicio: horaInicio,
-          horaFin: horaFin,
-          canchaNombre: canchaNombre,
-          reemplazaPractica: ignoroPractica,
+        tx.set(
+          _db.collection('eventosPublicos').doc(eventoRef.id),
+          _datosEventoPublico({
+            ...datos,
+            'titulo': titulo,
+            'deporteId': deporteId,
+            'canchaNombre': canchaNombre,
+            'fecha': fecha,
+            'horaInicio': horaInicio,
+            'horaFin': horaFin,
+          }),
         );
-      }
+      });
+      await _escribirNotificacionesEvento(
+        eventoId: eventoRef.id,
+        deporteId: deporteId,
+        titulo: titulo,
+        fecha: fecha,
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+        canchaNombre: canchaNombre,
+        reemplazaPractica: ignoroPractica,
+      );
     });
   }
 
@@ -2357,16 +2481,23 @@ class FirebaseServices {
   }) {
     return _ejecutarAdmin(() async {
       final eventoRef = _db.collection(eventosCollection).doc(id);
+      var estadoEvento = '';
+      var cambioHorario = false;
+      var deporteEvento = '';
+      var tituloEvento = '';
       await _db.runTransaction((tx) async {
         final evento = await tx.get(eventoRef);
         if (!evento.exists) throw StateError('El evento no existe.');
         final actual = evento.data() ?? {};
+        estadoEvento = '${actual['estado'] ?? ''}';
+        deporteEvento = '${actual['deporteId'] ?? ''}';
         final titulo = datos.containsKey('titulo')
             ? '${datos['titulo']}'.trim()
             : '${actual['titulo'] ?? ''}';
         if (datos.containsKey('titulo') && titulo.isEmpty) {
           throw StateError('El título del evento es obligatorio.');
         }
+        tituloEvento = titulo;
         final canchaNueva = canchaId ?? '${actual['canchaId'] ?? ''}';
         final fechaNueva = fecha ?? '${actual['fecha'] ?? ''}';
         final inicioNuevo = horaInicio ?? _enteroAdmin(actual['horaInicio']);
@@ -2376,6 +2507,7 @@ class FirebaseServices {
             fecha != null ||
             horaInicio != null ||
             horaFin != null;
+        cambioHorario = cambiaHorario;
         final estado = '${actual['estado'] ?? ''}';
         DocumentSnapshot<Map<String, dynamic>>? cancha;
         QuerySnapshot<Map<String, dynamic>>? reservas;
@@ -2459,7 +2591,30 @@ class FirebaseServices {
             descripcion: AppStrings.txEventoActualizado(titulo),
           ),
         );
+        if (estado == 'aprobado') {
+          tx.set(
+            _db.collection('eventosPublicos').doc(id),
+            _datosEventoPublico({
+              ...actual,
+              ...cambios,
+              'titulo': titulo,
+              'canchaNombre': canchaNombre,
+              'fecha': fechaNueva,
+              'horaInicio': inicioNuevo,
+              'horaFin': finNuevo,
+            }),
+          );
+        }
       });
+      if (estadoEvento == 'aprobado' && cambioHorario) {
+        await _avisarInscritos(
+          deporteId: deporteEvento,
+          tipo: 'evento_modificado',
+          titulo: AppStrings.tituloAvisoEvento,
+          mensaje: AppStrings.avisoEventoModificado(tituloEvento),
+          eventoId: id,
+        );
+      }
     });
   }
 
@@ -2473,17 +2628,25 @@ class FirebaseServices {
         throw StateError('El estado del evento no es válido.');
       }
       final eventoRef = _db.collection(eventosCollection).doc(id);
+      var deporteAprobado = '';
+      var tituloEvento = '';
       await _db.runTransaction((tx) async {
         final evento = await tx.get(eventoRef);
         if (!evento.exists) throw StateError('El evento no existe.');
         final actual = evento.data() ?? {};
+        deporteAprobado = '${actual['deporteId'] ?? ''}'.trim();
+        tituloEvento = '${actual['titulo'] ?? ''}';
+        final creador = '${actual['creadoPorUid'] ?? ''}';
+        final creadorDoc = creador.isEmpty
+            ? null
+            : await tx.get(_db.collection(usuariosCollection).doc(creador));
+        final esEntrenador = creadorDoc?.data()?['rol'] == 'entrenador';
         final canchaId = '${actual['canchaId'] ?? ''}';
         final cancha = canchaId.isEmpty
             ? null
             : await tx.get(_db.collection(canchasCollection).doc(canchaId));
         final reservas = await _reservasDelEvento(id);
-        final tituloAprobado = '${actual['titulo'] ?? ''}';
-        final deporteAprobado = '${actual['deporteId'] ?? ''}'.trim();
+        final tituloAprobado = tituloEvento;
         if (estado == 'aprobado') {
           if (canchaId.isEmpty ||
               cancha == null ||
@@ -2555,7 +2718,41 @@ class FirebaseServices {
             ),
           ),
         );
+        final publico = _db.collection('eventosPublicos').doc(id);
+        if (estado == 'aprobado') {
+          tx.set(publico, _datosEventoPublico({...actual, 'estado': estado}));
+        } else {
+          tx.delete(publico);
+        }
+        if (esEntrenador &&
+            creador != (_auth.currentUser?.uid ?? '') &&
+            (estado == 'aprobado' || estado == 'rechazado')) {
+          tx.set(
+            _db.collection(notificacionesCollection).doc(),
+            _aviso(
+              destinatarioUid: creador,
+              destinatarioRol: 'entrenador',
+              tipo: estado == 'aprobado' ? 'evento_aprobado' : 'evento_rechazado',
+              titulo: AppStrings.tituloAvisoEvento,
+              mensaje: estado == 'aprobado'
+                  ? AppStrings.avisoEventoAprobado('${actual['titulo'] ?? ''}')
+                  : AppStrings.avisoEventoRechazado('${actual['titulo'] ?? ''}'),
+              eventoId: id,
+              deporteId: deporteAprobado,
+            ),
+          );
+        }
       });
+      if (estado == 'cancelado') {
+        await _avisarInscritos(
+          deporteId: deporteAprobado,
+          tipo: 'evento_cancelado',
+          titulo: AppStrings.tituloAvisoEvento,
+          mensaje: AppStrings.avisoEventoCancelado(tituloEvento),
+          eventoId: id,
+          incluirEntrenador: true,
+        );
+      }
     });
   }
 
@@ -2567,9 +2764,11 @@ class FirebaseServices {
     required int horaFin,
     required String canchaNombre,
     required bool reemplazaPractica,
+    String eventoId = '',
   }) {
     return _ejecutarAdmin(
       () => _escribirNotificacionesEvento(
+        eventoId: eventoId,
         deporteId: deporteId,
         titulo: titulo,
         fecha: fecha,
@@ -2582,7 +2781,8 @@ class FirebaseServices {
   }
 
   static Future<void> _escribirNotificacionesEvento({
-    required String deporteId,
+    required String eventoId,
+    String? deporteId,
     required String titulo,
     required String fecha,
     required int horaInicio,
@@ -2590,34 +2790,96 @@ class FirebaseServices {
     required String canchaNombre,
     required bool reemplazaPractica,
   }) async {
-    final inscritos = await _db
-        .collection(inscripcionesCollection)
-        .where('deporteId', isEqualTo: deporteId)
-        .where('estado', isEqualTo: 'confirmada')
+    final disciplina = (deporteId ?? '').trim();
+    final inscritos = <String>{};
+    if (disciplina.isNotEmpty) {
+      final lista = await _db
+          .collection(inscripcionesCollection)
+          .where('deporteId', isEqualTo: disciplina)
+          .get();
+      for (final doc in lista.docs) {
+        final estado = '${doc.data()['estado'] ?? ''}';
+        if (estado != 'pendiente' && estado != 'confirmada') continue;
+        final uid = '${doc.data()['estudianteUid'] ?? ''}';
+        if (uid.isNotEmpty) inscritos.add(uid);
+      }
+    }
+    final estudiantes = await _db
+        .collection(usuariosCollection)
+        .where('rol', isEqualTo: 'estudiante')
         .get();
-    if (inscritos.docs.isEmpty) return;
-    final mensaje = mensajeNotificacionEvento(
-      titulo: titulo,
-      fecha: fecha,
-      horaInicio: horaInicio,
-      horaFin: horaFin,
-      canchaNombre: canchaNombre,
-      reemplazaPractica: reemplazaPractica,
-    );
+    final avisos = <Map<String, dynamic>>[];
+    for (final doc in estudiantes.docs) {
+      if ('${doc.data()['estado'] ?? 'activo'}' == 'inactivo') continue;
+      final propio = inscritos.contains(doc.id);
+      avisos.add(
+        _aviso(
+          destinatarioUid: doc.id,
+          destinatarioRol: 'estudiante',
+          tipo: propio ? 'evento_confirmar' : 'evento_info',
+          titulo: AppStrings.tituloAvisoEvento,
+          mensaje: propio
+              ? '${AppStrings.avisoEventoConfirmar(titulo, fecha)} ${AppStrings.avisoEventoConfirmaParticipacion}'
+              : AppStrings.avisoEventoInfo(titulo, fecha),
+          eventoId: eventoId,
+          deporteId: disciplina,
+        ),
+      );
+    }
+    await _guardarAvisos(avisos);
+  }
+
+  static Map<String, dynamic> _aviso({
+    required String destinatarioUid,
+    required String destinatarioRol,
+    required String tipo,
+    required String titulo,
+    required String mensaje,
+    String origenUid = '',
+    String inscripcionId = '',
+    String pagoId = '',
+    String eventoId = '',
+    String ticketId = '',
+    String deporteId = '',
+  }) {
+    return {
+      'destinatarioUid': destinatarioUid,
+      'destinatarioRol': destinatarioRol,
+      'origenUid': origenUid,
+      'tipo': tipo,
+      'titulo': titulo,
+      'mensaje': mensaje,
+      'leida': false,
+      'fecha': FieldValue.serverTimestamp(),
+      'inscripcionId': inscripcionId,
+      'pagoId': pagoId,
+      'eventoId': eventoId,
+      'ticketId': ticketId,
+      'deporteId': deporteId,
+    };
+  }
+
+  static Map<String, dynamic> _datosEventoPublico(Map<String, dynamic> datos) {
+    return {
+      'titulo': '${datos['titulo'] ?? ''}',
+      'tipo': '${datos['tipo'] ?? 'evento'}',
+      'deporteId': '${datos['deporteId'] ?? ''}',
+      'deporteNombre': '${datos['deporteNombre'] ?? ''}',
+      'canchaNombre': '${datos['canchaNombre'] ?? ''}',
+      'fecha': '${datos['fecha'] ?? ''}',
+      'horaInicio': _enteroAdmin(datos['horaInicio']),
+      'horaFin': _enteroAdmin(datos['horaFin']),
+      'descripcion': '${datos['descripcion'] ?? ''}',
+      'actualizadoEn': FieldValue.serverTimestamp(),
+    };
+  }
+
+  static Future<void> _guardarAvisos(List<Map<String, dynamic>> avisos) async {
+    if (avisos.isEmpty) return;
     var batch = _db.batch();
     var escritos = 0;
-    for (final doc in inscritos.docs) {
-      final datos = doc.data();
-      final uid = '${datos['estudianteUid'] ?? datos['uid'] ?? ''}';
-      if (uid.isEmpty) continue;
-      batch.set(_db.collection(notificacionesCollection).doc(), {
-        'destinatarioUid': uid,
-        'tipo': 'evento',
-        'titulo': titulo,
-        'mensaje': mensaje,
-        'leida': false,
-        'fecha': FieldValue.serverTimestamp(),
-      });
+    for (final aviso in avisos) {
+      batch.set(_db.collection(notificacionesCollection).doc(), aviso);
       escritos++;
       if (escritos == 400) {
         await batch.commit();
@@ -2626,6 +2888,168 @@ class FirebaseServices {
       }
     }
     if (escritos > 0) await batch.commit();
+  }
+
+  static Future<void> _avisarInscritos({
+    required String deporteId,
+    required String tipo,
+    required String titulo,
+    required String mensaje,
+    required String eventoId,
+    bool incluirEntrenador = false,
+  }) async {
+    final disciplina = deporteId.trim();
+    if (disciplina.isEmpty) return;
+    final avisos = <Map<String, dynamic>>[];
+    final lista = await _db
+        .collection(inscripcionesCollection)
+        .where('deporteId', isEqualTo: disciplina)
+        .get();
+    for (final doc in lista.docs) {
+      final estado = '${doc.data()['estado'] ?? ''}';
+      if (estado != 'pendiente' && estado != 'confirmada') continue;
+      final uid = '${doc.data()['estudianteUid'] ?? ''}';
+      if (uid.isEmpty) continue;
+      avisos.add(
+        _aviso(
+          destinatarioUid: uid,
+          destinatarioRol: 'estudiante',
+          tipo: tipo,
+          titulo: titulo,
+          mensaje: mensaje,
+          eventoId: eventoId,
+          deporteId: disciplina,
+        ),
+      );
+    }
+    if (incluirEntrenador) {
+      final deporte = await _db.collection(deportesCollection).doc(disciplina).get();
+      final entrenador = '${deporte.data()?['entrenadorUid'] ?? ''}';
+      if (entrenador.isNotEmpty) {
+        avisos.add(
+          _aviso(
+            destinatarioUid: entrenador,
+            destinatarioRol: 'entrenador',
+            tipo: tipo,
+            titulo: titulo,
+            mensaje: mensaje,
+            eventoId: eventoId,
+            deporteId: disciplina,
+          ),
+        );
+      }
+    }
+    await _guardarAvisos(avisos);
+  }
+
+  static Stream<List<Map<String, dynamic>>> streamEventosPublicos({
+    required String desdeFecha,
+    int limite = 20,
+  }) {
+    return _streamConsultaEntrenador(
+      _db
+          .collection('eventosPublicos')
+          .where('fecha', isGreaterThanOrEqualTo: desdeFecha)
+          .orderBy('fecha')
+          .limit(limite),
+    );
+  }
+
+  static Stream<List<Map<String, dynamic>>> streamNotificacionesAdmin() {
+    return _streamConsultaEntrenador(
+      _db
+          .collection(notificacionesCollection)
+          .where('destinatarioRol', isEqualTo: 'administrador'),
+    );
+  }
+
+  static Future<void> marcarAvisoAdminLeido({required String id}) async {
+    await _db.collection(notificacionesCollection).doc(id).update({'leida': true});
+  }
+
+  static Future<void> responderParticipacionEvento({
+    required String eventoId,
+    required bool asistira,
+    String? notificacionId,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) throw StateError(AppStrings.sesionNoIniciada);
+    final batch = _db.batch();
+    batch.set(
+      _db.collection(eventosCollection).doc(eventoId).collection('participantes').doc(uid),
+      {
+        'estudianteUid': uid,
+        'estado': asistira ? 'confirmado' : 'rechazado',
+        'fecha': FieldValue.serverTimestamp(),
+      },
+    );
+    if (notificacionId != null && notificacionId.isNotEmpty) {
+      batch.update(
+        _db.collection(notificacionesCollection).doc(notificacionId),
+        {'leida': true},
+      );
+    }
+    await batch.commit();
+  }
+
+  static Stream<String> streamParticipacion({
+    required String eventoId,
+    required String uid,
+  }) {
+    return _db
+        .collection(eventosCollection)
+        .doc(eventoId)
+        .collection('participantes')
+        .doc(uid)
+        .snapshots()
+        .map((doc) => '${doc.data()?['estado'] ?? ''}');
+  }
+
+  static Stream<List<Map<String, dynamic>>> streamParticipantesEvento({
+    required String eventoId,
+  }) {
+    return _streamConsultaEntrenador(
+      _db.collection(eventosCollection).doc(eventoId).collection('participantes'),
+    );
+  }
+
+  static Future<void> sincronizarEventosPublicos() async {
+    final hoy = DateTime.now();
+    final desde =
+        '${hoy.year.toString().padLeft(4, '0')}-${hoy.month.toString().padLeft(2, '0')}-${hoy.day.toString().padLeft(2, '0')}';
+    final eventos = await _db
+        .collection(eventosCollection)
+        .where('estado', isEqualTo: 'aprobado')
+        .get();
+    final espejo = await _db.collection('eventosPublicos').get();
+    final aprobados = <String>{};
+    var batch = _db.batch();
+    var escritos = 0;
+    Future<void> cerrar() async {
+      if (escritos == 0) return;
+      await batch.commit();
+      batch = _db.batch();
+      escritos = 0;
+    }
+
+    for (final doc in eventos.docs) {
+      final datos = doc.data();
+      if ('${datos['fecha'] ?? ''}'.compareTo(desde) < 0) continue;
+      aprobados.add(doc.id);
+      batch.set(
+        _db.collection('eventosPublicos').doc(doc.id),
+        _datosEventoPublico(datos),
+      );
+      escritos++;
+      if (escritos == 400) await cerrar();
+    }
+    for (final doc in espejo.docs) {
+      if (aprobados.contains(doc.id)) continue;
+      batch.delete(doc.reference);
+      escritos++;
+      if (escritos == 400) await cerrar();
+    }
+    await cerrar();
   }
 
   static Stream<List<Map<String, dynamic>>> streamEstudiantesAdmin() {
@@ -2737,6 +3161,49 @@ class FirebaseServices {
           tx.update(deporteRef, {'inscritos': inscritos + 1});
         }
         tx.update(inscripcionRef, {'estado': estado});
+        final estudianteUid = '${datos['estudianteUid'] ?? ''}';
+        final tipoAviso = estado == 'confirmada'
+            ? 'inscripcion_confirmada'
+            : estado == 'cancelada'
+            ? 'inscripcion_cancelada_admin'
+            : 'inscripcion_pendiente_admin';
+        final mensajeAviso = estado == 'confirmada'
+            ? AppStrings.avisoInscripcionConfirmada(deporteNombre)
+            : estado == 'cancelada'
+            ? AppStrings.avisoInscripcionCanceladaAdmin(deporteNombre)
+            : AppStrings.avisoInscripcionPendienteAdminEstudiante(deporteNombre);
+        if (estudianteUid.isNotEmpty) {
+          tx.set(
+            _db.collection(notificacionesCollection).doc(),
+            _aviso(
+              destinatarioUid: estudianteUid,
+              destinatarioRol: 'estudiante',
+              tipo: tipoAviso,
+              titulo: AppStrings.tituloAvisoInscripcion,
+              mensaje: mensajeAviso,
+              inscripcionId: id,
+              deporteId: '${datos['deporteId'] ?? ''}',
+            ),
+          );
+        }
+        final entrenadorUid = '${deporte.data()?['entrenadorUid'] ?? ''}';
+        if (estado == 'confirmada' && entrenadorUid.isNotEmpty) {
+          tx.set(
+            _db.collection(notificacionesCollection).doc(),
+            _aviso(
+              destinatarioUid: entrenadorUid,
+              destinatarioRol: 'entrenador',
+              tipo: 'alumno_confirmado',
+              titulo: AppStrings.tituloAvisoInscripcion,
+              mensaje: AppStrings.avisoAlumnoConfirmado(
+                nombreEstudiante,
+                deporteNombre,
+              ),
+              inscripcionId: id,
+              deporteId: '${datos['deporteId'] ?? ''}',
+            ),
+          );
+        }
         tx.set(
           _db.collection(transaccionesCollection).doc(),
           _datosTransaccion(
@@ -2904,6 +3371,19 @@ class FirebaseServices {
             'solvente': true,
           });
         }
+        if (verificado && uid.isNotEmpty) {
+          tx.set(
+            _db.collection(notificacionesCollection).doc(),
+            _aviso(
+              destinatarioUid: uid,
+              destinatarioRol: 'estudiante',
+              tipo: 'pago_verificado',
+              titulo: AppStrings.tituloAvisoPago,
+              mensaje: AppStrings.avisoPagoVerificado(periodoPago),
+              pagoId: pagoId,
+            ),
+          );
+        }
         tx.set(
           _db.collection(transaccionesCollection).doc(),
           _datosTransaccion(
@@ -3037,7 +3517,24 @@ class FirebaseServices {
         'verificado': estado == 'realizado',
       };
       if (estado != 'realizado') cambios['verificadoPor'] = '';
-      await _db.collection(pagosCollection).doc(pagoId).update(cambios);
+      final batch = _db.batch();
+      batch.update(_db.collection(pagosCollection).doc(pagoId), cambios);
+      if (estado == 'rechazado' && estudianteUid.isNotEmpty) {
+        batch.set(
+          _db.collection(notificacionesCollection).doc(),
+          _aviso(
+            destinatarioUid: estudianteUid,
+            destinatarioRol: 'estudiante',
+            tipo: 'pago_rechazado',
+            titulo: AppStrings.tituloAvisoPago,
+            mensaje: AppStrings.avisoPagoRechazado(
+              '${datosPago?['periodo'] ?? ''}'.trim(),
+            ),
+            pagoId: pagoId,
+          ),
+        );
+      }
+      await batch.commit();
       await registrarTransaccion(
         accion: estado == 'rechazado' ? 'rechazar' : 'marcar_pendiente',
         modulo: 'pagos',
@@ -3169,7 +3666,25 @@ class FirebaseServices {
         cambios['estado'] = 'resuelto';
         cambios['resueltoEn'] = FieldValue.serverTimestamp();
       }
-      await _db.collection(ticketsCollection).doc(id).update(cambios);
+      final batch = _db.batch();
+      batch.update(_db.collection(ticketsCollection).doc(id), cambios);
+      final autorUid = '${datosTicket?['autorUid'] ?? ''}';
+      if (autorUid.isNotEmpty) {
+        batch.set(
+          _db.collection(notificacionesCollection).doc(),
+          _aviso(
+            destinatarioUid: autorUid,
+            destinatarioRol: '${datosTicket?['autorRol'] ?? 'estudiante'}',
+            tipo: 'ticket_respondido',
+            titulo: AppStrings.tituloAvisoTicket,
+            mensaje: AppStrings.avisoTicketRespondido(
+              '${datosTicket?['asunto'] ?? ''}',
+            ),
+            ticketId: id,
+          ),
+        );
+      }
+      await batch.commit();
       await registrarTransaccion(
         accion: resolver ? 'resolver' : 'responder',
         modulo: 'soporte',

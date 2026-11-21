@@ -112,6 +112,8 @@ class _RecordatoriosEstudianteViewState
                 _TarjetaAviso(
                   aviso: aviso,
                   onMarcar: () => _mostrarResultado(c.marcarLeido(aviso)),
+                  onResponder: (asistira) =>
+                      _mostrarResultado(c.responderEvento(aviso, asistira)),
                 ),
                 const SizedBox(height: AppSizes.space12),
               ],
@@ -124,14 +126,30 @@ class _RecordatoriosEstudianteViewState
 }
 
 class _TarjetaAviso extends StatelessWidget {
-  const _TarjetaAviso({required this.aviso, required this.onMarcar});
+  const _TarjetaAviso({
+    required this.aviso,
+    required this.onMarcar,
+    required this.onResponder,
+  });
 
   final Notificacion aviso;
   final VoidCallback onMarcar;
+  final void Function(bool asistira) onResponder;
 
   IconData get _icono => switch (aviso.tipo) {
-    'pago_pendiente' => Icons.receipt_long_outlined,
-    'evento' => Icons.event_outlined,
+    'pago_pendiente' || 'pago_verificado' || 'pago_rechazado' =>
+      Icons.receipt_long_outlined,
+    'evento' ||
+    'evento_confirmar' ||
+    'evento_info' ||
+    'evento_cancelado' ||
+    'evento_modificado' => Icons.event_outlined,
+    'inscripcion_creada' ||
+    'inscripcion_cancelada' ||
+    'inscripcion_confirmada' ||
+    'inscripcion_cancelada_admin' ||
+    'inscripcion_pendiente_admin' => Icons.how_to_reg_outlined,
+    'ticket_respondido' => Icons.support_agent_outlined,
     _ => Icons.notifications_outlined,
   };
 
@@ -193,7 +211,21 @@ class _TarjetaAviso extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                if (nuevo) ...[
+                if (aviso.pideConfirmacion) ...[
+                  const SizedBox(height: AppSizes.space8),
+                  Wrap(
+                    children: [
+                      TextButton(
+                        onPressed: () => onResponder(true),
+                        child: const Text(AppStrings.confirmarParticipacion),
+                      ),
+                      TextButton(
+                        onPressed: () => onResponder(false),
+                        child: const Text(AppStrings.noAsistire),
+                      ),
+                    ],
+                  ),
+                ] else if (nuevo) ...[
                   const SizedBox(height: AppSizes.space8),
                   TextButton(
                     onPressed: onMarcar,

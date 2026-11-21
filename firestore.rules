@@ -189,10 +189,100 @@ service cloud.firestore {
 
     // `eventos` no tiene campo `activo`. La portada no los lista.
     // El entrenador crea solicitudes pendientes de su disciplina y lee las suyas.
+    function eventoDoc(eventoId) {
+      return get(/databases/$(database)/documents/eventos/$(eventoId)).data;
+    }
+
+    function camposAviso() {
+      return request.resource.data.keys().hasOnly([
+          'destinatarioUid', 'destinatarioRol', 'origenUid', 'tipo', 'titulo', 'mensaje',
+          'leida', 'fecha', 'inscripcionId', 'pagoId', 'eventoId', 'ticketId', 'deporteId'
+        ])
+        && request.resource.data.leida == false
+        && request.resource.data.fecha == request.time;
+    }
+
+    function rutaDe(coleccion, docId) {
+      return /databases/$(database)/documents/$(coleccion)/$(docId);
+    }
+
+    function escritoAhora(coleccion, docId) {
+      let ruta = rutaDe(coleccion, docId);
+      return !exists(ruta) || get(ruta).data.diff(getAfter(ruta).data).affectedKeys().size() > 0;
+    }
+
+    function inscripcionDespues(inscripcionId) {
+      return getAfter(/databases/$(database)/documents/inscripciones/$(inscripcionId)).data;
+    }
+
+    function usuarioDespues() {
+      return getAfter(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function avisoPropioInscripcion() {
+      return isEstudiante() && camposAviso()
+        && request.resource.data.destinatarioUid == request.auth.uid
+        && request.resource.data.inscripcionId is string
+        && escritoAhora('inscripciones', request.resource.data.inscripcionId)
+        && inscripcionDespues(request.resource.data.inscripcionId).estudianteUid == request.auth.uid
+        && (
+          (request.resource.data.tipo == 'inscripcion_creada'
+            && inscripcionDespues(request.resource.data.inscripcionId).estado == 'pendiente')
+          || (request.resource.data.tipo == 'inscripcion_cancelada'
+            && inscripcionDespues(request.resource.data.inscripcionId).estado == 'cancelada')
+        );
+    }
+
+    function avisoParaAdmin() {
+      let d = request.resource.data;
+      return isSignedIn() && camposAviso()
+        && d.destinatarioRol == 'administrador' && d.destinatarioUid == ''
+        && d.origenUid == request.auth.uid
+        && usuarioDespues().get('estado', 'activo') != 'inactivo'
+        && (
+          (d.tipo == 'inscripcion_pendiente' && usuarioDespues().rol == 'estudiante'
+            && d.inscripcionId is string
+            && escritoAhora('inscripciones', d.inscripcionId)
+            && inscripcionDespues(d.inscripcionId).estudianteUid == request.auth.uid
+            && inscripcionDespues(d.inscripcionId).estado == 'pendiente')
+          || (d.tipo == 'pago_enviado' && usuarioDespues().rol == 'estudiante'
+            && d.pagoId is string
+            && escritoAhora('pagos', d.pagoId)
+            && getAfter(/databases/$(database)/documents/pagos/$(d.pagoId)).data.estudianteUid == request.auth.uid)
+          || (d.tipo == 'solicitud_evento' && usuarioDespues().rol == 'entrenador'
+            && d.eventoId is string
+            && escritoAhora('eventos', d.eventoId)
+            && getAfter(/databases/$(database)/documents/eventos/$(d.eventoId)).data.creadoPorUid == request.auth.uid)
+          || (d.tipo == 'ticket_nuevo' && usuarioDespues().rol in ['estudiante', 'entrenador']
+            && d.ticketId is string
+            && escritoAhora('tickets', d.ticketId)
+            && getAfter(/databases/$(database)/documents/tickets/$(d.ticketId)).data.autorUid == request.auth.uid)
+          || (d.tipo == 'registro_estudiante' && usuarioDespues().rol == 'estudiante'
+            && escritoAhora('usuarios', request.auth.uid))
+        );
+    }
+
     match /eventos/{id} {
       allow read: if isAdmin()
         || resource.data.get('activo', false) == true
+        || (activo() && resource.data.estado == 'aprobado')
         || (isEntrenador() && resource.data.creadoPorUid == request.auth.uid);
+
+      match /participantes/{uid} {
+        allow read: if isAdmin()
+          || (activo() && request.auth.uid == uid)
+          || (eventoDoc(id).get('deporteId', null) is string && esSuDeporte(eventoDoc(id).deporteId));
+        allow create, update: if isEstudiante()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['estudianteUid', 'estado', 'fecha'])
+          && request.resource.data.estudianteUid == uid
+          && request.resource.data.estado in ['confirmado', 'rechazado']
+          && request.resource.data.fecha == request.time
+          && eventoDoc(id).estado == 'aprobado'
+          && eventoDoc(id).get('deporteId', null) is string
+          && get(/databases/$(database)/documents/inscripciones/$(uid + '_' + eventoDoc(id).deporteId)).data.estado in ['pendiente', 'confirmada'];
+        allow delete: if false;
+      }
 
       allow create: if isAdmin() || (
           isEntrenador()
@@ -351,13 +441,24 @@ service cloud.firestore {
       allow read: if isAdmin()
         || (activo() && resource.data.destinatarioUid == request.auth.uid);
 
-      allow create: if isAdmin();
+      allow create: if isAdmin() || avisoPropioInscripcion() || avisoParaAdmin();
 
-      allow update: if activo()
-        && resource.data.destinatarioUid == request.auth.uid
-        && soloCambia(['leida']);
+      allow update: if soloCambia(['leida']) && (
+          (activo() && resource.data.destinatarioUid == request.auth.uid)
+          || (isAdmin() && resource.data.get('destinatarioRol', '') == 'administrador')
+        );
 
       allow delete: if false;
+    }
+
+    match /eventosPublicos/{id} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'titulo', 'tipo', 'deporteId', 'deporteNombre', 'canchaNombre',
+          'fecha', 'horaInicio', 'horaFin', 'descripcion', 'actualizadoEn'
+        ]);
+      allow delete: if isAdmin();
     }
 
     // La colección real de soporte es `tickets`, no `soporte`.

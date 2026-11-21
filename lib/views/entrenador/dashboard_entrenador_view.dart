@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
-import 'package:saman_sports/controllers/entrenador/entrenador_notificacion_controller.dart';
 import 'package:saman_sports/controllers/inicio_entrenador_controller.dart';
+import 'package:saman_sports/controllers/proximos_eventos_controller.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
-import 'package:saman_sports/views/entrenador/notificaciones_entrenador_view.dart';
 import 'package:saman_sports/views/entrenador/opciones_entrenador.dart';
+import 'package:saman_sports/views/widgets/proximos_eventos_card.dart';
 import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
@@ -20,12 +20,12 @@ class DashboardEntrenadorView extends StatefulWidget {
     super.key,
     required this.auth,
     this.controller,
-    this.notificaciones,
+    this.proximos,
   });
 
   final AuthController auth;
   final InicioEntrenadorController? controller;
-  final EntrenadorNotificacionController? notificaciones;
+  final ProximosEventosController? proximos;
 
   @override
   State<DashboardEntrenadorView> createState() =>
@@ -35,10 +35,10 @@ class DashboardEntrenadorView extends StatefulWidget {
 class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
   late final InicioEntrenadorController controller =
       widget.controller ?? InicioEntrenadorController();
-  late final EntrenadorNotificacionController notificaciones =
-      widget.notificaciones ?? EntrenadorNotificacionController();
+  late final ProximosEventosController proximos =
+      widget.proximos ?? ProximosEventosController(modo: ModoEventos.entrenador);
   late final bool _propio = widget.controller == null;
-  late final bool _avisosPropios = widget.notificaciones == null;
+  late final bool _eventosPropios = widget.proximos == null;
 
   @override
   void initState() {
@@ -46,14 +46,17 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       controller.cargar();
-      notificaciones.iniciar();
+      proximos.iniciar();
+      proximos.filtrarPorDeportes({
+        for (final deporte in controller.disciplinas) deporte.id,
+      });
     });
   }
 
   @override
   void dispose() {
     if (_propio) controller.dispose();
-    if (_avisosPropios) notificaciones.dispose();
+    if (_eventosPropios) proximos.dispose();
     super.dispose();
   }
 
@@ -89,10 +92,6 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: CampanaEntrenador(controller: notificaciones),
-              ),
               _BienvenidaEntrenador(
                 nombre: perfil?.nombre ?? AppStrings.entNombreFallback,
                 disciplina: perfil?.disciplina ?? '',
@@ -130,6 +129,8 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
               ),
               const SizedBox(height: AppSizes.space24),
               _ProximaClase(controller: controller),
+              const SizedBox(height: AppSizes.space24),
+              ProximosEventosCard(controller: proximos),
               const SizedBox(height: AppSizes.space32),
               Text(AppStrings.entAccesosRapidos, style: AppTextStyles.title),
               const SizedBox(height: AppSizes.space16),

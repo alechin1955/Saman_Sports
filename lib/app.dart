@@ -11,6 +11,7 @@ import 'package:saman_sports/controllers/estudiante_controladores.dart';
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
 import 'package:saman_sports/controllers/home_controller.dart';
+import 'package:saman_sports/controllers/notificaciones_controller.dart';
 import 'package:saman_sports/controllers/resultado_login.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
@@ -20,16 +21,19 @@ import 'package:saman_sports/views/admin/admin_dashboard_view.dart';
 import 'package:saman_sports/views/dashboards/dashboard_placeholder_view.dart';
 import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
 import 'package:saman_sports/views/home/home_view.dart';
+import 'package:saman_sports/views/widgets/notificaciones_scope.dart';
 
 class SamanSportsApp extends StatefulWidget {
   const SamanSportsApp({
     super.key,
     @visibleForTesting this.auth,
     @visibleForTesting this.sesion,
+    @visibleForTesting this.notificaciones,
   });
 
   final AuthController? auth;
   final Stream<Object?>? sesion;
+  final NotificacionesController? notificaciones;
 
   @override
   State<SamanSportsApp> createState() => _SamanSportsAppState();
@@ -38,6 +42,8 @@ class SamanSportsApp extends StatefulWidget {
 class _SamanSportsAppState extends State<SamanSportsApp> {
   late final AuthController _auth;
   late final bool _authPropio;
+  late final NotificacionesController _notificaciones;
+  late final bool _avisosPropios;
   final HomeController _home = HomeController();
   final EstudianteController _estudiante = EstudianteController();
   final ExplorarDeportesController _explorar = ExplorarDeportesController();
@@ -51,12 +57,16 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
     super.initState();
     _authPropio = widget.auth == null;
     _auth = widget.auth ?? AuthController();
+    _avisosPropios = widget.notificaciones == null;
+    _notificaciones = widget.notificaciones ?? NotificacionesController();
+    _notificaciones.iniciar();
     _sesion = widget.sesion ?? _abrirSesion();
   }
 
   @override
   void dispose() {
     if (_authPropio) _auth.dispose();
+    if (_avisosPropios) _notificaciones.dispose();
     _home.dispose();
     _estudiante.dispose();
     _explorar.dispose();
@@ -72,6 +82,10 @@ class _SamanSportsAppState extends State<SamanSportsApp> {
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      builder: (context, child) => NotificacionesScope(
+        controller: _notificaciones,
+        child: child ?? const SizedBox.shrink(),
+      ),
       initialRoute: AppRoutes.home,
       routes: {
         AppRoutes.home: (_) => _InicioSegunSesion(

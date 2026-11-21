@@ -297,6 +297,7 @@ class _Eventos implements AdminEventoRepository {
     required int horaFin,
     required String canchaNombre,
     required bool reemplazaPractica,
+    String eventoId = '',
   }) async => null;
 }
 

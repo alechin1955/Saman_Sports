@@ -176,5 +176,35 @@ void main() {
       expect(find.text(AppStrings.sinRecordatorios), findsOneWidget);
       await tester.binding.setSurfaceSize(null);
     });
+
+    testWidgets('evento_confirmar muestra los botones y responde', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      final respuestas = <bool>[];
+      final controller = RecordatoriosController(
+        uidActual: () => 'u1',
+        origen: (_) => Stream.value([
+          {
+            ...aviso('ev', 'evento_confirmar'),
+            'eventoId': 'evento-1',
+          },
+        ]),
+        marcar: (_) async => AuthResponse(isSuccess: true),
+        responder: (eventoId, asistira, notificacionId) async {
+          respuestas.add(asistira);
+          expect(eventoId, 'evento-1');
+          expect(notificacionId, 'ev');
+          return AuthResponse(isSuccess: true);
+        },
+      );
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(pantalla(controller));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.confirmarParticipacion), findsOneWidget);
+      expect(find.text(AppStrings.noAsistire), findsOneWidget);
+      await tester.tap(find.text(AppStrings.confirmarParticipacion));
+      await tester.pumpAndSettle();
+      expect(respuestas, [true]);
+      await tester.binding.setSurfaceSize(null);
+    });
   });
 }

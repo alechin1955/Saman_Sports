@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:saman_sports/FirebaseServices.dart';
 import 'package:saman_sports/models/deporte.dart';
+import 'package:saman_sports/models/evento_publico.dart';
 import 'package:saman_sports/models/entrenador_publico.dart';
 import 'package:saman_sports/models/resena.dart';
 
@@ -11,15 +12,19 @@ class HomeController extends ChangeNotifier {
     Stream<List<Map<String, dynamic>>> Function()? deportesOrigen,
     Stream<List<Map<String, dynamic>>> Function()? entrenadoresOrigen,
     Stream<List<Map<String, dynamic>>> Function()? resenasOrigen,
+    Stream<List<Map<String, dynamic>>> Function()? eventosOrigen,
   })  : _deportesOrigen = deportesOrigen ?? FirebaseServices.streamDeportes,
         _entrenadoresOrigen = entrenadoresOrigen ?? FirebaseServices.streamEntrenadores,
-        _resenasOrigen = resenasOrigen ?? FirebaseServices.streamResenas;
+        _resenasOrigen = resenasOrigen ?? FirebaseServices.streamResenas,
+        _eventosOrigen = eventosOrigen ?? _eventosDeHoy;
 
   final Stream<List<Map<String, dynamic>>> Function() _deportesOrigen;
   final Stream<List<Map<String, dynamic>>> Function() _entrenadoresOrigen;
   final Stream<List<Map<String, dynamic>>> Function() _resenasOrigen;
+  final Stream<List<Map<String, dynamic>>> Function() _eventosOrigen;
 
   List<Deporte> deportes = [];
+  List<EventoPublico> proximosEventos = [];
   List<EntrenadorPublico> entrenadores = [];
   List<Resena> resenas = [];
   bool cargando = true;
@@ -27,6 +32,7 @@ class HomeController extends ChangeNotifier {
   StreamSubscription<List<Map<String, dynamic>>>? _subDeportes;
   StreamSubscription<List<Map<String, dynamic>>>? _subEntrenadores;
   StreamSubscription<List<Map<String, dynamic>>>? _subResenas;
+  StreamSubscription<List<Map<String, dynamic>>>? _subEventos;
   var _recibioDeportes = false;
   var _recibioEntrenadores = false;
   var _recibioResenas = false;
@@ -58,6 +64,22 @@ class HomeController extends ChangeNotifier {
       resenas = lista.map(Resena.fromMap).toList();
       _cerrarCarga();
     });
+    _subEventos = _escuchar(_eventosOrigen, (lista) {
+      proximosEventos = lista
+          .map((mapa) => EventoPublico.fromMap('${mapa['id'] ?? ''}', mapa))
+          .toList();
+      notifyListeners();
+    });
+  }
+
+  static Stream<List<Map<String, dynamic>>> _eventosDeHoy() {
+    final hoy = DateTime.now();
+    final mes = hoy.month.toString().padLeft(2, '0');
+    final dia = hoy.day.toString().padLeft(2, '0');
+    return FirebaseServices.streamEventosPublicos(
+      desdeFecha: '${hoy.year}-$mes-$dia',
+      limite: 6,
+    );
   }
 
   @override
@@ -65,6 +87,7 @@ class HomeController extends ChangeNotifier {
     _subDeportes?.cancel();
     _subEntrenadores?.cancel();
     _subResenas?.cancel();
+    _subEventos?.cancel();
     super.dispose();
   }
 

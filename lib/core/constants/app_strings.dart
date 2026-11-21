@@ -975,4 +975,64 @@ class AppStrings {
   static String txResenaDe(String autor, String disciplina) =>
       'de $autor sobre $disciplina';
   static String txTicketDe(String asunto) => '«$asunto»';
+
+  // --- Prompt C: notificaciones y eventos ---
+  static const String proximosEventos = 'Próximos eventos';
+  static const String sinProximosEventos = 'No hay eventos próximos.';
+  static const String tuDeporte = 'Tu deporte';
+  static const String confirmarParticipacion = 'Confirmar';
+  static const String noAsistire = 'No asistiré';
+  static const String marcarTodas = 'Marcar todas';
+  static const String notificacionesTitulo = 'Notificaciones';
+  static const String sinNotificaciones = 'No tienes notificaciones.';
+  static const String participacionConfirmada = 'Confirmaste tu asistencia.';
+  static const String participacionRechazada = 'Indicaste que no asistirás.';
+  static const String confirmadosEvento = 'confirmados';
+  static const String avisoEventoConfirmaParticipacion =
+      'Confirma si vas a participar.';
+
+  static String avisoInscripcionCreada(String deporte) =>
+      'Tu inscripción en $deporte quedó pendiente.';
+  static String avisoInscripcionCancelada(String deporte) =>
+      'Cancelaste tu inscripción en $deporte.';
+  static String avisoInscripcionPendienteAdmin(String estudiante, String deporte) =>
+      '$estudiante solicitó inscribirse en $deporte.';
+  static String avisoInscripcionConfirmada(String deporte) =>
+      'Tu inscripción en $deporte fue confirmada.';
+  static String avisoInscripcionCanceladaAdmin(String deporte) =>
+      'La coordinación canceló tu inscripción en $deporte.';
+  static String avisoInscripcionPendienteAdminEstudiante(String deporte) =>
+      'Tu inscripción en $deporte volvió a pendiente.';
+  static String avisoAlumnoConfirmado(String estudiante, String deporte) =>
+      '$estudiante quedó confirmado en $deporte.';
+  static String avisoEventoConfirmar(String titulo, String fecha) =>
+      'Confirma tu participación en $titulo el $fecha.';
+  static String avisoEventoInfo(String titulo, String fecha) =>
+      'Se realizará $titulo el $fecha.';
+  static String avisoEventoAprobado(String titulo) =>
+      'La coordinación aprobó tu evento $titulo.';
+  static String avisoEventoRechazado(String titulo) =>
+      'La coordinación rechazó tu evento $titulo.';
+  static String avisoEventoCancelado(String titulo) =>
+      'Se canceló el evento $titulo.';
+  static String avisoEventoModificado(String titulo) =>
+      'Cambió el horario o la cancha de $titulo.';
+  static String avisoSolicitudEvento(String titulo) =>
+      'Nueva solicitud de evento: $titulo.';
+  static String avisoTicketNuevo(String asunto) => 'Nuevo ticket: $asunto.';
+  static String avisoPagoEnviado(String periodo) =>
+      'Un estudiante envió el pago del período $periodo.';
+  static String avisoRegistroEstudiante(String nombre) =>
+      '$nombre se registró como estudiante.';
+  static String avisoTicketRespondido(String asunto) =>
+      'La coordinación respondió tu ticket «$asunto».';
+  static String avisoPagoVerificado(String periodo) =>
+      'Se verificó tu pago del período $periodo.';
+  static String avisoPagoRechazado(String periodo) =>
+      'Se rechazó tu pago del período $periodo.';
+  static const String tituloAvisoInscripcion = 'Inscripción';
+  static const String tituloAvisoEvento = 'Evento';
+  static const String tituloAvisoPago = 'Pago';
+  static const String tituloAvisoTicket = 'Soporte';
+  static const String tituloAvisoRegistro = 'Registro';
 }

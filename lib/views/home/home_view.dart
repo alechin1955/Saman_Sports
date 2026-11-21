@@ -7,6 +7,7 @@ import 'package:saman_sports/views/home/widgets/deportes_section.dart';
 import 'package:saman_sports/views/home/widgets/entrenadores_section.dart';
 import 'package:saman_sports/views/home/widgets/footer_publico.dart';
 import 'package:saman_sports/views/home/widgets/hero_section.dart';
+import 'package:saman_sports/views/home/widgets/proximos_eventos_section.dart';
 import 'package:saman_sports/views/home/widgets/que_es_section.dart';
 import 'package:saman_sports/views/home/widgets/resenas_section.dart';
 import 'package:saman_sports/views/widgets/public_header.dart';
@@ -69,6 +70,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 const QueEsSection(),
                 DeportesSection(key: _deportes, controller: controller, onDetalles: () => _proximamente(context)),
+                ProximosEventosSection(eventos: controller.proximosEventos),
                 EntrenadoresSection(key: _entrenadores, controller: controller),
                 ResenasSection(key: _resenas, controller: controller),
                 CtaSection(onRegistrarme: () => Navigator.pushNamed(context, AppRoutes.registro)),

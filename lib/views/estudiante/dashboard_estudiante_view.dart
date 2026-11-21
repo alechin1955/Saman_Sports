@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/controllers/auth_controller.dart';
 import 'package:saman_sports/controllers/estudiante_controller.dart';
+import 'package:saman_sports/controllers/proximos_eventos_controller.dart';
 import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
@@ -12,6 +13,7 @@ import 'package:saman_sports/views/home/widgets/etiqueta_ejemplo.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
+import 'package:saman_sports/views/widgets/proximos_eventos_card.dart';
 
 /// Pantalla de inicio del panel del estudiante (Observer: observa a
 /// EstudianteController con ListenableBuilder).
@@ -20,10 +22,12 @@ class DashboardEstudianteView extends StatefulWidget {
     super.key,
     required this.auth,
     required this.controller,
+    this.proximos,
   });
 
   final AuthController auth;
   final EstudianteController controller;
+  final ProximosEventosController? proximos;
 
   @override
   State<DashboardEstudianteView> createState() =>
@@ -31,13 +35,25 @@ class DashboardEstudianteView extends StatefulWidget {
 }
 
 class _DashboardEstudianteViewState extends State<DashboardEstudianteView> {
+  late final ProximosEventosController _proximos =
+      widget.proximos ?? ProximosEventosController(modo: ModoEventos.estudiante);
+  late final bool _eventosPropios = widget.proximos == null;
+
   @override
   void initState() {
     super.initState();
     // Se carga después del primer frame para no notificar durante el build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.controller.cargarPerfil();
+      if (!mounted) return;
+      widget.controller.cargarPerfil();
+      _proximos.iniciar();
     });
+  }
+
+  @override
+  void dispose() {
+    if (_eventosPropios) _proximos.dispose();
+    super.dispose();
   }
 
   @override
@@ -83,6 +99,8 @@ class _DashboardEstudianteViewState extends State<DashboardEstudianteView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               BienvenidaCard(estudiante: estudiante),
+              const SizedBox(height: AppSizes.space24),
+              ProximosEventosCard(controller: _proximos),
               const SizedBox(height: AppSizes.space32),
               Text(AppStrings.accesosRapidos, style: AppTextStyles.title),
               const SizedBox(height: AppSizes.space16),
