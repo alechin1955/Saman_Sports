@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saman_sports/controllers/admin/admin_calendario_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_deporte_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_resumen_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_transaccion_controller.dart';
@@ -7,6 +8,7 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/deporte.dart';
+import 'package:saman_sports/views/admin/widgets/calendario_ocupacion.dart';
 import 'package:saman_sports/views/admin/widgets/grafico_barras.dart';
 import 'package:saman_sports/views/admin/widgets/tarjeta_resumen.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
@@ -17,16 +19,23 @@ class ResumenView extends StatelessWidget {
     required this.resumen,
     required this.deportes,
     required this.transacciones,
+    required this.calendario,
   });
 
   final AdminResumenController resumen;
   final AdminDeporteController deportes;
   final AdminTransaccionController transacciones;
+  final AdminCalendarioController calendario;
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([resumen, deportes, transacciones]),
+      listenable: Listenable.merge([
+        resumen,
+        deportes,
+        transacciones,
+        calendario,
+      ]),
       builder: (context, _) {
         if (resumen.cargando && resumen.conteos.isEmpty) {
           return const Center(child: CircularProgressIndicator());
@@ -61,6 +70,10 @@ class ResumenView extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.space16),
             _Grilla(resumen: resumen),
+            const SizedBox(height: AppSizes.space24),
+            Text(AppStrings.adminCalendarioTitulo, style: AppTextStyles.title),
+            const SizedBox(height: AppSizes.space12),
+            CalendarioOcupacion(controller: calendario),
             const SizedBox(height: AppSizes.space24),
             _Graficos(resumen: resumen, deportes: deportes),
             const SizedBox(height: AppSizes.space24),

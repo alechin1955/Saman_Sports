@@ -30,4 +30,6 @@ class AppSizes {
   static const double botonTablaAlto = 32;
   static const double columnaAccionesInscripcion = 200;
   static const double columnaNombreTabla = 220;
+  static const double calendarioAltoHora = 48;
+  static const double calendarioAnchoColumnaMin = 120;
 }

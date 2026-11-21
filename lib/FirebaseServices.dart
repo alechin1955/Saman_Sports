@@ -1519,6 +1519,12 @@ class FirebaseServices {
     return _streamConsulta(_db.collection(canchasCollection).orderBy('nombre'));
   }
 
+  static Stream<List<Map<String, dynamic>>> streamReservasActivas() {
+    return _streamConsultaEntrenador(
+      _db.collection(reservasCollection).where('activa', isEqualTo: true),
+    );
+  }
+
   static Future<AuthResponse> crearCancha({
     required Map<String, dynamic> datos,
   }) {

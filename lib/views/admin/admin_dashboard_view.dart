@@ -50,6 +50,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         panel.resumen.cargar();
         panel.deportes.iniciar();
         panel.transacciones.iniciar();
+        panel.calendario.iniciar();
       case SeccionAdmin.deportes:
         panel.deportes.iniciar();
         panel.entrenadores.iniciar();
@@ -182,6 +183,7 @@ Widget _cuerpo(SeccionAdmin seccion, AdminControladores controladores) {
       resumen: controladores.resumen,
       deportes: controladores.deportes,
       transacciones: controladores.transacciones,
+      calendario: controladores.calendario,
     ),
     SeccionAdmin.deportes => DeportesAdminView(
       deportes: controladores.deportes,

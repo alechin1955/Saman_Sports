@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:saman_sports/controllers/admin/admin_calendario_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_controladores.dart';
 import 'package:saman_sports/controllers/admin/admin_deporte_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_entrenador_controller.dart';
@@ -22,6 +23,7 @@ import 'package:saman_sports/models/reserva_horario.dart';
 import 'package:saman_sports/models/resena.dart';
 import 'package:saman_sports/models/ticket_soporte.dart';
 import 'package:saman_sports/models/transaccion.dart';
+import 'package:saman_sports/repositories/admin/admin_calendario_repository.dart';
 import 'package:saman_sports/repositories/admin/admin_deporte_repository.dart';
 import 'package:saman_sports/repositories/admin/admin_entrenador_repository.dart';
 import 'package:saman_sports/repositories/admin/admin_estudiante_repository.dart';
@@ -47,11 +49,20 @@ void main() {
       eventos: AdminEventoController(repository: _Eventos()),
       soporte: AdminSoporteController(repository: _Soporte()),
       transacciones: AdminTransaccionController(repository: _Historial()),
+      calendario: AdminCalendarioController(repositorio: _Calendario()),
     );
 
     expect(panel.pagos.verificacionSimulada, isTrue);
     panel.dispose();
   });
+}
+
+class _Calendario implements AdminCalendarioRepository {
+  @override
+  Stream<List<Cancha>> canchas() => Stream.value(const []);
+
+  @override
+  Stream<List<ReservaHorario>> reservasActivas() => Stream.value(const []);
 }
 
 class _Resumen implements AdminResumenRepository {
