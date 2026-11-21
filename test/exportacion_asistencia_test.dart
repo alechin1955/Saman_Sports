@@ -68,7 +68,7 @@ void main() {
     await tester.tap(find.byType(OutlinedButton));
     await tester.pumpAndSettle();
     expect(archivo, 'asistencia_d1_2026-10-25.csv');
-    expect(contenido, contains('100.0%'));
+    expect(contenido, contains('"100,0%"'));
     c.marcar('i1', EstadoAsistencia.ausente);
     await tester.pumpAndSettle();
     expect(

@@ -25,6 +25,17 @@ void main() {
     expect(csv, contains('Sin registros'));
     expect(csv, contains('\r\n'));
   });
+  test('cada dato va en su columna con el separador de Excel en español', () {
+    final csv = generarCsvAsistencia(
+      disciplina: 'Tenis',
+      fecha: DateTime(2026, 10, 25),
+      alumnos: [alumno],
+      sesiones: [],
+    );
+    final encabezado = csv.substring(1).split('\r\n').first;
+    expect(encabezado.split(separadorCsv), hasLength(9));
+    expect(encabezado, isNot(contains('","')));
+  });
   test(
     'porcentaje excluye sesiones sin registro del alumno y posteriores a fecha',
     () {
@@ -48,7 +59,7 @@ void main() {
           ),
         ],
       );
-      expect(csv, contains('"ausente","2","1","50.0%"'));
+      expect(csv, contains('"ausente";"2";"1";"50,0%"'));
     },
   );
 }

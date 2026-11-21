@@ -8,7 +8,6 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/views/entrenador/opciones_entrenador.dart';
-import 'package:saman_sports/views/entrenador/widgets/boton_exportar_asistencia.dart';
 import 'package:saman_sports/views/entrenador/widgets/registro_asistencia.dart';
 import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
@@ -91,25 +90,6 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
     await panel.entrenador.seleccionar(id);
   }
 
-  Future<void> _cambiarFecha() async {
-    final elegida = await showDatePicker(
-      context: context,
-      initialDate: panel.asistencia.fecha,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-    if (elegida == null || !mounted) return;
-    if (!await _permitirSalida()) return;
-    final id = panel.entrenador.seleccionId;
-    if (id == null) return;
-    await panel.asistencia.abrir(
-      id,
-      elegida,
-      panel.entrenador.alumnos,
-      descartar: true,
-    );
-  }
-
   Future<void> _volverADisciplinas() async {
     if (!await _permitirSalida() || !mounted) return;
     Navigator.pushReplacementNamed(context, AppRoutes.entrenadorDisciplinas);
@@ -135,7 +115,7 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
           rutaActiva: AppRoutes.entrenadorAsistencia,
           subtituloPanel: 'Panel del entrenador',
           titulo: 'Asistencia',
-          descripcion: 'Selecciona una disciplina y una fecha para pasar lista o exportar el historial.',
+          descripcion: 'Selecciona una disciplina y una fecha, marca a cada estudiante en la lista y guarda la asistencia.',
           child: _contenido(),
         ),
       ),
@@ -199,11 +179,6 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
                       : _cambiarDisciplina,
                 ),
               ),
-              OutlinedButton.icon(
-                onPressed: entrenador.cargandoNomina ? null : _cambiarFecha,
-                icon: const Icon(Icons.calendar_today_outlined),
-                label: Text(_fecha(asistencia.fecha)),
-              ),
               TextButton.icon(
                 onPressed: _volverADisciplinas,
                 icon: const Icon(Icons.arrow_back),
@@ -230,9 +205,7 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
             style: AppTextStyles.title,
           ),
           const SizedBox(height: AppSizes.space16),
-          RegistroAsistencia(controller: asistencia),
-          const SizedBox(height: AppSizes.space16),
-          BotonExportarAsistencia(
+          RegistroAsistencia(
             controller: asistencia,
             disciplina: seleccionada?.nombre ?? 'disciplina',
           ),
@@ -240,7 +213,4 @@ class _AsistenciaEntrenadorViewState extends State<AsistenciaEntrenadorView> {
       ],
     );
   }
-
-  String _fecha(DateTime fecha) =>
-      '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
 }
