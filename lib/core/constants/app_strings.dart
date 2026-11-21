@@ -170,6 +170,12 @@ class AppStrings {
       'Sin conexión. Revisa tu internet e inténtalo de nuevo.';
   static const String correoYaRegistrado =
       'Ya existe una cuenta con ese correo.';
+  static const String registroNoHabilitado =
+      'El registro por correo no está habilitado en Firebase Authentication.';
+  static const String demasiadosIntentosRegistro =
+      'Hubo demasiados intentos de registro. Inténtalo más tarde.';
+  static const String configuracionRegistroInvalida =
+      'La configuración de Firebase Authentication no es válida.';
   static const String reintentar = 'Reintentar';
   static const String campoObligatorio = 'Este campo es obligatorio.';
   static const String correoInvalido = 'Ingresa un correo válido.';
@@ -245,11 +251,11 @@ class AppStrings {
   static const String sinResultadosTexto =
       'Prueba con otra búsqueda o quita los filtros.';
   static const String limpiarFiltros = 'Limpiar filtros';
-    static const String sinDisciplinasPublicadas =
+  static const String sinDisciplinasPublicadas =
       'Aún no hay disciplinas publicadas';
   static const String sinDisciplinasPublicadasTexto =
       'Cuando el administrador publique una disciplina aparecerá aquí.';
-        // Inscripciones del estudiante (RF-04 y RF-05)
+  // Inscripciones del estudiante (RF-04 y RF-05)
   static const String inscribirme = 'Inscribirme';
   static const String inscribiendo = 'Inscribiendo…';
   static const String inscripcionRegistrada =
@@ -264,8 +270,7 @@ class AppStrings {
       'Esta disciplina ya no está disponible.';
   static const String inscripcionYaExiste =
       'Ya tienes una inscripción activa en esta disciplina.';
-  static const String inscripcionSinCupos =
-      'La disciplina se quedó sin cupos.';
+  static const String inscripcionSinCupos = 'La disciplina se quedó sin cupos.';
   static const String inscripcionNoEncontrada =
       'No encontramos esa inscripción.';
   static const String inscripcionYaCancelada =
@@ -288,7 +293,7 @@ class AppStrings {
   static const String pendienteDePagoTexto =
       'Paga la cuota del período para que el administrador confirme tu inscripción.';
 
-  // Pagos del estudiante (RF-15, PayPal simulado)
+  // Pagos del estudiante (RF-15, PayPal)
   static const String pagoDelPeriodo = 'Pago del período';
   static const String periodo = 'Período';
   static const String montoAPagar = 'Monto';
@@ -302,10 +307,10 @@ class AppStrings {
   static const String pagoSimuladoNota =
       'El pago se procesa de forma segura a través de PayPal.';
   static const String conectandoPaypal = 'Conectando con PayPal…';
-  static const String pagoEnviado = 'Pago enviado';
+  static const String pagoEnviado = 'Pago confirmado';
   static const String idTransaccion = 'ID de transacción';
   static const String pagoEnviadoTexto =
-      'El administrador verificará tu pago. Mientras tanto aparecerá como pendiente de verificación.';
+      'PayPal confirmó el pago y quedó verificado automáticamente.';
   static const String pagoPendienteVerificacion = 'Pendiente de verificación';
   static const String pagoVerificado = 'Verificado';
   static const String pagoRechazado = 'Rechazado';
@@ -321,8 +326,7 @@ class AppStrings {
   static const String clases = 'clases';
   static const String de = 'de';
   static const String calculandoAsistencia = 'Calculando asistencia…';
-  static const String sinClasesRegistradas =
-      'Aún no hay clases registradas';
+  static const String sinClasesRegistradas = 'Aún no hay clases registradas';
   static const String asistenciaNoDisponible =
       'La asistencia no está disponible por ahora';
   static const String sinHistorial = 'Todavía no tienes historial';
@@ -636,7 +640,8 @@ class AppStrings {
   static const String adminRevisarIdentificadores = 'Revisar cédulas y carnets';
   static const String adminSinIdentificadoresRepetidos =
       'No hay cédulas ni carnets repetidos ni estudiantes sin índice.';
-  static const String adminDuplicadosIdentificador = 'Identificadores repetidos';
+  static const String adminDuplicadosIdentificador =
+      'Identificadores repetidos';
   static const String adminSinIndiceIdentificador = 'Estudiantes sin índice';
   static const String adminEstudianteSinNombre = 'Estudiante sin nombre';
   static const String adminRevisionIdentificadoresError =
@@ -644,7 +649,8 @@ class AppStrings {
   static const String cambiarClave = 'Cambiar contraseña';
   static const String claveActual = 'Contraseña actual';
   static const String claveNueva = 'Nueva contraseña';
-  static const String claveActualIncorrecta = 'La contraseña actual no coincide.';
+  static const String claveActualIncorrecta =
+      'La contraseña actual no coincide.';
   static const String claveDebil = 'La nueva contraseña es muy débil.';
   static const String reiniciaSesionParaClave =
       'Vuelve a iniciar sesión para cambiar la contraseña.';
@@ -707,7 +713,8 @@ class AppStrings {
       'Las reseñas que publiquen los estudiantes sobre tus disciplinas aparecerán aquí.';
   static const String entAsistenciaDescripcion =
       'Selecciona una disciplina y una fecha, marca a cada estudiante en la lista y guarda la asistencia.';
-  static const String entSinDisciplinaRegistro = 'No hay una disciplina para registrar';
+  static const String entSinDisciplinaRegistro =
+      'No hay una disciplina para registrar';
   static const String entSinDisciplinaRegistroTexto =
       'Primero necesitas una disciplina activa asignada.';
   static const String entSinConfirmados = 'No hay estudiantes confirmados';
@@ -732,7 +739,8 @@ class AppStrings {
   static const String entCuentaAcceso = 'Cuenta y acceso';
   static const String entOtro = 'Otro';
   static const String entEligeCategoria = 'Elige una categoría.';
-  static const String entAsuntoCorto = 'El asunto debe tener al menos 5 caracteres.';
+  static const String entAsuntoCorto =
+      'El asunto debe tener al menos 5 caracteres.';
   static const String entDescripcionCorta =
       'Describe el problema con al menos 10 caracteres.';
   static const String entSesionEntrenador = 'Sesión de entrenador requerida';
@@ -744,19 +752,23 @@ class AppStrings {
       'No se pudo enviar la solicitud. Reintenta.';
   static const String entNombreObligatorio = 'Escribe el nombre del evento.';
   static const String entFechaPasada = 'La fecha no puede estar en el pasado.';
-  static const String entHorarioInvalido = 'El horario del evento no es válido.';
+  static const String entHorarioInvalido =
+      'El horario del evento no es válido.';
   static const String entCanchaActiva = 'Elige una cancha activa.';
   static const String entEsperaCancha =
       'Espera mientras revisamos la disponibilidad de la cancha.';
-  static const String entCapacidadInvalida = 'La capacidad debe ser mayor que cero.';
+  static const String entCapacidadInvalida =
+      'La capacidad debe ser mayor que cero.';
   static const String entSinSolicitudesCarga =
       'No se pudieron cargar tus solicitudes.';
-  static const String entSinCanchas = 'No se pudieron cargar las canchas activas.';
+  static const String entSinCanchas =
+      'No se pudieron cargar las canchas activas.';
   static const String entSinOcupacion =
       'No se pudo revisar la disponibilidad de la cancha.';
   static const String entAsistenciaCarga =
       'No se pudo cargar la asistencia. Reintenta antes de registrar.';
-  static const String entAsistenciaGuardada = 'Asistencia guardada correctamente.';
+  static const String entAsistenciaGuardada =
+      'Asistencia guardada correctamente.';
   static const String entAsistenciaNoGuardada =
       'No se pudo guardar. Tus cambios siguen aquí; intenta nuevamente.';
   static const String entSoporteEnviado =
@@ -765,14 +777,16 @@ class AppStrings {
       'No se pudo enviar la solicitud. Intenta nuevamente.';
   static const String entSoporteCarga =
       'No se pudieron cargar tus solicitudes de soporte.';
-  static const String entPerfilCarga = 'No se pudo cargar tu perfil. Vuelve a intentar.';
+  static const String entPerfilCarga =
+      'No se pudo cargar tu perfil. Vuelve a intentar.';
   static const String entResumenCarga =
       'No se pudo cargar tu resumen. Revisa la conexión y reintenta.';
   static const String entHistorialCarga =
       'No se pudo cargar parte del historial de asistencia. Reintenta.';
   static const String entDisciplinasCarga =
       'No se pudieron cargar tus disciplinas. Revisa la conexión y vuelve a intentar.';
-  static const String entNominaCarga = 'No se pudo cargar la nómina. Vuelve a intentar.';
+  static const String entNominaCarga =
+      'No se pudo cargar la nómina. Vuelve a intentar.';
   static const String entResenasCarga =
       'No se pudieron cargar las reseñas de tus disciplinas.';
   static const String entNombreEventoObligatorio = 'El nombre es obligatorio.';
@@ -783,7 +797,8 @@ class AppStrings {
       'La fecha del evento no puede estar en el pasado.';
   static const String entDisciplinaNoAsignada =
       'La disciplina no está asignada al entrenador.';
-  static const String entCanchaInactiva = 'La cancha no existe o está inactiva.';
+  static const String entCanchaInactiva =
+      'La cancha no existe o está inactiva.';
   static const String entPresente = 'Presente';
   static const String entAusente = 'Ausente';
   static const String entSinDisciplinasAsignadas =
@@ -818,7 +833,8 @@ class AppStrings {
   static const String entPersonas = 'personas';
 
   static String entHola(String nombre) => 'Hola, $nombre';
-  static String entEntrenadorDe(String disciplina) => 'Entrenador de $disciplina';
+  static String entEntrenadorDe(String disciplina) =>
+      'Entrenador de $disciplina';
   static String entFechaEtiqueta(String fecha) => 'Fecha: $fecha';
   static String entInscritosDe(int inscritos, int cupos) =>
       '$inscritos inscritos de $cupos';
@@ -840,7 +856,8 @@ class AppStrings {
       'Consulta tu experiencia y los datos asociados a tu cuenta.';
   static const String entCuentaActiva = 'Cuenta activa';
   static const String entCuentaInactiva = 'Cuenta inactiva';
-  static const String entSinCertificaciones = 'No hay certificaciones registradas.';
+  static const String entSinCertificaciones =
+      'No hay certificaciones registradas.';
   static const String entNoRegistrado = 'No registrado';
   static const String entListaConfirmados =
       'La lista aparecerá cuando existan inscripciones confirmadas.';
@@ -995,8 +1012,10 @@ class AppStrings {
       'Tu inscripción en $deporte quedó pendiente.';
   static String avisoInscripcionCancelada(String deporte) =>
       'Cancelaste tu inscripción en $deporte.';
-  static String avisoInscripcionPendienteAdmin(String estudiante, String deporte) =>
-      '$estudiante solicitó inscribirse en $deporte.';
+  static String avisoInscripcionPendienteAdmin(
+    String estudiante,
+    String deporte,
+  ) => '$estudiante solicitó inscribirse en $deporte.';
   static String avisoInscripcionConfirmada(String deporte) =>
       'Tu inscripción en $deporte fue confirmada.';
   static String avisoInscripcionCanceladaAdmin(String deporte) =>

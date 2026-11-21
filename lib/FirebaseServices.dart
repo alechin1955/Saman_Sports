@@ -24,9 +24,15 @@ class FirebaseServices {
           .createUserWithEmailAndPassword(email: email, password: password);
       return AuthResponse(credential: credential, isSuccess: true);
     } on FirebaseAuthException catch (e) {
-      return AuthResponse(errorMessage: e.message, isSuccess: false);
+      return AuthResponse(
+        errorMessage: '${e.code}: ${e.message ?? 'Sin detalle de Firebase Auth.'}',
+        isSuccess: false,
+      );
     } catch (e) {
-      return AuthResponse(errorMessage: 'Error desconocido', isSuccess: false);
+      return AuthResponse(
+        errorMessage: 'Error creando la cuenta (${e.runtimeType}): $e',
+        isSuccess: false,
+      );
     }
   }
 
@@ -193,19 +199,23 @@ class FirebaseServices {
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') {
         return AuthResponse(
-          errorMessage: AppStrings.cedulaOCarnetYaRegistrado,
+          errorMessage:
+              'Firestore rechazó el registro (permission-denied). '
+              'Verifica las reglas publicadas y que la cédula o el carnet no estén registrados.',
           isSuccess: false,
         );
       }
       return AuthResponse(
-        errorMessage: _firestoreErrorMessage(e),
+        errorMessage:
+            'No se pudo guardar el perfil (Firestore: ${e.code}). '
+            '${e.message ?? _firestoreErrorMessage(e)}',
         isSuccess: false,
       );
     } on StateError catch (e) {
       return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
-    } catch (_) {
+    } catch (e) {
       return AuthResponse(
-        errorMessage: AppStrings.errorInesperado,
+        errorMessage: 'Error guardando el perfil (${e.runtimeType}): $e',
         isSuccess: false,
       );
     }
@@ -1351,7 +1361,7 @@ class FirebaseServices {
       );
     }
   }
-  
+
   // ---------------------------------------------------------------------------
   // Funciones agregadas por Gonzalo (panel del estudiante: pagos)
   // ---------------------------------------------------------------------------
@@ -1366,64 +1376,6 @@ class FirebaseServices {
           .collection(pagosCollection)
           .where('estudianteUid', isEqualTo: estudianteUid),
     );
-  }
-
-  /// Registra el pago del período hecho con PayPal (simulado, RF-15).
-  ///
-  /// Queda 'pendiente' y sin verificar: el administrador lo verifica desde
-  /// su panel con el `paypalOrderId`. El estudiante nunca escribe
-  /// `verificado`, `verificadoPor` ni `fechaPago`.
-  static Future<AuthResponse> registrarPagoEstudiante({
-    required double monto,
-    required String periodo,
-    required String paypalOrderId,
-  }) async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) {
-      return AuthResponse(
-        errorMessage: AppStrings.sesionNoIniciada,
-        isSuccess: false,
-      );
-    }
-    try {
-      final pagoRef = _db.collection(pagosCollection).doc();
-      final batch = _db.batch();
-      batch.set(pagoRef, {
-        'estudianteUid': uid,
-        'inscripcionId': '',
-        'monto': monto,
-        'periodo': periodo,
-        'paypalOrderId': paypalOrderId,
-        'idTransaccion': paypalOrderId,
-        'estado': 'pendiente',
-        'verificado': false,
-        'fecha': FieldValue.serverTimestamp(),
-      });
-      batch.set(
-        _db.collection(notificacionesCollection).doc(),
-        _aviso(
-          destinatarioUid: '',
-          destinatarioRol: 'administrador',
-          origenUid: uid,
-          tipo: 'pago_enviado',
-          titulo: AppStrings.tituloAvisoPago,
-          mensaje: AppStrings.avisoPagoEnviado(periodo),
-          pagoId: pagoRef.id,
-        ),
-      );
-      await batch.commit();
-      return AuthResponse(isSuccess: true);
-    } on FirebaseException catch (e) {
-      return AuthResponse(
-        errorMessage: _firestoreErrorMessage(e),
-        isSuccess: false,
-      );
-    } catch (_) {
-      return AuthResponse(
-        errorMessage: AppStrings.errorInesperado,
-        isSuccess: false,
-      );
-    }
   }
 
   // ---------------------------------------------------------------------------

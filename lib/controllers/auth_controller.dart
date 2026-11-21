@@ -17,6 +17,7 @@ class AuthController extends ChangeNotifier {
     this.uidSesion,
     this.crearPerfil,
     this.crearCuenta,
+    this.iniciarSesionRegistro,
     this.borrarCuenta,
     this.asegurarIdentificadores,
   });
@@ -43,6 +44,11 @@ class AuthController extends ChangeNotifier {
     DatosRegistro datos,
   )?
   crearCuenta;
+  final Future<({String? uid, String? error})> Function(
+    String correo,
+    String clave,
+  )?
+  iniciarSesionRegistro;
   final Future<void> Function()? borrarCuenta;
   final Future<void> Function(String uid)? asegurarIdentificadores;
 
@@ -144,10 +150,17 @@ class AuthController extends ChangeNotifier {
         error = guardado.errorMessage ?? AppStrings.errorInesperado;
         return false;
       }
+      final sesion = await _asegurarSesionRegistro(datos, uid);
+      if (sesion.uid != uid || sesion.error != null) {
+        error =
+            'La cuenta se creó, pero no se pudo iniciar sesión automáticamente: '
+            '${sesion.error ?? 'la sesión no corresponde a la cuenta creada.'}';
+        return false;
+      }
       destinoActual = DestinoLogin.estudiante;
       return true;
-    } catch (_) {
-      error = AppStrings.errorInesperado;
+    } catch (e) {
+      error = 'No se pudo completar el registro (${e.runtimeType}): $e';
       return false;
     } finally {
       registrando = false;
@@ -176,6 +189,29 @@ class AuthController extends ChangeNotifier {
     } else {
       await borrarCuenta!();
     }
+  }
+
+  Future<({String? uid, String? error})> _asegurarSesionRegistro(
+    DatosRegistro datos,
+    String uid,
+  ) async {
+    if (iniciarSesionRegistro != null) {
+      return iniciarSesionRegistro!(datos.correo.trim(), datos.clave);
+    }
+
+    await FirebaseServices.setRememberSession(true);
+    final (credential, errorMessage) = await FirebaseServices.signIn(
+      email: datos.correo.trim(),
+      password: datos.clave,
+    );
+    final uidAutenticado = credential?.user?.uid;
+    return (
+      uid: uidAutenticado,
+      error: uidAutenticado == uid
+          ? null
+          : errorMessage ??
+                'Firebase no mantuvo la sesión de la cuenta creada.',
+    );
   }
 
   Future<void> enviarEnlaceRecuperacion(String correo) async {
@@ -351,6 +387,16 @@ class AuthController extends ChangeNotifier {
     }
     if (texto.contains('network') || texto.contains('unavailable')) {
       return AppStrings.errorConexion;
+    }
+    if (texto.contains('operation-not-allowed')) {
+      return AppStrings.registroNoHabilitado;
+    }
+    if (texto.contains('too-many-requests')) {
+      return AppStrings.demasiadosIntentosRegistro;
+    }
+    if (texto.contains('invalid-api-key') ||
+        texto.contains('configuration-not-found')) {
+      return AppStrings.configuracionRegistroInvalida;
     }
     return mensaje == null || mensaje.isEmpty
         ? AppStrings.errorInesperado

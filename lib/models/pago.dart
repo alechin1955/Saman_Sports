@@ -1,6 +1,6 @@
 // Esquema Firestore pagos/{id} (se crea en el Hito 3):
 // inscripcionId, estudianteUid, monto (número), idTransaccion
-// (identificador de PayPal simulado), estado ('pendiente' | 'realizado'),
+// (identificador de orden PayPal), estado ('pendiente' | 'realizado'),
 // fecha (Timestamp).
 
 enum EstadoPago { pendiente, realizado, rechazado }

@@ -187,6 +187,15 @@ describe('estudiante', () => {
     await assertFails(updateDoc(doc(db, 'pagos', 'p1'), { verificado: true, estado: 'realizado' }));
   });
 
+  it('no permite crear pagos directamente desde el cliente', async () => {
+    await assertFails(setDoc(doc(dbDe('est1'), 'pagos', 'nuevo'), {
+      estudianteUid: 'est1',
+      verificado: false,
+      estado: 'pendiente',
+      monto: 10,
+    }));
+  });
+
   it('lee sus notificaciones y solo cambia leida', async () => {
     const db = dbDe('est1');
     await assertSucceeds(getDocs(query(collection(db, 'notificaciones'), where('destinatarioUid', '==', 'est1'))));
