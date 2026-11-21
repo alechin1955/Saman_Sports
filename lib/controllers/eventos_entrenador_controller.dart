@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/models/cancha.dart';
 import 'package:saman_sports/models/deporte.dart';
@@ -140,15 +141,104 @@ class EventosEntrenadorController extends ChangeNotifier {
         error = resultado;
         return false;
       }
-      mensaje = 'Solicitud enviada. La coordinación debe aprobarla.';
+      mensaje = AppStrings.entSolicitudEnviada;
       return true;
     } on TimeoutException {
       if (!_cerrado) {
-        mensaje = 'La solicitud se está procesando. Revisa la lista en unos instantes.';
+        mensaje = AppStrings.entSolicitudProcesando;
       }
       return true;
     } catch (_) {
-      if (!_cerrado) error = 'No se pudo enviar la solicitud. Reintenta.';
+      if (!_cerrado) error = AppStrings.entSolicitudNoEnviada;
+      return false;
+    } finally {
+      if (!_cerrado) {
+        guardando = false;
+        _avisar();
+      }
+    }
+  }
+
+  Future<bool> cancelarSolicitud(Evento evento) async {
+    if (evento.estado != EstadoEvento.pendiente) {
+      error = AppStrings.entSolicitudNoCancelable;
+      _avisar();
+      return false;
+    }
+    return _guardar(
+      () => _repository.cancelar(evento.id),
+      AppStrings.entSolicitudCancelada,
+    );
+  }
+
+  Future<bool> editarSolicitud({
+    required Evento evento,
+    required String nombre,
+    required Deporte disciplina,
+    required Cancha cancha,
+    required DateTime fecha,
+    required int horaInicio,
+    required int horaFin,
+    required int capacidad,
+    required String descripcion,
+  }) async {
+    if (evento.estado != EstadoEvento.pendiente ||
+        evento.deporteId != disciplina.id) {
+      error = AppStrings.entSolicitudNoCancelable;
+      _avisar();
+      return false;
+    }
+    final validacion = validar(
+      nombre: nombre,
+      cancha: cancha,
+      fecha: fecha,
+      horaInicio: horaInicio,
+      horaFin: horaFin,
+      capacidad: capacidad,
+    );
+    if (validacion != null) {
+      error = validacion;
+      _avisar();
+      return false;
+    }
+    return _guardar(
+      () => _repository.editar(evento.id, {
+        'titulo': nombre.trim(),
+        'deporteId': disciplina.id,
+        'deporteNombre': disciplina.nombre,
+        'canchaId': cancha.id,
+        'fecha': _fecha(fecha),
+        'horaInicio': horaInicio,
+        'horaFin': horaFin,
+        'capacidad': capacidad,
+        'descripcion': descripcion.trim(),
+      }),
+      AppStrings.entSolicitudActualizada,
+    );
+  }
+
+  Future<bool> _guardar(
+    Future<String?> Function() accion,
+    String exito,
+  ) async {
+    guardando = true;
+    error = null;
+    mensaje = null;
+    _avisar();
+    try {
+      final resultado = await accion().timeout(timeoutSolicitud);
+      if (_cerrado) return false;
+      if (resultado != null) {
+        error = resultado;
+        return false;
+      }
+      mensaje = exito;
+      return true;
+    } on TimeoutException {
+      if (!_cerrado) mensaje = exito;
+      return true;
+    } catch (_) {
+      if (!_cerrado) error = AppStrings.entSolicitudNoCancelable;
       return false;
     } finally {
       if (!_cerrado) {
@@ -166,19 +256,19 @@ class EventosEntrenadorController extends ChangeNotifier {
     required int horaFin,
     required int capacidad,
   }) {
-    if (nombre.trim().isEmpty) return 'Escribe el nombre del evento.';
+    if (nombre.trim().isEmpty) return AppStrings.entNombreObligatorio;
     final ahora = _reloj();
     final hoy = DateTime(ahora.year, ahora.month, ahora.day);
     final dia = DateTime(fecha.year, fecha.month, fecha.day);
-    if (dia.isBefore(hoy)) return 'La fecha no puede estar en el pasado.';
+    if (dia.isBefore(hoy)) return AppStrings.entFechaPasada;
     if (horaInicio < 0 || horaFin > 1440 || horaFin <= horaInicio) {
-      return 'El horario del evento no es válido.';
+      return AppStrings.entHorarioInvalido;
     }
     if (!cancha.activa || !canchas.any((item) => item.id == cancha.id)) {
-      return 'Elige una cancha activa.';
+      return AppStrings.entCanchaActiva;
     }
     if (_canchaObservada != cancha.id || cargandoOcupacion) {
-      return 'Espera mientras revisamos la disponibilidad de la cancha.';
+      return AppStrings.entEsperaCancha;
     }
     if (errorOcupacion != null) return errorOcupacion;
     final choque = choqueHorario(
@@ -188,7 +278,7 @@ class EventosEntrenadorController extends ChangeNotifier {
       horaFin: horaFin,
     );
     if (choque != null) return choque;
-    if (capacidad <= 0) return 'La capacidad debe ser mayor que cero.';
+    if (capacidad <= 0) return AppStrings.entCapacidadInvalida;
     return null;
   }
 
@@ -229,21 +319,21 @@ class EventosEntrenadorController extends ChangeNotifier {
   void _falloCarga() {
     if (_cerrado) return;
     cargando = false;
-    error = 'No se pudieron cargar tus solicitudes.';
+    error = AppStrings.entSinSolicitudesCarga;
     _avisar();
   }
 
   void _falloCanchas() {
     if (_cerrado) return;
     cargandoCanchas = false;
-    errorCanchas = 'No se pudieron cargar las canchas activas.';
+    errorCanchas = AppStrings.entSinCanchas;
     _avisar();
   }
 
   void _falloOcupacion(String canchaId) {
     if (_cerrado || _canchaObservada != canchaId) return;
     cargandoOcupacion = false;
-    errorOcupacion = 'No se pudo revisar la disponibilidad de la cancha.';
+    errorOcupacion = AppStrings.entSinOcupacion;
     _avisar();
   }
 

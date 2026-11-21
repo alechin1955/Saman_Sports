@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "resenas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "autorUid", "order": "ASCENDING" },
+        { "fieldPath": "fecha", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

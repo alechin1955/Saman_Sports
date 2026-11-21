@@ -391,4 +391,6 @@ class _Estudiantes implements AdminEstudianteRepository {
   @override
   Future<String?> cambiarEstado({required String uid, required bool activo}) async =>
       null;
+  @override
+  Future<List<String>> revisarIdentificadores() async => const [];
 }

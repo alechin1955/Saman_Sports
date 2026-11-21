@@ -6,6 +6,7 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/inscripcion.dart';
+import 'package:saman_sports/views/admin/widgets/tabla_desplazable.dart';
 
 class InscripcionesAdminView extends StatelessWidget {
   const InscripcionesAdminView({
@@ -52,7 +53,7 @@ class InscripcionesAdminView extends StatelessWidget {
                 ),
                 for (final estado in EstadoInscripcion.values)
                   ChoiceChip(
-                    label: Text(_estado(estado)),
+                    label: Text(_estadoFiltro(estado)),
                     selected: inscripciones.filtroEstado == estado,
                     onSelected: (_) => inscripciones.filtrar(
                       estado: estado,
@@ -107,17 +108,20 @@ class InscripcionesAdminView extends StatelessWidget {
                           style: AppTextStyles.subtitle,
                         ),
                         Text(item.deporteNombre),
-                        Text('${_fecha(item.fecha)} · ${_estado(item.estado)}'),
-                        Text(item.pagoId ?? AppStrings.adminSinDato),
+                        Text('${_fecha(item.fecha)} · ${_estadoFila(item.estado)}'),
+                        Text(_pago(item.pagoId)),
                         _Acciones(item: item, panel: inscripciones),
                       ],
                     ),
                   ),
                 )
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              TablaDesplazable(
                 child: DataTable(
+                  horizontalMargin: AppSizes.space16,
+                  columnSpacing: AppSizes.space24,
+                  dataRowMinHeight: AppSizes.space48,
+                  dataRowMaxHeight: AppSizes.space48,
                   columns: [
                     DataColumn(label: Text(AppStrings.adminEstudiante)),
                     DataColumn(label: Text(AppStrings.deportes)),
@@ -130,15 +134,11 @@ class InscripcionesAdminView extends StatelessWidget {
                     for (final item in lista)
                       DataRow(
                         cells: [
-                          DataCell(
-                            Text(_nombreEstudiante(item, nombresEstudiantes)),
-                          ),
+                          DataCell(_nombreCelda(item, nombresEstudiantes)),
                           DataCell(Text(item.deporteNombre)),
                           DataCell(Text(_fecha(item.fecha))),
-                          DataCell(Text(_estado(item.estado))),
-                          DataCell(
-                            Text(item.pagoId ?? AppStrings.adminSinDato),
-                          ),
+                          DataCell(Text(_estadoFila(item.estado))),
+                          DataCell(Text(_pago(item.pagoId))),
                           DataCell(_Acciones(item: item, panel: inscripciones)),
                         ],
                       ),
@@ -154,7 +154,26 @@ class InscripcionesAdminView extends StatelessWidget {
 
 String _nombreEstudiante(Inscripcion inscripcion, Map<String, String> nombres) {
   final nombre = nombres[inscripcion.estudianteUid]?.trim();
-  return nombre == null || nombre.isEmpty ? inscripcion.estudianteUid : nombre;
+  return nombre == null || nombre.isEmpty
+      ? AppStrings.adminEstudianteSinNombre
+      : nombre;
+}
+
+Widget _nombreCelda(Inscripcion inscripcion, Map<String, String> nombres) {
+  final nombre = _nombreEstudiante(inscripcion, nombres);
+  return ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: AppSizes.columnaNombreTabla),
+    child: Tooltip(
+      message: nombre,
+      child: Text(nombre, overflow: TextOverflow.ellipsis),
+    ),
+  );
+}
+
+String _pago(String? pagoId) {
+  return pagoId == null || pagoId.trim().isEmpty
+      ? AppStrings.adminSinDato
+      : AppStrings.adminPagoRegistrado;
 }
 
 class _Acciones extends StatelessWidget {
@@ -165,37 +184,73 @@ class _Acciones extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: AppSizes.space8,
-      children: [
-        if (item.estado == EstadoInscripcion.pendiente)
-          TextButton(
-            onPressed: () =>
-                panel.cambiarEstado(item, EstadoInscripcion.confirmada.name),
-            child: Text(AppStrings.adminConfirmar),
-          ),
-        if (item.estado != EstadoInscripcion.cancelada)
-          TextButton(
-            onPressed: () =>
-                panel.cambiarEstado(item, EstadoInscripcion.cancelada.name),
-            child: Text(AppStrings.cancelar),
-          ),
-        if (item.estado == EstadoInscripcion.cancelada)
-          TextButton(
-            onPressed: () =>
-                panel.cambiarEstado(item, EstadoInscripcion.pendiente.name),
-            child: Text(AppStrings.adminReactivar),
-          ),
-      ],
+    final botones = <Widget>[
+      if (item.estado == EstadoInscripcion.pendiente)
+        _boton(
+          AppStrings.adminConfirmar,
+          AppColors.success,
+          () => panel.cambiarEstado(item, EstadoInscripcion.confirmada.name),
+        ),
+      if (item.estado != EstadoInscripcion.cancelada)
+        _boton(
+          AppStrings.cancelar,
+          AppColors.error,
+          () => panel.cambiarEstado(item, EstadoInscripcion.cancelada.name),
+        ),
+      if (item.estado == EstadoInscripcion.cancelada)
+        _boton(
+          AppStrings.adminReactivar,
+          null,
+          () => panel.cambiarEstado(item, EstadoInscripcion.pendiente.name),
+        ),
+    ];
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: AppSizes.columnaAccionesInscripcion,
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < botones.length; i++) ...[
+              if (i > 0) const SizedBox(width: AppSizes.space8),
+              botones[i],
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
 
-String _estado(EstadoInscripcion estado) {
+Widget _boton(String texto, Color? color, VoidCallback onPressed) {
+  return TextButton(
+    style: TextButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.space8),
+      minimumSize: const Size(0, AppSizes.botonTablaAlto),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      foregroundColor: color,
+    ),
+    onPressed: onPressed,
+    child: Text(texto),
+  );
+}
+
+String _estadoFiltro(EstadoInscripcion estado) {
   return switch (estado) {
     EstadoInscripcion.pendiente => AppStrings.adminPendientes,
     EstadoInscripcion.confirmada => AppStrings.adminConfirmadas,
     EstadoInscripcion.cancelada => AppStrings.adminCancelados,
+  };
+}
+
+String _estadoFila(EstadoInscripcion estado) {
+  return switch (estado) {
+    EstadoInscripcion.pendiente => AppStrings.estadoPendiente,
+    EstadoInscripcion.confirmada => AppStrings.estadoConfirmada,
+    EstadoInscripcion.cancelada => AppStrings.estadoCancelada,
   };
 }
 

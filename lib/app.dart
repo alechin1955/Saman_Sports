@@ -22,25 +22,41 @@ import 'package:saman_sports/views/estudiante/dashboard_estudiante_view.dart';
 import 'package:saman_sports/views/home/home_view.dart';
 
 class SamanSportsApp extends StatefulWidget {
-  const SamanSportsApp({super.key});
+  const SamanSportsApp({
+    super.key,
+    @visibleForTesting this.auth,
+    @visibleForTesting this.sesion,
+  });
+
+  final AuthController? auth;
+  final Stream<Object?>? sesion;
 
   @override
   State<SamanSportsApp> createState() => _SamanSportsAppState();
 }
 
 class _SamanSportsAppState extends State<SamanSportsApp> {
-  final AuthController _auth = AuthController();
+  late final AuthController _auth;
+  late final bool _authPropio;
   final HomeController _home = HomeController();
   final EstudianteController _estudiante = EstudianteController();
   final ExplorarDeportesController _explorar = ExplorarDeportesController();
   final ComunidadController _comunidad = ComunidadController();
   final AdminControladores _admin = AdminControladores();
-    final EstudianteControladores _panelEstudiante = EstudianteControladores();
-  late final Stream<Object?> _sesion = _abrirSesion();
+  final EstudianteControladores _panelEstudiante = EstudianteControladores();
+  late final Stream<Object?> _sesion;
+
+  @override
+  void initState() {
+    super.initState();
+    _authPropio = widget.auth == null;
+    _auth = widget.auth ?? AuthController();
+    _sesion = widget.sesion ?? _abrirSesion();
+  }
 
   @override
   void dispose() {
-    _auth.dispose();
+    if (_authPropio) _auth.dispose();
     _home.dispose();
     _estudiante.dispose();
     _explorar.dispose();
@@ -115,6 +131,7 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
   void initState() {
     super.initState();
     _listo = true;
+    widget.auth.addListener(_alCambiarAuth);
     try {
       _sub = widget.sesion.listen(
         (usuario) {
@@ -143,8 +160,30 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
     }
   }
 
+  void _alCambiarAuth() {
+    if (!mounted) return;
+    if (!widget.auth.cargando &&
+        !widget.auth.registrando &&
+        _usuario != null &&
+        _rol == null) {
+      setState(() {
+        _rol = widget.auth.rolSesionActual();
+      });
+    }
+  }
+
+  void _pedirRol() {
+    if (!mounted) return;
+    if (widget.auth.cargando || widget.auth.registrando) return;
+    if (_usuario == null || _rol != null) return;
+    setState(() {
+      _rol = widget.auth.rolSesionActual();
+    });
+  }
+
   @override
   void dispose() {
+    widget.auth.removeListener(_alCambiarAuth);
     _sub?.cancel();
     super.dispose();
   }
@@ -152,9 +191,6 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
   @override
   Widget build(BuildContext context) {
     if (!_listo) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    if (widget.auth.registrando || widget.auth.cargando) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (_usuario == null) {
@@ -171,7 +207,14 @@ class _InicioSegunSesionState extends State<_InicioSegunSesion> {
         return FutureBuilder<ResultadoRol>(
           future: _rol,
           builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
+            if (_rol == null &&
+                _usuario != null &&
+                !widget.auth.cargando &&
+                !widget.auth.registrando) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => _pedirRol());
+            }
+            if (_rol == null ||
+                snapshot.connectionState != ConnectionState.done) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );

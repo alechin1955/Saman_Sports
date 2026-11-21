@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:saman_sports/core/constants/app_strings.dart';
+import 'package:saman_sports/core/utils/identificadores.dart';
+import 'package:saman_sports/core/utils/validators.dart';
 import 'package:saman_sports/core/utils/choque_horario.dart';
 import 'package:saman_sports/core/utils/solicitud_evento_entrenador.dart';
 import 'package:saman_sports/core/utils/ticket_soporte_entrenador.dart';
@@ -68,6 +70,7 @@ class FirebaseServices {
   /// Nombre de la colección de Firestore donde se guarda cada usuario
   /// (documento usuarios/{uid}).
   static const String usuariosCollection = 'usuarios';
+  static const String identificadoresCollection = 'identificadores';
 
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -132,6 +135,261 @@ class FirebaseServices {
     } catch (_) {
       return AuthResponse(
         errorMessage: 'No se pudieron guardar los datos. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
+  static Future<AuthResponse> crearPerfilEstudiante({
+    required String uid,
+    required Map<String, dynamic> datos,
+  }) async {
+    try {
+      final cedula = cedulaNormalizada('${datos['cedula'] ?? ''}');
+      final carnet = carnetNormalizado('${datos['carnet'] ?? ''}');
+      final cedulaRef = _db
+          .collection(identificadoresCollection)
+          .doc('cedula_$cedula');
+      final carnetRef = _db
+          .collection(identificadoresCollection)
+          .doc('carnet_$carnet');
+      await _db.runTransaction((tx) async {
+        final cedulaDoc = await tx.get(cedulaRef);
+        if (cedulaDoc.exists) {
+          throw StateError(AppStrings.cedulaYaRegistrada);
+        }
+        final carnetDoc = await tx.get(carnetRef);
+        if (carnetDoc.exists) {
+          throw StateError(AppStrings.carnetYaRegistrado);
+        }
+        tx.set(_db.collection(usuariosCollection).doc(uid), {
+          ...datos,
+          'cedula': cedula,
+          'carnet': carnet,
+        });
+        tx.set(cedulaRef, {
+          'uid': uid,
+          'tipo': 'cedula',
+          'creadoEn': FieldValue.serverTimestamp(),
+        });
+        tx.set(carnetRef, {
+          'uid': uid,
+          'tipo': 'carnet',
+          'creadoEn': FieldValue.serverTimestamp(),
+        });
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        return AuthResponse(
+          errorMessage: AppStrings.cedulaOCarnetYaRegistrado,
+          isSuccess: false,
+        );
+      }
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+
+  static Future<List<String>> indexarIdentificadoresEstudiantes() async {
+    final consulta = await consultarRol(uid: _auth.currentUser?.uid ?? '');
+    if (consulta.rol != 'administrador') {
+      throw StateError('Solo el administrador puede revisar identificadores.');
+    }
+    final estudiantes = await _db
+        .collection(usuariosCollection)
+        .where('rol', isEqualTo: 'estudiante')
+        .get();
+    final alumnos = [
+      for (final doc in estudiantes.docs)
+        AlumnoIdentificador(
+          uid: doc.id,
+          nombre: '${doc.data()['nombre'] ?? ''}',
+          apellido: '${doc.data()['apellido'] ?? ''}',
+          cedula: '${doc.data()['cedula'] ?? ''}',
+          carnet: '${doc.data()['carnet'] ?? ''}',
+        ),
+    ];
+    final ocupados = await _ocupadosIdentificadores(alumnos);
+    final plan = planificarIdentificadores(alumnos: alumnos, ocupados: ocupados);
+    var lote = _db.batch();
+    var operaciones = 0;
+    Future<void> cerrar() async {
+      if (operaciones == 0) return;
+      await lote.commit();
+      lote = _db.batch();
+      operaciones = 0;
+    }
+
+    for (final item in plan.crear) {
+      lote.set(_db.collection(identificadoresCollection).doc(item.id), {
+        'uid': item.uid,
+        'tipo': item.tipo,
+        'creadoEn': FieldValue.serverTimestamp(),
+      });
+      operaciones++;
+      if (operaciones >= 400) await cerrar();
+    }
+    await cerrar();
+    return plan.informe;
+  }
+
+  /// Crea los índices que faltan del estudiante con sesión abierta.
+  /// Si el índice ya es suyo, no escribe. Si lo tiene otro uid, no escribe
+  /// y no interrumpe el inicio de sesión.
+  static Future<void> asegurarIdentificadoresEstudiante({
+    required String uid,
+  }) async {
+    try {
+      if (_auth.currentUser?.uid != uid) return;
+      final doc = await _db.collection(usuariosCollection).doc(uid).get();
+      final datos = doc.data();
+      if (datos == null || datos['rol'] != 'estudiante') return;
+      if ('${datos['estado'] ?? 'activo'}' == 'inactivo') return;
+      final alumno = AlumnoIdentificador(
+        uid: uid,
+        nombre: '${datos['nombre'] ?? ''}',
+        apellido: '${datos['apellido'] ?? ''}',
+        cedula: '${datos['cedula'] ?? ''}',
+        carnet: '${datos['carnet'] ?? ''}',
+      );
+      final ocupados = await _ocupadosIdentificadores([alumno]);
+      final plan = planificarIdentificadores(
+        alumnos: [alumno],
+        ocupados: ocupados,
+      );
+      for (final item in plan.crear) {
+        try {
+          await _db.collection(identificadoresCollection).doc(item.id).set({
+            'uid': uid,
+            'tipo': item.tipo,
+            'creadoEn': FieldValue.serverTimestamp(),
+          });
+        } on FirebaseException catch (e) {
+          if (e.code == 'permission-denied' || e.code == 'already-exists') {
+            continue;
+          }
+        }
+      }
+    } catch (_) {
+      // Un índice duplicado o un fallo de red no puede tumbar la sesión.
+    }
+  }
+
+  static Future<Map<String, String>> _ocupadosIdentificadores(
+    List<AlumnoIdentificador> alumnos,
+  ) async {
+    final ocupados = <String, String>{};
+    for (final alumno in alumnos) {
+      for (final item in [
+        ('cedula', cedulaNormalizada(alumno.cedula)),
+        ('carnet', carnetNormalizado(alumno.carnet)),
+      ]) {
+        if (item.$2.isEmpty) continue;
+        final id = idIdentificador(item.$1, item.$2);
+        final actual = await _db
+            .collection(identificadoresCollection)
+            .doc(id)
+            .get();
+        final dueno = actual.data()?['uid'];
+        if (actual.exists && dueno is String && dueno.isNotEmpty) {
+          ocupados[id] = dueno;
+        }
+      }
+    }
+    return ocupados;
+  }
+
+  static Future<AuthResponse> cambiarClave({
+    required String claveActual,
+    required String claveNueva,
+  }) async {
+    try {
+      final usuario = _auth.currentUser;
+      final correo = usuario?.email;
+      if (usuario == null || correo == null) {
+        return AuthResponse(
+          errorMessage: AppStrings.sesionNoIniciada,
+          isSuccess: false,
+        );
+      }
+      final credencial = EmailAuthProvider.credential(
+        email: correo,
+        password: claveActual,
+      );
+      await usuario.reauthenticateWithCredential(credencial);
+      await usuario.updatePassword(claveNueva);
+      return AuthResponse(isSuccess: true);
+    } on FirebaseAuthException catch (e) {
+      final codigo = e.code;
+      final mensaje = codigo == 'wrong-password' || codigo == 'invalid-credential'
+          ? AppStrings.claveActualIncorrecta
+          : codigo == 'weak-password'
+          ? AppStrings.claveDebil
+          : codigo == 'requires-recent-login'
+          ? AppStrings.reiniciaSesionParaClave
+          : AppStrings.errorInesperado;
+      return AuthResponse(errorMessage: mensaje, isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
+        isSuccess: false,
+      );
+    }
+  }
+
+  static Future<AuthResponse> actualizarPerfilEntrenador({
+    required String uid,
+    required String telefono,
+    required String biografia,
+    required int anosExperiencia,
+    required List<String> certificaciones,
+  }) async {
+    try {
+      if (_auth.currentUser?.uid != uid) {
+        throw StateError(AppStrings.sesionNoIniciada);
+      }
+      final telefonoError = Validators.telefono(telefono);
+      if (telefonoError != null) throw StateError(telefonoError);
+      if (anosExperiencia < 0 || anosExperiencia > 60) {
+        throw StateError(AppStrings.entAnosInvalidos);
+      }
+      if (biografia.trim().length > 500) {
+        throw StateError(AppStrings.entBiografiaLarga);
+      }
+      if (certificaciones.length > 10) {
+        throw StateError(AppStrings.entCertificacionesMaximo);
+      }
+      final lote = _db.batch();
+      lote.update(_db.collection(usuariosCollection).doc(uid), {
+        'telefono': telefono.trim(),
+      });
+      lote.update(_db.collection(entrenadoresCollection).doc(uid), {
+        'biografia': biografia.trim(),
+        'anosExperiencia': anosExperiencia,
+        'certificaciones': certificaciones,
+      });
+      await lote.commit();
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: AppStrings.errorInesperado,
         isSuccess: false,
       );
     }
@@ -610,6 +868,110 @@ class FirebaseServices {
     }
   }
 
+  static Future<AuthResponse> cancelarSolicitudEventoEntrenador({
+    required String entrenadorUid,
+    required String eventoId,
+  }) async {
+    try {
+      final actual = _auth.currentUser?.uid;
+      if (actual == null || actual != entrenadorUid) {
+        throw StateError('Sesión de entrenador requerida');
+      }
+      final ref = _db.collection(eventosCollection).doc(eventoId);
+      final evento = await ref.get();
+      final datos = evento.data();
+      if (!evento.exists ||
+          datos == null ||
+          datos['creadoPorUid'] != entrenadorUid ||
+          datos['estado'] != 'pendiente') {
+        throw StateError(AppStrings.entSolicitudNoCancelable);
+      }
+      await ref.update({
+        'estado': 'cancelado',
+        'actualizadoEn': FieldValue.serverTimestamp(),
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo solicitar el evento. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
+  static Future<AuthResponse> editarSolicitudEventoEntrenador({
+    required String entrenadorUid,
+    required String eventoId,
+    required Map<String, dynamic> datos,
+  }) async {
+    try {
+      final actual = _auth.currentUser?.uid;
+      if (actual == null || actual != entrenadorUid) {
+        throw StateError('Sesión de entrenador requerida');
+      }
+      final ref = _db.collection(eventosCollection).doc(eventoId);
+      final evento = await ref.get();
+      final actualDatos = evento.data();
+      if (!evento.exists ||
+          actualDatos == null ||
+          actualDatos['creadoPorUid'] != entrenadorUid ||
+          actualDatos['estado'] != 'pendiente') {
+        throw StateError(AppStrings.entSolicitudNoCancelable);
+      }
+      final deporteId = '${actualDatos['deporteId'] ?? ''}'.trim();
+      final canchaId = '${datos['canchaId'] ?? actualDatos['canchaId'] ?? ''}'
+          .trim();
+      if (deporteId.isEmpty) throw StateError('Elige una disciplina.');
+      if (canchaId.isEmpty) throw StateError('Elige una cancha.');
+      final documentos = await Future.wait([
+        _db.collection(deportesCollection).doc(deporteId).get(),
+        _db.collection(canchasCollection).doc(canchaId).get(),
+      ]);
+      final deporte = documentos[0];
+      final cancha = documentos[1];
+      final solicitud = construirSolicitudEventoEntrenador(
+        datos: {...datos, 'deporteId': deporteId},
+        entrenadorUid: entrenadorUid,
+        deporte: {'id': deporte.id, ...?deporte.data()},
+        cancha: {'id': cancha.id, ...?cancha.data()},
+        reservasCancha: await _ocupadas(canchaId),
+        ahora: DateTime.now(),
+      );
+      await ref.update({
+        'titulo': solicitud['titulo'],
+        'descripcion': solicitud['descripcion'],
+        'fecha': solicitud['fecha'],
+        'horaInicio': solicitud['horaInicio'],
+        'horaFin': solicitud['horaFin'],
+        'capacidad': solicitud['capacidad'],
+        'canchaId': solicitud['canchaId'],
+        'canchaNombre': solicitud['canchaNombre'],
+        'ubicacion': solicitud['ubicacion'],
+        'actualizadoEn': FieldValue.serverTimestamp(),
+      });
+      return AuthResponse(isSuccess: true);
+    } on FirebaseException catch (e) {
+      return AuthResponse(
+        errorMessage: _firestoreErrorMessage(e),
+        isSuccess: false,
+      );
+    } on StateError catch (e) {
+      return AuthResponse(errorMessage: e.message.toString(), isSuccess: false);
+    } catch (_) {
+      return AuthResponse(
+        errorMessage: 'No se pudo solicitar el evento. Intenta nuevamente.',
+        isSuccess: false,
+      );
+    }
+  }
+
   /// Tickets creados por el entrenador autenticado. El filtro por autor es
   /// parte del contrato que también deben exigir las reglas de Firestore.
   static Stream<List<Map<String, dynamic>>> streamTicketsEntrenador({
@@ -883,6 +1245,7 @@ class FirebaseServices {
         final deporte = await tx.get(deporteRef);
         if (deporte.exists) {
           final inscritos = _enteroAdmin(deporte.data()?['inscritos']);
+          // Si inscritos ya es 0 no se escribe el deporte: la regla lo permite.
           if (inscritos > 0) {
             tx.update(deporteRef, {'inscritos': inscritos - 1});
           }
@@ -1069,7 +1432,7 @@ class FirebaseServices {
       await registrarTransaccion(
         accion: 'crear',
         modulo: 'canchas',
-        descripcion: 'Creó la cancha $nombre',
+        descripcion: AppStrings.txCanchaCreada(nombre),
       );
     });
   }
@@ -1099,11 +1462,15 @@ class FirebaseServices {
           );
         }
       }
+      final actual = await _db.collection(canchasCollection).doc(id).get();
+      final nombre = _textoODesconocido(
+        '${cambios['nombre'] ?? actual.data()?['nombre'] ?? ''}',
+      );
       await _db.collection(canchasCollection).doc(id).update(cambios);
       await registrarTransaccion(
         accion: 'actualizar',
         modulo: 'canchas',
-        descripcion: 'Actualizó la cancha $id',
+        descripcion: AppStrings.txCanchaActualizada(nombre),
       );
     });
   }
@@ -1204,7 +1571,7 @@ class FirebaseServices {
           _datosTransaccion(
             accion: 'crear',
             modulo: 'deportes',
-            descripcion: 'Creó el deporte $nombre',
+            descripcion: AppStrings.txDeporteCreado(nombre),
           ),
         );
       });
@@ -1353,7 +1720,7 @@ class FirebaseServices {
           _datosTransaccion(
             accion: 'actualizar',
             modulo: 'deportes',
-            descripcion: 'Actualizó el deporte $nombreNuevo',
+            descripcion: AppStrings.txDeporteActualizado(nombreNuevo),
           ),
         );
       });
@@ -1446,8 +1813,10 @@ class FirebaseServices {
           _datosTransaccion(
             accion: activo ? 'activar' : 'desactivar',
             modulo: 'deportes',
-            descripcion:
-                '${activo ? 'Activó' : 'Desactivó'} el deporte ${actual['nombre'] ?? id}',
+            descripcion: AppStrings.txDeporteEstado(
+              activo ? 'Activó' : 'Desactivó',
+              _textoODesconocido('${actual['nombre'] ?? ''}'),
+            ),
           ),
         );
       });
@@ -1482,8 +1851,13 @@ class FirebaseServices {
             accion: entrenadorUid.isEmpty ? 'desasignar' : 'asignar',
             modulo: 'entrenadores',
             descripcion: entrenadorUid.isEmpty
-                ? 'Desasignó el entrenador del deporte $deporteId'
-                : 'Asignó a $entrenadorNombre al deporte $deporteId',
+                ? AppStrings.txEntrenadorDesasignado(
+                    _textoODesconocido('${deporte.data()?['nombre'] ?? ''}'),
+                  )
+                : AppStrings.txEntrenadorAsignado(
+                    entrenadorNombre,
+                    _textoODesconocido('${deporte.data()?['nombre'] ?? ''}'),
+                  ),
           ),
         );
       });
@@ -1519,7 +1893,61 @@ class FirebaseServices {
       'accion': accion,
       'modulo': modulo,
       'descripcion': descripcion,
+      'legible': true,
     };
+  }
+
+  static String _nombrePersona(Map<String, dynamic>? datos) {
+    final nombre = '${datos?['nombre'] ?? ''}'.trim();
+    final apellido = '${datos?['apellido'] ?? ''}'.trim();
+    final completo = '$nombre $apellido'.trim();
+    if (completo.isNotEmpty) return completo;
+    final correo = '${datos?['correo'] ?? ''}'.trim();
+    if (correo.isNotEmpty) return correo;
+    return AppStrings.adminUsuarioDesconocido;
+  }
+
+  static String _textoODesconocido(String valor) {
+    final limpio = valor.trim();
+    return limpio.isEmpty ? AppStrings.adminRegistroNoDisponible : limpio;
+  }
+
+  static String _estadoInscripcionLegible(String estado) {
+    return switch (estado) {
+      'confirmada' => AppStrings.estadoConfirmada,
+      'cancelada' => AppStrings.estadoCancelada,
+      _ => AppStrings.estadoPendiente,
+    };
+  }
+
+  static String _estadoEventoLegible(String estado) {
+    return switch (estado) {
+      'aprobado' => AppStrings.adminEventoAprobado,
+      'rechazado' => AppStrings.adminEventoRechazado,
+      'cancelado' => AppStrings.adminEventoCancelado,
+      _ => AppStrings.estadoPendiente,
+    };
+  }
+
+  static String _estadoPagoLegible(String estado) {
+    return switch (estado) {
+      'realizado' => AppStrings.adminPagoRealizado,
+      'rechazado' => AppStrings.adminPagoRechazado,
+      _ => AppStrings.adminPagoPendienteEtiqueta,
+    };
+  }
+
+  static Future<Map<String, dynamic>?> leerDocumentoAdmin({
+    required String coleccion,
+    required String id,
+  }) async {
+    try {
+      final doc = await _db.collection(coleccion).doc(id).get();
+      if (!doc.exists) return null;
+      return doc.data();
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<AuthResponse> _ejecutarAdmin(
@@ -1651,9 +2079,9 @@ class FirebaseServices {
         _datosTransaccion(
           accion: 'crear',
           modulo: 'entrenadores',
-          descripcion:
-              'Creó la cuenta del entrenador ${publico['nombre'] ?? ''} ${publico['apellido'] ?? ''}'
-                  .trim(),
+          descripcion: AppStrings.txEntrenadorCreado(
+            _nombrePersona(publico),
+          ),
         ),
       );
       try {
@@ -1750,7 +2178,9 @@ class FirebaseServices {
         _datosTransaccion(
           accion: 'actualizar',
           modulo: 'entrenadores',
-          descripcion: 'Actualizó al entrenador $nombreNuevo $apellidoNuevo',
+          descripcion: AppStrings.txEntrenadorActualizado(
+            '$nombreNuevo $apellidoNuevo'.trim(),
+          ),
         ),
       );
       await batch.commit();
@@ -1782,6 +2212,9 @@ class FirebaseServices {
           );
         }
       }
+      final perfil = await _db.collection(entrenadoresCollection).doc(uid).get();
+      final usuario = await _db.collection(usuariosCollection).doc(uid).get();
+      final nombre = _nombrePersona(usuario.data() ?? perfil.data());
       final batch = _db.batch();
       batch.update(_db.collection(entrenadoresCollection).doc(uid), {
         'activo': activo,
@@ -1794,7 +2227,10 @@ class FirebaseServices {
         _datosTransaccion(
           accion: activo ? 'activar' : 'desactivar',
           modulo: 'entrenadores',
-          descripcion: '${activo ? 'Activó' : 'Desactivó'} al entrenador $uid',
+          descripcion: AppStrings.txEntrenadorEstado(
+            activo ? 'Activó' : 'Desactivó',
+            nombre,
+          ),
         ),
       );
       await batch.commit();
@@ -1893,7 +2329,7 @@ class FirebaseServices {
           _datosTransaccion(
             accion: 'crear',
             modulo: 'eventos',
-            descripcion: 'Creó el evento $titulo',
+            descripcion: AppStrings.txEventoCreado(titulo),
           ),
         );
       });
@@ -2020,7 +2456,7 @@ class FirebaseServices {
           _datosTransaccion(
             accion: 'actualizar',
             modulo: 'eventos',
-            descripcion: 'Actualizó el evento $titulo',
+            descripcion: AppStrings.txEventoActualizado(titulo),
           ),
         );
       });
@@ -2113,7 +2549,10 @@ class FirebaseServices {
           _datosTransaccion(
             accion: estado,
             modulo: 'eventos',
-            descripcion: 'Cambió a $estado el evento ${actual['titulo'] ?? id}',
+            descripcion: AppStrings.txEventoEstado(
+              _estadoEventoLegible(estado),
+              _textoODesconocido('${actual['titulo'] ?? ''}'),
+            ),
           ),
         );
       });
@@ -2200,6 +2639,8 @@ class FirebaseServices {
     required bool activo,
   }) {
     return _ejecutarAdmin(() async {
+      final usuario = await _db.collection(usuariosCollection).doc(uid).get();
+      final nombre = _nombrePersona(usuario.data());
       final batch = _db.batch();
       batch.update(_db.collection(usuariosCollection).doc(uid), {
         'estado': activo ? 'activo' : 'inactivo',
@@ -2209,7 +2650,10 @@ class FirebaseServices {
         _datosTransaccion(
           accion: activo ? 'activar' : 'desactivar',
           modulo: 'estudiantes',
-          descripcion: '${activo ? 'Activó' : 'Desactivó'} al estudiante $uid',
+          descripcion: AppStrings.txEstudianteEstado(
+            activo ? 'Activó' : 'Desactivó',
+            nombre,
+          ),
         ),
       );
       await batch.commit();
@@ -2227,13 +2671,19 @@ class FirebaseServices {
     required bool visible,
   }) {
     return _ejecutarAdmin(() async {
+      final resena = await _db.collection(resenasCollection).doc(id).get();
+      final datos = resena.data();
       await _db.collection(resenasCollection).doc(id).update({
         'visible': visible,
       });
       await registrarTransaccion(
         accion: visible ? 'mostrar' : 'ocultar',
         modulo: 'resenas',
-        descripcion: '${visible ? 'Mostró' : 'Ocultó'} la reseña $id',
+        descripcion: AppStrings.txResenaVisibilidad(
+          visible ? 'Mostró' : 'Ocultó',
+          _textoODesconocido('${datos?['autorNombre'] ?? ''}'),
+          _textoODesconocido('${datos?['disciplina'] ?? ''}'),
+        ),
       );
     });
   }
@@ -2265,6 +2715,13 @@ class FirebaseServices {
             .doc('${datos['deporteId'] ?? ''}');
         final deporte = await tx.get(deporteRef);
         if (!deporte.exists) throw StateError('El deporte no existe.');
+        final estudiante = await tx.get(
+          _db.collection(usuariosCollection).doc('${datos['estudianteUid'] ?? ''}'),
+        );
+        final nombreEstudiante = _nombrePersona(estudiante.data());
+        final deporteNombre = _textoODesconocido(
+          '${datos['deporteNombre'] ?? deporte.data()?['nombre'] ?? ''}',
+        );
         final antes = '${datos['estado'] ?? ''}';
         final ocupaba = antes == 'pendiente' || antes == 'confirmada';
         final ocupara = estado == 'pendiente' || estado == 'confirmada';
@@ -2285,7 +2742,11 @@ class FirebaseServices {
           _datosTransaccion(
             accion: estado,
             modulo: 'inscripciones',
-            descripcion: 'Cambió a $estado la inscripción $id',
+            descripcion: AppStrings.txInscripcionEstado(
+              _estadoInscripcionLegible(estado),
+              nombreEstudiante,
+              deporteNombre,
+            ),
           ),
         );
       });
@@ -2411,6 +2872,10 @@ class FirebaseServices {
         final periodoConfig = '${config.data()?['periodo'] ?? ''}'.trim();
         final montoEsperado = _numeroAdmin(config.data()?['monto']);
         final periodoPago = (periodo ?? '${datos['periodo'] ?? ''}').trim();
+        final estudiante = uid.isEmpty
+            ? null
+            : await tx.get(_db.collection(usuariosCollection).doc(uid));
+        final nombreEstudiante = _nombrePersona(estudiante?.data());
         final concede = verificado &&
             AdminSolvencia.datosValidos(
               uidPago: uid,
@@ -2445,8 +2910,12 @@ class FirebaseServices {
             accion: verificado ? 'verificar' : 'rechazar',
             modulo: 'pagos',
             descripcion: concede
-                ? 'Verificó el pago $pagoId y dejó solvente a $uid. La fecha es la del momento de verificar, no una fecha bancaria.'
-                : 'Registró el pago $pagoId sin conceder solvencia',
+                ? AppStrings.txPagoVerificado(
+                    nombreEstudiante,
+                    periodoPago,
+                    '$monto',
+                  )
+                : AppStrings.txPagoSinSolvencia(nombreEstudiante, periodoPago),
           ),
         );
       });
@@ -2520,8 +2989,8 @@ class FirebaseServices {
             accion: valido ? 'corte_solvente' : 'corte_insolvente',
             modulo: 'pagos',
             descripcion: valido
-                ? 'El corte dejó solvente a $uid'
-                : 'El corte marcó insolvente a $uid',
+                ? AppStrings.txCorteSolvente(_nombrePersona(datosUsuario))
+                : AppStrings.txCorteInsolvente(_nombrePersona(datosUsuario)),
           ),
         );
       });
@@ -2557,6 +3026,12 @@ class FirebaseServices {
       if (!validos.contains(estado)) {
         throw StateError('El estado del pago no es válido.');
       }
+      final pago = await _db.collection(pagosCollection).doc(pagoId).get();
+      final datosPago = pago.data();
+      final estudianteUid = '${datosPago?['estudianteUid'] ?? ''}';
+      final usuario = estudianteUid.isEmpty
+          ? null
+          : await _db.collection(usuariosCollection).doc(estudianteUid).get();
       final cambios = <String, dynamic>{
         'estado': estado,
         'verificado': estado == 'realizado',
@@ -2566,7 +3041,11 @@ class FirebaseServices {
       await registrarTransaccion(
         accion: estado == 'rechazado' ? 'rechazar' : 'marcar_pendiente',
         modulo: 'pagos',
-        descripcion: 'Marcó el pago $pagoId como $estado',
+        descripcion: AppStrings.txPagoEstado(
+          _estadoPagoLegible(estado),
+          _nombrePersona(usuario?.data()),
+          '${datosPago?['periodo'] ?? ''}'.trim(),
+        ),
       );
     });
   }
@@ -2613,7 +3092,7 @@ class FirebaseServices {
         _datosTransaccion(
           accion: 'guardar',
           modulo: 'pagos',
-          descripcion: 'Guardó la fecha de corte del período ${periodo.trim()}',
+          descripcion: AppStrings.txFechaCorte(periodo.trim()),
         ),
       );
       await batch.commit();
@@ -2625,14 +3104,17 @@ class FirebaseServices {
     required bool solvente,
   }) {
     return _ejecutarAdmin(() async {
+      final usuario = await _db.collection(usuariosCollection).doc(uid).get();
       await _db.collection(usuariosCollection).doc(uid).update({
         'solvente': solvente,
       });
       await registrarTransaccion(
         accion: solvente ? 'marcar_solvente' : 'marcar_insolvente',
         modulo: 'estudiantes',
-        descripcion:
-            '${solvente ? 'Marcó solvente' : 'Marcó insolvente'} al estudiante $uid',
+        descripcion: AppStrings.txSolvencia(
+          solvente ? 'Marcó solvente' : 'Marcó insolvente',
+          _nombrePersona(usuario.data()),
+        ),
       );
     });
   }
@@ -2680,6 +3162,8 @@ class FirebaseServices {
       if (texto.isEmpty) {
         throw StateError('La respuesta es obligatoria.');
       }
+      final ticket = await _db.collection(ticketsCollection).doc(id).get();
+      final datosTicket = ticket.data();
       final cambios = <String, dynamic>{'respuesta': texto};
       if (resolver) {
         cambios['estado'] = 'resuelto';
@@ -2689,7 +3173,10 @@ class FirebaseServices {
       await registrarTransaccion(
         accion: resolver ? 'resolver' : 'responder',
         modulo: 'soporte',
-        descripcion: 'Respondió el ticket $id',
+        descripcion: AppStrings.txTicketRespondido(
+          _textoODesconocido('${datosTicket?['asunto'] ?? ''}'),
+          _textoODesconocido('${datosTicket?['autorNombre'] ?? ''}'),
+        ),
       );
     });
   }

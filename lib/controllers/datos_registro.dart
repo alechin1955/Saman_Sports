@@ -1,3 +1,5 @@
+import 'package:saman_sports/core/utils/identificadores.dart';
+
 class DatosRegistro {
   const DatosRegistro({
     required this.nombre,
@@ -21,8 +23,8 @@ class DatosRegistro {
     return {
       'nombre': nombre.trim(),
       'apellido': apellido.trim(),
-      'cedula': cedula.trim(),
-      'carnet': carnet.trim(),
+      'cedula': cedulaNormalizada(cedula),
+      'carnet': carnetNormalizado(carnet),
       'telefono': telefono.trim(),
       'correo': correo.trim().toLowerCase(),
       'rol': 'estudiante',

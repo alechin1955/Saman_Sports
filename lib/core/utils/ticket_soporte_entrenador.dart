@@ -1,9 +1,10 @@
+import 'package:saman_sports/core/constants/app_strings.dart';
 const Map<String, String> categoriasSoporteEntrenador = {
-  'cuenta': 'Cuenta y acceso',
-  'disciplinas': 'Disciplinas',
-  'asistencia': 'Asistencia',
-  'eventos': 'Eventos',
-  'otro': 'Otro',
+  'cuenta': AppStrings.entCuentaAcceso,
+  'disciplinas': AppStrings.disciplinas,
+  'asistencia': AppStrings.asistencia,
+  'eventos': AppStrings.adminEventos,
+  'otro': AppStrings.entOtro,
 };
 
 const int maximoAsuntoSoporteEntrenador = 80;
@@ -15,19 +16,19 @@ String? validarTicketSoporteEntrenador({
   required String descripcion,
 }) {
   if (!categoriasSoporteEntrenador.containsKey(categoria)) {
-    return 'Elige una categoría.';
+    return AppStrings.entEligeCategoria;
   }
   if (asunto.length < 5) {
-    return 'El asunto debe tener al menos 5 caracteres.';
+    return AppStrings.entAsuntoCorto;
   }
   if (asunto.length > maximoAsuntoSoporteEntrenador) {
-    return 'El asunto puede tener máximo $maximoAsuntoSoporteEntrenador caracteres.';
+    return AppStrings.entAsuntoMaximo(maximoAsuntoSoporteEntrenador);
   }
   if (descripcion.length < 10) {
-    return 'Describe el problema con al menos 10 caracteres.';
+    return AppStrings.entDescripcionCorta;
   }
   if (descripcion.length > maximoDescripcionSoporteEntrenador) {
-    return 'La descripción puede tener máximo $maximoDescripcionSoporteEntrenador caracteres.';
+    return AppStrings.entDescripcionMaxima(maximoDescripcionSoporteEntrenador);
   }
   return null;
 }
@@ -50,7 +51,7 @@ Map<String, dynamic> construirTicketSoporteEntrenador({
   );
   if (error != null) throw StateError(error);
   if (entrenadorUid.trim().isEmpty || perfil?['rol'] != 'entrenador') {
-    throw StateError('Sesión de entrenador requerida');
+    throw StateError(AppStrings.entSesionEntrenador);
   }
 
   final nombre = [
@@ -66,7 +67,7 @@ Map<String, dynamic> construirTicketSoporteEntrenador({
     'autorUid': entrenadorUid,
     'autorNombre': nombre.isNotEmpty
         ? nombre
-        : (correo.isNotEmpty ? correo : 'Entrenador'),
+        : (correo.isNotEmpty ? correo : AppStrings.entNombreFallback),
     'autorRol': 'entrenador',
     'estado': 'abierto',
     'respuesta': '',

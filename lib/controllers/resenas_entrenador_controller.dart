@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/resena.dart';
 import 'package:saman_sports/repositories/resenas_entrenador_repository.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class ResenasEntrenadorController extends ChangeNotifier {
   ResenasEntrenadorController({ResenasEntrenadorRepository? repository})
@@ -50,7 +51,7 @@ class ResenasEntrenadorController extends ChangeNotifier {
   void _fallo() {
     if (_cerrado) return;
     cargando = false;
-    error = 'No se pudieron cargar las reseñas de tus disciplinas.';
+    error = AppStrings.entResenasCarga;
     _avisar();
   }
 

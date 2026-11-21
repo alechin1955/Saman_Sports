@@ -8,6 +8,7 @@ class Transaccion {
     required this.accion,
     required this.modulo,
     required this.descripcion,
+    this.legible = false,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class Transaccion {
   final String accion;
   final String modulo;
   final String descripcion;
+  final bool legible;
 
   factory Transaccion.fromMap(String id, Map<String, dynamic> map) {
     return Transaccion(
@@ -29,6 +31,7 @@ class Transaccion {
       accion: '${map['accion'] ?? ''}',
       modulo: '${map['modulo'] ?? ''}',
       descripcion: '${map['descripcion'] ?? ''}',
+      legible: map['legible'] == true,
     );
   }
 
@@ -41,6 +44,7 @@ class Transaccion {
       'accion': accion,
       'modulo': modulo,
       'descripcion': descripcion,
+      'legible': legible,
     };
   }
 }

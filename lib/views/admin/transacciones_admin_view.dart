@@ -5,6 +5,7 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/transaccion.dart';
+import 'package:saman_sports/views/admin/widgets/tabla_desplazable.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
 
 class TransaccionesAdminView extends StatelessWidget {
@@ -110,10 +111,13 @@ class TransaccionesAdminView extends StatelessWidget {
             else if (lista.isEmpty)
               Text(AppStrings.adminSinTransacciones, style: AppTextStyles.body)
             else if (movil)
-              for (final item in lista) _Tarjeta(item: item)
+              for (final item in lista)
+                _Tarjeta(
+                  item: item,
+                  descripcion: transacciones.descripcionVisible(item),
+                )
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              TablaDesplazable(
                 child: DataTable(
                   columns: [
                     DataColumn(label: Text(AppStrings.adminFecha)),
@@ -132,7 +136,7 @@ class TransaccionesAdminView extends StatelessWidget {
                           DataCell(Text(_rol(item.rol))),
                           DataCell(Text(item.modulo)),
                           DataCell(Text(item.accion)),
-                          DataCell(Text(item.descripcion)),
+                          DataCell(Text(transacciones.descripcionVisible(item))),
                         ],
                       ),
                   ],
@@ -165,9 +169,10 @@ class TransaccionesAdminView extends StatelessWidget {
 }
 
 class _Tarjeta extends StatelessWidget {
-  const _Tarjeta({required this.item});
+  const _Tarjeta({required this.item, required this.descripcion});
 
   final Transaccion item;
+  final String descripcion;
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +180,7 @@ class _Tarjeta extends StatelessWidget {
       child: ListTile(
         title: Text(item.accion),
         subtitle: Text(
-          '${_diaHora(item.fecha)}\n${item.usuarioNombre} · ${_rol(item.rol)} · ${item.modulo}\n${item.descripcion}',
+          '${_diaHora(item.fecha)}\n${item.usuarioNombre} · ${_rol(item.rol)} · ${item.modulo}\n$descripcion',
         ),
         isThreeLine: true,
       ),

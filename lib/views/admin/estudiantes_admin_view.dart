@@ -5,6 +5,7 @@ import 'package:saman_sports/core/theme/app_colors.dart';
 import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/core/theme/app_text_styles.dart';
 import 'package:saman_sports/models/estudiante.dart';
+import 'package:saman_sports/views/admin/widgets/tabla_desplazable.dart';
 import 'package:saman_sports/views/widgets/campo_texto.dart';
 
 class EstudiantesAdminView extends StatefulWidget {
@@ -55,6 +56,35 @@ class _EstudiantesAdminViewState extends State<EstudiantesAdminView> {
                     controller: _busqueda,
                   ),
                 ),
+                TextButton(
+                  onPressed: () async {
+                    final repetidos = await panel.revisarIdentificadores();
+                    if (!context.mounted) return;
+                    await showDialog<void>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text(AppStrings.adminRevisarIdentificadores),
+                        content: SizedBox(
+                          width: AppSizes.formMaxWidth,
+                          child: SingleChildScrollView(
+                            child: Text(
+                              repetidos.isEmpty
+                                  ? AppStrings.adminSinIdentificadoresRepetidos
+                                  : repetidos.join('\n'),
+                            ),
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text(AppStrings.cancelar),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  child: const Text(AppStrings.adminRevisarIdentificadores),
+                ),
                 for (final filtro in FiltroEstudiante.values)
                   ChoiceChip(
                     label: Text(_filtro(filtro)),
@@ -81,8 +111,7 @@ class _EstudiantesAdminViewState extends State<EstudiantesAdminView> {
                   onEstado: () => _estado(context, item),
                 )
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              TablaDesplazable(
                 child: DataTable(
                   columnSpacing: AppSizes.space12,
                   horizontalMargin: AppSizes.space12,

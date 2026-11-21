@@ -1,42 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:saman_sports/core/routes/app_routes.dart';
 import 'package:saman_sports/views/widgets/opcion_panel.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class OpcionesEntrenador {
   static const List<OpcionPanel> menu = [
     OpcionPanel(
       icono: Icons.dashboard_outlined,
-      texto: 'Inicio',
+      texto: AppStrings.inicio,
       ruta: AppRoutes.dashboardEntrenador,
     ),
     OpcionPanel(
       icono: Icons.sports_outlined,
-      texto: 'Disciplinas',
+      texto: AppStrings.disciplinas,
       ruta: AppRoutes.entrenadorDisciplinas,
     ),
     OpcionPanel(
       icono: Icons.fact_check_outlined,
-      texto: 'Asistencia',
+      texto: AppStrings.asistencia,
       ruta: AppRoutes.entrenadorAsistencia,
     ),
     OpcionPanel(
       icono: Icons.event_outlined,
-      texto: 'Eventos',
+      texto: AppStrings.adminEventos,
       ruta: AppRoutes.entrenadorEventos,
     ),
     OpcionPanel(
       icono: Icons.reviews_outlined,
-      texto: 'Reseñas',
+      texto: AppStrings.resenas,
       ruta: AppRoutes.entrenadorResenas,
     ),
     OpcionPanel(
       icono: Icons.support_agent_outlined,
-      texto: 'Soporte',
+      texto: AppStrings.soporte,
       ruta: AppRoutes.entrenadorSoporte,
     ),
     OpcionPanel(
       icono: Icons.person_outline,
-      texto: 'Mi perfil',
+      texto: AppStrings.miPerfil,
       ruta: AppRoutes.entrenadorPerfil,
     ),
   ];

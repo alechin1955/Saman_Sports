@@ -7,6 +7,7 @@ import 'package:saman_sports/core/theme/app_sizes.dart';
 import 'package:saman_sports/views/estudiante/opciones_estudiante.dart';
 import 'package:saman_sports/views/estudiante/widgets/datos_cuenta_card.dart';
 import 'package:saman_sports/views/estudiante/widgets/formulario_perfil.dart';
+import 'package:saman_sports/views/widgets/cambiar_clave_dialog.dart';
 import 'package:saman_sports/views/home/widgets/etiqueta_ejemplo.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
@@ -77,7 +78,20 @@ class _PerfilEstudianteViewState extends State<PerfilEstudianteView> {
                 controller: c,
                 estudiante: estudiante,
               );
-              final cuenta = DatosCuentaCard(estudiante: estudiante);
+              final cuenta = Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  DatosCuentaCard(estudiante: estudiante),
+                  const SizedBox(height: AppSizes.space12),
+                  TextButton(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => const CambiarClaveDialog(),
+                    ),
+                    child: const Text(AppStrings.cambiarClave),
+                  ),
+                ],
+              );
 
               if (constraints.maxWidth >= AppSizes.perfilDosColumnas) {
                 return Row(

@@ -101,7 +101,7 @@ service cloud.firestore {
           isSignedIn()
           && activo()
           && request.auth.uid == userId
-          && noToca(['rol', 'estado', 'solvente'])
+          && noToca(['rol', 'estado', 'solvente', 'cedula', 'carnet'])
         );
 
       allow delete: if false;
@@ -170,7 +170,12 @@ service cloud.firestore {
 
     match /entrenadores/{id} {
       allow read: if resource.data.activo == true || isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+          isEntrenador()
+          && request.auth.uid == id
+          && soloCambia(['biografia', 'anosExperiencia', 'certificaciones'])
+        );
     }
 
     // El campo real es `activa`, no `activo`.
@@ -198,7 +203,24 @@ service cloud.firestore {
           && deporteDe(request.resource.data.deporteId).activo == true
         );
 
-      allow update, delete: if isAdmin();
+      allow delete: if isAdmin();
+      allow update: if isAdmin() || (
+          isEntrenador()
+          && resource.data.creadoPorUid == request.auth.uid
+          && request.resource.data.creadoPorUid == request.auth.uid
+          && resource.data.estado == 'pendiente'
+          && (
+            (
+              request.resource.data.estado == 'cancelado'
+              && soloCambia(['estado', 'actualizadoEn'])
+            ) || (
+              request.resource.data.estado == 'pendiente'
+              && soloCambia(['titulo', 'descripcion', 'fecha', 'horaInicio', 'horaFin',
+                             'capacidad', 'canchaId', 'canchaNombre', 'ubicacion', 'actualizadoEn'])
+              && deporteDe(resource.data.deporteId).entrenadorUid == request.auth.uid
+            )
+          )
+        );
     }
 
     match /resenas/{id} {
@@ -208,7 +230,10 @@ service cloud.firestore {
 
       allow create: if isEstudiante()
         && request.resource.data.autorUid == request.auth.uid
-        && request.resource.data.visible == true;
+        && request.resource.data.visible == true
+        && request.resource.data.deporteId is string
+        && exists(pathInscripcion(request.resource.data.deporteId))
+        && get(pathInscripcion(request.resource.data.deporteId)).data.estado == 'confirmada';
 
       allow update: if (isAdmin() && soloCambia(['visible']))
         || (
@@ -217,7 +242,8 @@ service cloud.firestore {
           && noToca(['visible', 'autorUid'])
         );
 
-      allow delete: if isAdmin();
+      allow delete: if isAdmin()
+        || (isEstudiante() && resource.data.autorUid == request.auth.uid);
     }
 
     // No existe un uid de dueño en `reservas`. Las crea el admin.
@@ -292,7 +318,13 @@ service cloud.firestore {
               resource.data.estado in ['pendiente', 'confirmada']
               && request.resource.data.estado == 'cancelada'
               && soloCambia(['estado'])
-              && bajaUnInscrito(resource.data.deporteId)
+              && (
+                bajaUnInscrito(resource.data.deporteId)
+                || (
+                  get(pathDeporte(resource.data.deporteId)).data.get('inscritos', 0) == 0
+                  && getAfter(pathDeporte(resource.data.deporteId)).data.get('inscritos', 0) == 0
+                )
+              )
             ) || (
               resource.data.estado == 'cancelada'
               && request.resource.data.estado == 'pendiente'
@@ -354,6 +386,35 @@ service cloud.firestore {
       allow read: if isSignedIn() && activo();
       allow create, update: if isAdmin();
       allow delete: if false;
+    }
+
+    match /identificadores/{id} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if (
+          isSignedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'tipo', 'creadoEn'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.tipo in ['cedula', 'carnet']
+          && request.resource.data.creadoEn == request.time
+          && getAfter(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('rol', '') == 'estudiante'
+          && getAfter(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('estado', 'activo') != 'inactivo'
+          && (
+            id == request.resource.data.tipo + '_'
+              + getAfter(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get(request.resource.data.tipo, '')
+            || (
+              request.resource.data.tipo == 'cedula'
+              && id.matches('^cedula_([VE]-)?[0-9]+$')
+              && ('cedula_' + getAfter(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('cedula', '')).matches('(?i)^' + id + '$')
+            )
+          )
+        ) || (
+          isAdmin()
+          && request.resource.data.keys().hasOnly(['uid', 'tipo', 'creadoEn'])
+          && request.resource.data.tipo in ['cedula', 'carnet']
+        );
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     match /{document=**} {

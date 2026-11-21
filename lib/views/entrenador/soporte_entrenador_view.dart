@@ -11,6 +11,7 @@ import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/widgets/boton_primario.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class SoporteEntrenadorView extends StatefulWidget {
   const SoporteEntrenadorView({super.key, required this.auth, this.controller});
@@ -61,7 +62,7 @@ class _SoporteEntrenadorViewState extends State<SoporteEntrenadorView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppColors.success,
-        content: Text(controller.mensaje ?? 'Solicitud enviada.'),
+        content: Text(controller.mensaje ?? AppStrings.entSolicitudEnviadaSnack),
       ),
     );
   }
@@ -72,10 +73,9 @@ class _SoporteEntrenadorViewState extends State<SoporteEntrenadorView> {
       auth: widget.auth,
       opciones: OpcionesEntrenador.menu,
       rutaActiva: AppRoutes.entrenadorSoporte,
-      subtituloPanel: 'Panel del entrenador',
-      titulo: 'Soporte',
-      descripcion:
-          'Envía una solicitud a la coordinación y consulta su respuesta.',
+      subtituloPanel: AppStrings.entPanel,
+      titulo: AppStrings.soporte,
+      descripcion: AppStrings.entSoporteDescripcion,
       child: ListenableBuilder(
         listenable: controller,
         builder: (context, _) => LayoutBuilder(
@@ -143,10 +143,10 @@ class _FormularioSoporte extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Nueva solicitud', style: AppTextStyles.subtitle),
+          Text(AppStrings.entNuevaSolicitud, style: AppTextStyles.subtitle),
           const SizedBox(height: AppSizes.space4),
           Text(
-            'Cuéntanos qué ocurrió para que la coordinación pueda ayudarte.',
+            AppStrings.entSoporteAyuda,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -156,7 +156,7 @@ class _FormularioSoporte extends StatelessWidget {
             key: ValueKey(categoria),
             initialValue: categoria,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Categoría'),
+            decoration: const InputDecoration(labelText: AppStrings.entCategoria),
             items: SoporteEntrenadorController.categorias.entries
                 .map(
                   (entry) => DropdownMenuItem(
@@ -175,8 +175,8 @@ class _FormularioSoporte extends StatelessWidget {
             textInputAction: TextInputAction.next,
             onChanged: (_) => controller.limpiarErrorFormulario(),
             decoration: const InputDecoration(
-              labelText: 'Asunto',
-              hintText: 'Resume el problema',
+              labelText: AppStrings.entAsunto,
+              hintText: AppStrings.entResumeProblema,
             ),
           ),
           const SizedBox(height: AppSizes.space8),
@@ -188,8 +188,8 @@ class _FormularioSoporte extends StatelessWidget {
             maxLength: SoporteEntrenadorController.maximoDescripcion,
             onChanged: (_) => controller.limpiarErrorFormulario(),
             decoration: const InputDecoration(
-              labelText: 'Descripción',
-              hintText: 'Incluye los detalles necesarios para ayudarte',
+              labelText: AppStrings.adminDescripcion,
+              hintText: AppStrings.entDetallesAyuda,
               alignLabelWithHint: true,
             ),
           ),
@@ -199,7 +199,7 @@ class _FormularioSoporte extends StatelessWidget {
           ],
           const SizedBox(height: AppSizes.space16),
           BotonPrimario(
-            texto: 'Enviar solicitud',
+            texto: AppStrings.entEnviarSolicitud,
             icono: Icons.send_outlined,
             anchoCompleto: true,
             cargando: controller.enviando,
@@ -221,7 +221,7 @@ class _HistorialSoporte extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Mis solicitudes', style: AppTextStyles.subtitle),
+        Text(AppStrings.entMisSolicitudes, style: AppTextStyles.subtitle),
         const SizedBox(height: AppSizes.space16),
         if (controller.error != null) ...[
           MensajeError(texto: controller.error!),
@@ -234,8 +234,8 @@ class _HistorialSoporte extends StatelessWidget {
         else if (controller.tickets.isEmpty)
           const EstadoVacio(
             icono: Icons.support_agent_outlined,
-            titulo: 'No tienes solicitudes',
-            texto: 'Cuando necesites ayuda, envía tu primera solicitud.',
+            titulo: AppStrings.entSinSolicitudesSoporte,
+            texto: AppStrings.entSinSolicitudesSoporteTexto,
           )
         else
           for (final ticket in controller.tickets) ...[
@@ -277,7 +277,7 @@ class _TicketCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppSizes.radius),
                 ),
                 child: Text(
-                  resuelto ? 'Resuelto' : 'Abierto',
+                  resuelto ? AppStrings.soporteResuelto : AppStrings.soporteAbierto,
                   style: AppTextStyles.label.copyWith(color: colorEstado),
                 ),
               ),
@@ -308,7 +308,7 @@ class _TicketCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Respuesta de coordinación',
+                    AppStrings.entRespuestaCoordinacion,
                     style: AppTextStyles.label.copyWith(
                       color: AppColors.success,
                     ),

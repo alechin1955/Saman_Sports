@@ -8,6 +8,7 @@ abstract interface class AdminEstudianteRepository {
     required String uid,
     required bool solvente,
   });
+  Future<List<String>> revisarIdentificadores();
 }
 
 class FirebaseAdminEstudianteAdapter implements AdminEstudianteRepository {
@@ -35,6 +36,11 @@ class FirebaseAdminEstudianteAdapter implements AdminEstudianteRepository {
     return _texto(
       FirebaseServices.actualizarSolvencia(uid: uid, solvente: solvente),
     );
+  }
+
+  @override
+  Future<List<String>> revisarIdentificadores() {
+    return FirebaseServices.indexarIdentificadoresEstudiantes();
   }
 }
 

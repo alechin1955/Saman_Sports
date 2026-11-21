@@ -50,7 +50,9 @@ class _FormularioResenaState extends State<FormularioResena> {
       return;
     }
 
-    final deporte = c.deportes.where((d) => d.id == _deporteId).firstOrNull;
+    final deporte = c.deportesResenables
+        .where((d) => d.id == _deporteId)
+        .firstOrNull;
     final ok = await c.publicar(
       deporte: deporte,
       estrellas: _estrellas,
@@ -84,12 +86,17 @@ class _FormularioResenaState extends State<FormularioResena> {
             const SizedBox(height: AppSizes.space8),
             if (_editando)
               Text(widget.inicial!.disciplina, style: AppTextStyles.subtitle)
+            else if (c.deportesResenables.isEmpty)
+              Text(
+                AppStrings.comunidadSinConfirmadas,
+                style: AppTextStyles.body,
+              )
             else
               Wrap(
                 spacing: AppSizes.space8,
                 runSpacing: AppSizes.space8,
                 children: [
-                  for (final deporte in c.deportes)
+                  for (final deporte in c.deportesResenables)
                     _OpcionDisciplina(
                       texto: deporte.nombre,
                       activa: deporte.id == _deporteId,
@@ -128,7 +135,9 @@ class _FormularioResenaState extends State<FormularioResena> {
               texto: _editando ? AppStrings.guardar : AppStrings.publicarResena,
               cargando: c.enviando,
               anchoCompleto: true,
-              onPressed: _enviar,
+              onPressed: !_editando && c.deportesResenables.isEmpty
+                  ? null
+                  : _enviar,
             ),
           ],
         );

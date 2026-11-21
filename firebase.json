@@ -15,7 +15,7 @@
     "database": "(default)",
     "location": "nam5",
     "rules": "firestore.rules",
-    "indexes": "n"
+    "indexes": "firestore.indexes.json"
   },
   "emulators": {
     "firestore": {

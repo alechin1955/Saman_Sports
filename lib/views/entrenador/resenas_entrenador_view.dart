@@ -10,6 +10,7 @@ import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/home/widgets/resena_card.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class ResenasEntrenadorView extends StatefulWidget {
   const ResenasEntrenadorView({super.key, required this.auth, this.controller});
@@ -46,10 +47,10 @@ class _ResenasEntrenadorViewState extends State<ResenasEntrenadorView> {
       auth: widget.auth,
       opciones: OpcionesEntrenador.menu,
       rutaActiva: AppRoutes.entrenadorResenas,
-      subtituloPanel: 'Panel del entrenador',
-      titulo: 'Reseñas',
+      subtituloPanel: AppStrings.entPanel,
+      titulo: AppStrings.resenas,
       descripcion:
-          'Lee la opinión de los estudiantes sobre tus disciplinas asignadas.',
+          AppStrings.entResenasDescripcion,
       child: ListenableBuilder(
         listenable: controller,
         builder: (context, _) {
@@ -62,8 +63,8 @@ class _ResenasEntrenadorViewState extends State<ResenasEntrenadorView> {
           if (controller.resenas.isEmpty) {
             return const EstadoVacio(
               icono: Icons.reviews_outlined,
-              titulo: 'Aún no hay reseñas',
-              texto: 'Las reseñas que publiquen los estudiantes sobre tus disciplinas aparecerán aquí.',
+              titulo: AppStrings.entSinResenas,
+              texto: AppStrings.entSinResenasTexto,
             );
           }
           return Column(
@@ -87,7 +88,7 @@ class _ResenasEntrenadorViewState extends State<ResenasEntrenadorView> {
                     const SizedBox(width: AppSizes.space8),
                     Expanded(
                       child: Text(
-                        'promedio de ${controller.resenas.length} reseñas',
+                        AppStrings.entPromedioResenas(controller.resenas.length),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodySmall.copyWith(

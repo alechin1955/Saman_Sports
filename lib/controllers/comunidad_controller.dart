@@ -7,11 +7,13 @@ import 'package:saman_sports/controllers/estudiante_controller.dart'
 import 'package:saman_sports/controllers/explorar_deportes_controller.dart'
     show OrigenDeportes;
 import 'package:saman_sports/core/constants/app_strings.dart';
-import 'package:saman_sports/core/constants/datos_ejemplo.dart';
 import 'package:saman_sports/models/deporte.dart';
 import 'package:saman_sports/models/resena.dart';
 
 typedef OrigenMisResenas = Stream<List<Map<String, dynamic>>> Function(
+  String uid,
+);
+typedef OrigenMisInscripciones = Stream<List<Map<String, dynamic>>> Function(
   String uid,
 );
 typedef CrearResena = Future<AuthResponse> Function(Map<String, dynamic> data);
@@ -31,6 +33,7 @@ class ComunidadController extends ChangeNotifier {
     LeerPerfil? leerPerfil,
     OrigenMisResenas? misResenasOrigen,
     OrigenDeportes? deportesOrigen,
+    OrigenMisInscripciones? misInscripcionesOrigen,
     CrearResena? crear,
     ActualizarResena? actualizar,
     EliminarResena? eliminar,
@@ -41,6 +44,9 @@ class ComunidadController extends ChangeNotifier {
            misResenasOrigen ??
            ((uid) => FirebaseServices.streamMisResenas(uid: uid)),
        _deportesOrigen = deportesOrigen ?? FirebaseServices.streamDeportes,
+       _misInscripcionesOrigen =
+           misInscripcionesOrigen ??
+           ((uid) => FirebaseServices.streamMisInscripciones(estudianteUid: uid)),
        _crear = crear ?? ((data) => FirebaseServices.crearResena(data: data)),
        _actualizar =
            actualizar ??
@@ -56,12 +62,14 @@ class ComunidadController extends ChangeNotifier {
   final LeerPerfil _leerPerfil;
   final OrigenMisResenas _misResenasOrigen;
   final OrigenDeportes _deportesOrigen;
+  final OrigenMisInscripciones _misInscripcionesOrigen;
   final CrearResena _crear;
   final ActualizarResena _actualizar;
   final EliminarResena _eliminar;
 
   List<Resena> misResenas = [];
   List<Deporte> deportes = [];
+  List<Map<String, dynamic>> _inscripciones = [];
   String autorNombre = '';
   bool cargando = true;
   bool enviando = false;
@@ -70,6 +78,7 @@ class ComunidadController extends ChangeNotifier {
 
   StreamSubscription<List<Map<String, dynamic>>>? _subResenas;
   StreamSubscription<List<Map<String, dynamic>>>? _subDeportes;
+  StreamSubscription<List<Map<String, dynamic>>>? _subInscripciones;
   Timer? _espera;
 
   /// Empieza a escuchar las reseñas del estudiante y los deportes.
@@ -95,11 +104,16 @@ class ComunidadController extends ChangeNotifier {
     });
 
     _subDeportes = _escuchar(_deportesOrigen, (lista) {
-      deportes = lista.isEmpty
-          ? DatosEjemplo.deportes
-          : lista.map(Deporte.fromMap).toList();
+      deportes = lista.map(Deporte.fromMap).toList();
       notifyListeners();
     });
+    _subInscripciones = _escuchar(
+      () => _misInscripcionesOrigen(uid),
+      (lista) {
+        _inscripciones = lista;
+        notifyListeners();
+      },
+    );
 
     _subResenas = _escuchar(() => _misResenasOrigen(uid), (lista) {
       _espera?.cancel();
@@ -110,6 +124,16 @@ class ComunidadController extends ChangeNotifier {
     });
 
     autorNombre = await _nombreAutor(uid);
+  }
+
+  List<Deporte> get deportesResenables {
+    final confirmados = _inscripciones
+        .where((item) => '${item['estado'] ?? ''}' == 'confirmada')
+        .map((item) => '${item['deporteId'] ?? ''}')
+        .toSet();
+    return deportes
+        .where((deporte) => deporte.activo && confirmados.contains(deporte.id))
+        .toList();
   }
 
   /// Valida una reseña. Devuelve el mensaje de error o null si es válida.
@@ -146,6 +170,11 @@ class ComunidadController extends ChangeNotifier {
       return false;
     }
     final elegido = deporte!;
+    if (!deportesResenables.any((item) => item.id == elegido.id)) {
+      errorFormulario = AppStrings.resenaSoloConfirmadas;
+      notifyListeners();
+      return false;
+    }
     return _enviar(
       () => _crear({
         'autorUid': uid,
@@ -249,5 +278,6 @@ class ComunidadController extends ChangeNotifier {
     _espera?.cancel();
     _subResenas?.cancel();
     _subDeportes?.cancel();
+    _subInscripciones?.cancel();
   }
 }

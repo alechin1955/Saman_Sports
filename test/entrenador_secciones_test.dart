@@ -424,6 +424,13 @@ class _EventosRepo implements EventosEntrenadorRepository {
     solicitud = datos;
     return null;
   }
+
+  @override
+  Future<String?> cancelar(String eventoId) async => null;
+
+  @override
+  Future<String?> editar(String eventoId, Map<String, dynamic> datos) async =>
+      null;
 }
 
 class _EventosErrorRepo implements EventosEntrenadorRepository {
@@ -439,6 +446,13 @@ class _EventosErrorRepo implements EventosEntrenadorRepository {
 
   @override
   Future<String?> solicitar(Map<String, dynamic> datos) async => null;
+
+  @override
+  Future<String?> cancelar(String eventoId) async => null;
+
+  @override
+  Future<String?> editar(String eventoId, Map<String, dynamic> datos) async =>
+      null;
 }
 
 class _EventosLentoRepo implements EventosEntrenadorRepository {
@@ -457,6 +471,13 @@ class _EventosLentoRepo implements EventosEntrenadorRepository {
 
   @override
   Future<String?> solicitar(Map<String, dynamic> datos) => _pendiente.future;
+
+  @override
+  Future<String?> cancelar(String eventoId) async => null;
+
+  @override
+  Future<String?> editar(String eventoId, Map<String, dynamic> datos) async =>
+      null;
 
   void publicar(Evento evento) => _eventos.add([evento]);
 

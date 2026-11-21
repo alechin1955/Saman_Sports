@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:saman_sports/core/utils/ticket_soporte_entrenador.dart';
 import 'package:saman_sports/models/ticket_soporte.dart';
 import 'package:saman_sports/repositories/soporte_entrenador_repository.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class SoporteEntrenadorController extends ChangeNotifier {
   SoporteEntrenadorController({SoporteEntrenadorRepository? repository})
@@ -79,12 +80,12 @@ class SoporteEntrenadorController extends ChangeNotifier {
         errorFormulario = resultado;
         return false;
       }
-      mensaje = 'Tu solicitud fue enviada a la coordinación.';
+      mensaje = AppStrings.entSoporteEnviado;
       errorFormulario = null;
       return true;
     } catch (_) {
       if (!_cerrado) {
-        errorFormulario = 'No se pudo enviar la solicitud. Intenta nuevamente.';
+        errorFormulario = AppStrings.entSoporteNoEnviado;
       }
       return false;
     } finally {
@@ -107,7 +108,7 @@ class SoporteEntrenadorController extends ChangeNotifier {
   void _falloCarga() {
     if (_cerrado) return;
     cargando = false;
-    error = 'No se pudieron cargar tus solicitudes de soporte.';
+    error = AppStrings.entSoporteCarga;
     _avisar();
   }
 

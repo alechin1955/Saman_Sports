@@ -13,6 +13,7 @@ import 'package:saman_sports/views/estudiante/widgets/estado_vacio.dart';
 import 'package:saman_sports/views/widgets/boton_secundario.dart';
 import 'package:saman_sports/views/widgets/mensaje_error.dart';
 import 'package:saman_sports/views/widgets/panel_layout.dart';
+import 'package:saman_sports/core/constants/app_strings.dart';
 
 class DashboardEntrenadorView extends StatefulWidget {
   const DashboardEntrenadorView({
@@ -62,9 +63,9 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
       auth: widget.auth,
       opciones: OpcionesEntrenador.menu,
       rutaActiva: AppRoutes.dashboardEntrenador,
-      subtituloPanel: 'Panel del entrenador',
-      titulo: 'Inicio',
-      descripcion: 'Tu resumen deportivo y los próximos pasos de tu equipo.',
+      subtituloPanel: AppStrings.entPanel,
+      titulo: AppStrings.inicio,
+      descripcion: AppStrings.entInicioDescripcion,
       child: ListenableBuilder(
         listenable: controller,
         builder: (context, _) {
@@ -78,7 +79,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                 MensajeError(texto: controller.error!),
                 const SizedBox(height: AppSizes.space16),
                 BotonSecundario(
-                  texto: 'Reintentar',
+                  texto: AppStrings.reintentar,
                   onPressed: controller.cargar,
                 ),
               ],
@@ -93,7 +94,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                 child: CampanaEntrenador(controller: notificaciones),
               ),
               _BienvenidaEntrenador(
-                nombre: perfil?.nombre ?? 'Entrenador',
+                nombre: perfil?.nombre ?? AppStrings.entNombreFallback,
                 disciplina: perfil?.disciplina ?? '',
                 iniciales: perfil?.iniciales ?? 'E',
               ),
@@ -112,7 +113,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                         child: _ResumenCard(
                           icono: Icons.sports_outlined,
                           valor: '${controller.disciplinas.length}',
-                          etiqueta: 'Disciplinas asignadas',
+                          etiqueta: AppStrings.entDisciplinasAsignadas,
                         ),
                       ),
                       SizedBox(
@@ -120,7 +121,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                         child: _ResumenCard(
                           icono: Icons.groups_outlined,
                           valor: '${controller.totalEstudiantes}',
-                          etiqueta: 'Estudiantes inscritos',
+                          etiqueta: AppStrings.entEstudiantesInscritosEtiqueta,
                         ),
                       ),
                     ],
@@ -130,11 +131,11 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
               const SizedBox(height: AppSizes.space24),
               _ProximaClase(controller: controller),
               const SizedBox(height: AppSizes.space32),
-              Text('Accesos rápidos', style: AppTextStyles.title),
+              Text(AppStrings.entAccesosRapidos, style: AppTextStyles.title),
               const SizedBox(height: AppSizes.space16),
               const _AccesosEntrenador(),
               const SizedBox(height: AppSizes.space32),
-              Text('Asistencia reciente', style: AppTextStyles.title),
+              Text(AppStrings.entAsistenciaReciente, style: AppTextStyles.title),
               const SizedBox(height: AppSizes.space16),
               if (controller.advertenciaAsistencias != null) ...[
                 MensajeError(texto: controller.advertenciaAsistencias!),
@@ -142,7 +143,7 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: BotonSecundario(
-                    texto: 'Reintentar',
+                    texto: AppStrings.reintentar,
                     onPressed: controller.cargar,
                   ),
                 ),
@@ -152,8 +153,8 @@ class _DashboardEntrenadorViewState extends State<DashboardEntrenadorView> {
                   controller.advertenciaAsistencias == null)
                 const EstadoVacio(
                   icono: Icons.fact_check_outlined,
-                  titulo: 'Aún no hay asistencias registradas',
-                  texto: 'Cuando pases lista, las sesiones más recientes aparecerán aquí.',
+                  titulo: AppStrings.entSinAsistencias,
+                  texto: AppStrings.entSinAsistenciasTexto,
                 )
               else if (controller.asistenciasRecientes.isNotEmpty)
                 for (final registro in controller.asistenciasRecientes)
@@ -198,12 +199,12 @@ class _BienvenidaEntrenador extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Hola, $nombre', style: AppTextStyles.title),
+                Text(AppStrings.entHola(nombre), style: AppTextStyles.title),
                 const SizedBox(height: AppSizes.space4),
                 Text(
                   disciplina.isEmpty
-                      ? 'Gestiona tus equipos desde un solo lugar.'
-                      : 'Entrenador de $disciplina',
+                      ? AppStrings.entGestionaEquipos
+                      : AppStrings.entEntrenadorDe(disciplina),
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -279,11 +280,11 @@ class _ProximaClase extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Próxima clase', style: AppTextStyles.subtitle),
+                Text(AppStrings.entProximaClase, style: AppTextStyles.subtitle),
                 const SizedBox(height: AppSizes.space8),
                 Text(
                   disciplina == null
-                      ? 'No tienes una clase programada.'
+                      ? AppStrings.entSinClase
                       : '${disciplina.nombre} · ${_horario(clase!)}',
                   style: AppTextStyles.body,
                 ),
@@ -306,15 +307,7 @@ class _ProximaClase extends StatelessWidget {
     final inicio = clase.inicio;
     final franja = clase.franja;
     if (inicio == null || franja == null) return clase.disciplina.horario;
-    const dias = [
-      'lunes',
-      'martes',
-      'miércoles',
-      'jueves',
-      'viernes',
-      'sábado',
-      'domingo',
-    ];
+    const dias = AppStrings.entDiasSemana;
     return '${dias[inicio.weekday - 1]} ${minutosATexto(franja.horaInicio)}–${minutosATexto(franja.horaFin)}';
   }
 }
@@ -323,10 +316,10 @@ class _AccesosEntrenador extends StatelessWidget {
   const _AccesosEntrenador();
 
   static const accesos = [
-    (Icons.sports_outlined, 'Disciplinas', AppRoutes.entrenadorDisciplinas),
-    (Icons.fact_check_outlined, 'Pasar lista', AppRoutes.entrenadorAsistencia),
-    (Icons.event_outlined, 'Solicitar evento', AppRoutes.entrenadorEventos),
-    (Icons.person_outline, 'Mi perfil', AppRoutes.entrenadorPerfil),
+    (Icons.sports_outlined, AppStrings.disciplinas, AppRoutes.entrenadorDisciplinas),
+    (Icons.fact_check_outlined, AppStrings.entPasarLista, AppRoutes.entrenadorAsistencia),
+    (Icons.event_outlined, AppStrings.entSolicitarEvento, AppRoutes.entrenadorEventos),
+    (Icons.person_outline, AppStrings.miPerfil, AppRoutes.entrenadorPerfil),
   ];
 
   @override
@@ -407,7 +400,10 @@ class _AsistenciaCard extends StatelessWidget {
             ),
           ),
           Text(
-            '${registro.presentes} presentes · ${registro.ausentes} ausentes',
+            AppStrings.entPresentesAusentes(
+              registro.presentes,
+              registro.ausentes,
+            ),
             style: AppTextStyles.bodySmall,
           ),
         ],
