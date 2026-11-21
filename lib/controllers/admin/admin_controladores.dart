@@ -1,3 +1,4 @@
+import 'package:saman_sports/controllers/admin/admin_calendario_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_deporte_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_entrenador_controller.dart';
 import 'package:saman_sports/controllers/admin/admin_estudiante_controller.dart';
@@ -23,6 +24,7 @@ class AdminControladores {
     AdminEventoController? eventos,
     AdminSoporteController? soporte,
     AdminTransaccionController? transacciones,
+    AdminCalendarioController? calendario,
   }) : resumen = resumen ?? AdminResumenController(),
        deportes = deportes ?? AdminDeporteController(),
        entrenadores = entrenadores ?? AdminEntrenadorController(),
@@ -32,7 +34,8 @@ class AdminControladores {
        inscripciones = inscripciones ?? AdminInscripcionController(),
        eventos = eventos ?? AdminEventoController(),
        soporte = soporte ?? AdminSoporteController(),
-       transacciones = transacciones ?? AdminTransaccionController();
+       transacciones = transacciones ?? AdminTransaccionController(),
+       calendario = calendario ?? AdminCalendarioController();
 
   final AdminResumenController resumen;
   final AdminDeporteController deportes;
@@ -44,6 +47,7 @@ class AdminControladores {
   final AdminEventoController eventos;
   final AdminSoporteController soporte;
   final AdminTransaccionController transacciones;
+  final AdminCalendarioController calendario;
 
   void dispose() {
     resumen.dispose();
@@ -56,5 +60,6 @@ class AdminControladores {
     eventos.dispose();
     soporte.dispose();
     transacciones.dispose();
+    calendario.dispose();
   }
 }

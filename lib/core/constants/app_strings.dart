@@ -231,7 +231,7 @@ class AppStrings {
       'Estamos construyendo esta sección';
   static const String seccionEnConstruccionTexto =
       'Muy pronto podrás usarla desde tu panel.';
-  static const String irAlDashboard = 'Ir al Dashboard';
+  static const String irAlDashboard = 'Ir al Resumen';
   static const String datosPersonales = 'Datos personales';
   static const String datosCuenta = 'Datos de la cuenta';
   static const String datosCuentaTexto =
@@ -253,9 +253,9 @@ class AppStrings {
   static const String inscribirme = 'Inscribirme';
   static const String inscribiendo = 'Inscribiendo…';
   static const String inscripcionRegistrada =
-      'Inscripción registrada. Queda pendiente hasta que pagues y el administrador la confirme.';
+      'Inscripción registrada. Queda pendiente hasta que el administrador la confirme.';
   static const String inscripcionPendienteNota =
-      'Al inscribirte tu cupo queda reservado como pendiente. Se confirma cuando pagues y el administrador lo verifique.';
+      'Tu inscripción queda pendiente hasta que el administrador la confirme. Recuerda que debes estar solvente para inscribirte.';
   static const String yaInscrito = 'Ya estás inscrito en esta disciplina';
   static const String sinCuposDisponibles = 'No quedan cupos disponibles';
   static const String inscripcionCuentaInactiva =
@@ -300,7 +300,7 @@ class AppStrings {
   static const String conceptoPago = 'Concepto';
   static const String cuotaDeportiva = 'Cuota deportiva del período';
   static const String pagoSimuladoNota =
-      'Esta es una simulación de PayPal: no se hace ningún cobro real.';
+      'El pago se procesa de forma segura a través de PayPal.';
   static const String conectandoPaypal = 'Conectando con PayPal…';
   static const String pagoEnviado = 'Pago enviado';
   static const String idTransaccion = 'ID de transacción';
@@ -1035,4 +1035,30 @@ class AppStrings {
   static const String tituloAvisoPago = 'Pago';
   static const String tituloAvisoTicket = 'Soporte';
   static const String tituloAvisoRegistro = 'Registro';
+
+  // --- Prompt D: calendario del admin ---
+  static const String adminCalendarioTitulo = 'Disponibilidad de canchas';
+  static const String adminCalendarioError =
+      'No se pudo cargar la disponibilidad de las canchas.';
+  static const String adminCalendarioDiaLibre = 'Sin ocupación este día.';
+  static const String adminCalendarioSinCanchas = 'No hay canchas activas.';
+  static const String adminCalendarioTodas = 'Todas';
+  static const String adminCalendarioHoy = 'Hoy';
+  static const String adminCalendarioLibre = 'Libre';
+  static const String adminCalendarioDeporte = 'Deporte';
+  static const String adminCalendarioEvento = 'Evento';
+  static const List<String> adminMesesCortos = [
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
+  ];
 }
