@@ -313,7 +313,7 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
 
-    testWidgets('inscribirme llama a la fachada y avisa que quedó pendiente', (
+    testWidgets('inscribirme llama a la fachada y avisa que quedó confirmada', (
       tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(1440, 900));

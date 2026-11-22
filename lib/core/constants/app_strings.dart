@@ -259,9 +259,9 @@ class AppStrings {
   static const String inscribirme = 'Inscribirme';
   static const String inscribiendo = 'Inscribiendo…';
   static const String inscripcionRegistrada =
-      'Inscripción registrada. Queda pendiente hasta que el administrador la confirme.';
+      'Inscripción registrada y confirmada.';
   static const String inscripcionPendienteNota =
-      'Tu inscripción queda pendiente hasta que el administrador la confirme. Recuerda que debes estar solvente para inscribirte.';
+      'La inscripción se confirma inmediatamente. Recuerda que debes estar solvente para inscribirte.';
   static const String yaInscrito = 'Ya estás inscrito en esta disciplina';
   static const String sinCuposDisponibles = 'No quedan cupos disponibles';
   static const String inscripcionCuentaInactiva =
@@ -1009,7 +1009,7 @@ class AppStrings {
       'Confirma si vas a participar.';
 
   static String avisoInscripcionCreada(String deporte) =>
-      'Tu inscripción en $deporte quedó pendiente.';
+      'Tu inscripción en $deporte fue confirmada.';
   static String avisoInscripcionCancelada(String deporte) =>
       'Cancelaste tu inscripción en $deporte.';
   static String avisoInscripcionPendienteAdmin(

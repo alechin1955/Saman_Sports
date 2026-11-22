@@ -1194,7 +1194,7 @@ class FirebaseServices {
   ///
   /// En una transacción: revisa que la cuenta esté activa, que el deporte
   /// esté activo y tenga cupo, que no esté ya inscrito, suma 1 a
-  /// `inscritos` y deja la inscripción en 'pendiente'. El id es
+  /// `inscritos` y deja la inscripción en 'confirmada'. El id es
   /// `{uid}_{deporteId}` para que no se pueda inscribir dos veces.
   static Future<AuthResponse> inscribirseEnDeporte({
     required String deporteId,
@@ -1242,7 +1242,7 @@ class FirebaseServices {
           'estudianteUid': uid,
           'deporteId': deporteId,
           'deporteNombre': deporteNombre,
-          'estado': 'pendiente',
+          'estado': 'confirmada',
           'fecha': FieldValue.serverTimestamp(),
         });
         tx.set(
@@ -1254,22 +1254,6 @@ class FirebaseServices {
             tipo: 'inscripcion_creada',
             titulo: AppStrings.tituloAvisoInscripcion,
             mensaje: AppStrings.avisoInscripcionCreada(deporteNombre),
-            inscripcionId: '${uid}_$deporteId',
-            deporteId: deporteId,
-          ),
-        );
-        tx.set(
-          _db.collection(notificacionesCollection).doc(),
-          _aviso(
-            destinatarioUid: '',
-            destinatarioRol: 'administrador',
-            origenUid: uid,
-            tipo: 'inscripcion_pendiente',
-            titulo: AppStrings.tituloAvisoInscripcion,
-            mensaje: AppStrings.avisoInscripcionPendienteAdmin(
-              _nombrePersona(usuarioTx.data()),
-              deporteNombre,
-            ),
             inscripcionId: '${uid}_$deporteId',
             deporteId: deporteId,
           ),
