@@ -102,7 +102,8 @@ class RecordatoriosController extends ChangeNotifier {
     String? primerError;
     try {
       for (final aviso in avisos.where((a) => !a.leida).toList()) {
-        primerError ??= await marcarLeido(aviso);
+        final resultado = await marcarLeido(aviso);
+        primerError ??= resultado;
       }
       return primerError;
     } finally {

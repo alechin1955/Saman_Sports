@@ -32,7 +32,10 @@ void main() {
     late StreamController<List<Map<String, dynamic>>> fuente;
     late List<String> marcados;
 
-    RecordatoriosController crear({AuthResponse? respuesta}) {
+    RecordatoriosController crear({
+      AuthResponse? respuesta,
+      Map<String, AuthResponse> respuestasPorAviso = const {},
+    }) {
       fuente = StreamController<List<Map<String, dynamic>>>();
       marcados = [];
       return RecordatoriosController(
@@ -40,7 +43,9 @@ void main() {
         origen: (_) => fuente.stream,
         marcar: (id) async {
           marcados.add(id);
-          return respuesta ?? AuthResponse(isSuccess: true);
+          return respuestasPorAviso[id] ??
+              respuesta ??
+              AuthResponse(isSuccess: true);
         },
       );
     }
@@ -83,6 +88,27 @@ void main() {
       expect(marcados, ['c', 'a']);
       expect(c.procesando, isFalse);
       c.dispose();
+    });
+
+    test('marcar todos sigue tras un fallo y devuelve el primer error', () async {
+      final c = crear(
+        respuestasPorAviso: {
+          'a': AuthResponse(isSuccess: false, errorMessage: 'Primer error'),
+          'b': AuthResponse(isSuccess: false, errorMessage: 'Segundo error'),
+        },
+      )..iniciar();
+      fuente.add([
+        aviso('a', 'evento', dia: 3),
+        aviso('b', 'evento', dia: 2),
+        aviso('c', 'evento', dia: 1),
+      ]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(await c.marcarTodos(), 'Primer error');
+      expect(marcados, ['a', 'b', 'c']);
+      expect(c.procesando, isFalse);
+      c.dispose();
+      await fuente.close();
     });
 
     test('devuelve el error de la fachada', () async {
